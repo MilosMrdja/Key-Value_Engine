@@ -1,7 +1,7 @@
 package main
 
 import (
-	"KeyValueEngine/SimHash"
+	"KeyValueEngine/SImHash"
 	"fmt"
 )
 
