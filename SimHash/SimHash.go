@@ -119,3 +119,31 @@ func decimalToBits(num uint64) []byte {
 	}
 	return bits
 }
+func HammingDistance(arr1, arr2 []int8) int8 {
+	result := 0
+	for i := 0; i < len(arr1); i++ {
+		if arr1[i] != arr2[i] {
+			result += 1
+		}
+	}
+	return int8(result)
+}
+
+//func main() {
+//	fmt.Println("---------------- SimHash ----------------")
+//	sm := SimHash.NewSimHash("my name is milos mrdja")
+//	sm2 := SimHash.NewSimHash("i am the one")
+//	sm3 := SimHash.NewSimHash("i like to play a football")
+//	sm4 := SimHash.NewSimHash("my name is XXX")
+//
+//	fmt.Println(sm.ReturnIdArray())
+//
+//	fmt.Println(sm2.ReturnIdArray())
+//
+//	fmt.Println(sm3.ReturnIdArray())
+//
+//	fmt.Println(sm4.ReturnIdArray())
+//
+//	fmt.Println(SimHash.HammingDistance(sm.ReturnIdArray(), sm2.ReturnIdArray()))
+//	fmt.Println(SimHash.HammingDistance(sm.ReturnIdArray(), sm3.ReturnIdArray()))
+//	fmt.Println(SimHash.HammingDistance(sm.ReturnIdArray(), sm4.ReturnIdArray()))
