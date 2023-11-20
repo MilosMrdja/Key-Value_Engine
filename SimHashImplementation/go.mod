@@ -1,4 +1,4 @@
-module KeyValueEngine
+module SimHashImplementation
 
 go 1.21.3
 
