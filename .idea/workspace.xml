@@ -7,6 +7,8 @@
     <list default="true" id="992a02df-014a-433a-a017-d379f8fcd761" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mem/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/skiplist.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/skiplist.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/skiplistmemtable.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/skiplistmemtable.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -91,6 +93,9 @@
     <watches-manager>
       <configuration name="GoApplicationRunConfiguration">
         <watch expression="update" />
+        <watch expression="*(*&quot;mem/memtable.SkiplistNode&quot;)(824634877344)" />
+        <watch expression="*(*&quot;mem/memtable.SkiplistNode&quot;)(824634877344)" />
+        <watch expression="*(*&quot;mem/memtable.SkiplistNode&quot;)(824634877344)" />
       </configuration>
     </watches-manager>
   </component>

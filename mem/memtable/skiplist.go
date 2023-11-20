@@ -1,6 +1,7 @@
 package memtable
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -26,7 +27,7 @@ type SkipList struct {
 
 func CreateSkipList(maxLevel int) *SkipList {
 	return &SkipList{
-		head:     CreateSkiplistNode("", nil, maxLevel),
+		head:     CreateSkiplistNode("", nil, 0),
 		level:    0,
 		maxLevel: maxLevel,
 	}
@@ -104,4 +105,32 @@ func (sl *SkipList) GetElement(key string) (bool, *DataType) {
 		return true, current.data
 	}
 	return false, current.data
+}
+
+func (sl *SkipList) ShowSkipList() {
+	fmt.Println("\n")
+	ranks := make(map[string]int)
+	i := 0
+
+	for node := sl.head.next[0]; node != nil; node = node.next[0] {
+		ranks[node.key] = i
+		i++
+	}
+
+	for level := sl.level; level >= 0; level-- {
+		if sl.head.next[level] == nil {
+			continue
+		}
+		i = 0
+		for node := sl.head.next[level]; node != nil; node = node.next[level] {
+			rank := ranks[node.key]
+			for j := 0; j < rank-i; j++ {
+				fmt.Print("--")
+			}
+			fmt.Print(node.key + "-")
+			i = rank + 1
+		}
+		fmt.Print("\n")
+	}
+	fmt.Println("")
 }

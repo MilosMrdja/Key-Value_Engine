@@ -22,7 +22,15 @@ func main() {
 	fmt.Printf("%s \n", data)
 
 	slmem := memtable.CreateSkipListMemtable(j)
-	slmem.AddElement("k1", []byte("zdravo"))
-	_, data = slmem.GetElement("k1")
-	fmt.Printf("%s \n", data)
+	slmem.AddElement("1", []byte("1"))
+	slmem.AddElement("2", []byte("2"))
+	slmem.AddElement("3", []byte("3"))
+	slmem.AddElement("4", []byte("4"))
+	slmem.AddElement("7", []byte("7"))
+	slmem.AddElement("8", []byte("8"))
+	slmem.AddElement("9", []byte("9"))
+	slmem.AddElement("5", []byte("5"))
+	slmem.AddElement("6", []byte("6"))
+	slmem.AddElement("10", []byte("10"))
+	slmem.ShowSkipList()
 }

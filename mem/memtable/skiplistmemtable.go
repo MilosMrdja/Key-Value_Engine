@@ -39,3 +39,7 @@ func (slmem *SkipListMemtable) GetElement(key string) (bool, []byte) {
 func (slmem *SkipListMemtable) DeleteElement(key string) bool {
 	return slmem.DeleteElement(key)
 }
+
+func (slmem *SkipListMemtable) ShowSkipList() {
+	slmem.data.ShowSkipList()
+}
