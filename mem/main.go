@@ -21,4 +21,8 @@ func main() {
 	_, data = m.GetElement("k1")
 	fmt.Printf("%s \n", data)
 
+	slmem := memtable.CreateSkipListMemtable(j)
+	slmem.AddElement("k1", []byte("zdravo"))
+	_, data = slmem.GetElement("k1")
+	fmt.Printf("%s \n", data)
 }
