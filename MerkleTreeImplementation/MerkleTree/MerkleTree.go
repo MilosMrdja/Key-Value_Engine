@@ -2,6 +2,7 @@ package MerkleTree
 
 import (
 	"encoding/binary"
+	"fmt"
 	"hash/fnv"
 	"math"
 	"os"
@@ -14,23 +15,19 @@ type Node struct {
 }
 
 type MerkleTree struct {
-	tree       []*Node
-	leafs      []*Node
-	merkleRoot *Node
-	numOfData  int
-	height     int
+	tree       []*Node // niz pokazivaca na Node-ove
+	merkleRoot *Node   // pokazivac na glavu
+	numOfData  int     // broj podataka
+	height     int     // visina stabla
 }
 
 // konstruktor - [root, ...., skroz levo dete,..., skroz desno dete]
-func CreateMerkleTree(data []string) (*MerkleTree, error) {
+func CreateMerkleTree(data [][]byte) (*MerkleTree, error) {
 	var numLeafs, numNodes, hTree int
 	numLeafs = 0
 	numNodes = 0
 	hTree = 0
 	if len(data) == 0 {
-		numLeafs = 0
-		numNodes = 0
-		hTree = 0
 		return nil, nil
 	} else if len(data) == 1 {
 		numLeafs = 1
@@ -50,19 +47,14 @@ func CreateMerkleTree(data []string) (*MerkleTree, error) {
 	}
 	MTree, err := fillMerkleTree(numNodes, data, numLeafs)
 	MTree.height = hTree
-	MTree.leafs = make([]*Node, numLeafs)
-
-	for i := 0; i < numLeafs; i++ {
-		MTree.leafs[i] = MTree.tree[numNodes-numLeafs+i]
-	}
+	MTree.numOfData = len(data)
 
 	return MTree, err
 }
 
 // f-ja koja popunjava merkle tree odredjenim hash vrednostima
-func fillMerkleTree(numN int, data []string, numL int) (*MerkleTree, error) {
+func fillMerkleTree(numN int, data [][]byte, numL int) (*MerkleTree, error) {
 	merkleTree := &MerkleTree{
-		numOfData:  numN,
 		merkleRoot: nil,
 		tree:       make([]*Node, numN),
 	}
@@ -76,7 +68,7 @@ func fillMerkleTree(numN int, data []string, numL int) (*MerkleTree, error) {
 		}
 		//za ulazni niz podataka dodeljuje hes vrednost, za ostale postavlja na 0
 		if brData < len(data) {
-			_, err := hash.Write([]byte(data[brData]))
+			_, err := hash.Write(data[brData])
 			if err != nil {
 				return nil, err
 			}
@@ -106,11 +98,6 @@ func fillMerkleTree(numN int, data []string, numL int) (*MerkleTree, error) {
 	return merkleTree, nil
 }
 
-// f-ja koja vraca niz listova
-func GetLeafs(mt *MerkleTree) []*Node {
-	return mt.leafs
-}
-
 // f-ja koja vraca head element
 func GetMerkleRoot(mt *MerkleTree) *Node {
 	return mt.merkleRoot
@@ -118,12 +105,17 @@ func GetMerkleRoot(mt *MerkleTree) *Node {
 
 // f-ja vraca broj elemenata u merkle stablu
 func GetNumNodes(mt *MerkleTree) int {
+	return len(mt.tree)
+}
+
+// f-ja koja vraca broj podatak - broj listova cija vrednost razlicita od nule
+func GetNumData(mt *MerkleTree) int {
 	return mt.numOfData
 }
 
-// f-ja vraca broj listova
-func GetNumLeafs(mt *MerkleTree) int {
-	return len(mt.leafs)
+// f-ja koja vraca visinu stabla
+func getHeightOfMerkleTree(mt *MerkleTree) int {
+	return mt.height
 }
 
 // serijalizacija merkle stabla
@@ -172,10 +164,10 @@ func DeserializeMerkleTree(fileName string) (*MerkleTree, bool, error) {
 	}
 
 	_, err = file.Seek(0, 0) //da dodjemo na pocetak
-
 	if err != nil {
 		return nil, false, err
 	}
+
 	duzina := make([]byte, 1)
 	_, err = file.Read(duzina)
 	if err != nil {
@@ -184,12 +176,12 @@ func DeserializeMerkleTree(fileName string) (*MerkleTree, bool, error) {
 
 	Mtree := MerkleTree{
 		tree:       make([]*Node, duzina[0]),
-		leafs:      nil,
 		merkleRoot: nil,
 		numOfData:  0,
 		height:     0,
 	}
 
+	numOfData := 0
 	for i := 0; i < int(duzina[0]); i++ {
 		tempNode := Node{
 			left:      nil,
@@ -202,6 +194,9 @@ func DeserializeMerkleTree(fileName string) (*MerkleTree, bool, error) {
 			return nil, false, err
 		}
 		tempNode.hashValue = binary.BigEndian.Uint64(tempHash)
+		if tempNode.hashValue != 0 && i > int(duzina[0])/2-1 {
+			numOfData += 1
+		}
 		Mtree.tree[i] = &tempNode
 	}
 
@@ -211,25 +206,35 @@ func DeserializeMerkleTree(fileName string) (*MerkleTree, bool, error) {
 	}
 
 	Mtree.merkleRoot = Mtree.tree[0]
-	Mtree.numOfData = len(Mtree.tree)
+	Mtree.numOfData = numOfData
+	Mtree.height = int(math.Log2(float64(duzina[0])))
 	return &Mtree, true, nil
+}
+
+func PrintMerkleTree(mt *MerkleTree) {
+	fmt.Println("Visina merkle stabla: ", mt.height)
+	fmt.Println("Broj cvorova u merkle stablu: ", GetNumNodes(mt))
+	fmt.Println("Broj podataka u merkle stablu: ", mt.numOfData)
+	for i := 0; i < len(mt.tree); i++ {
+		fmt.Print(mt.tree[i].hashValue, ",")
+	}
 }
 
 // vraca da li je doslo do izmena nad podacima
 // TRUE -> nije doslo do izmene podatka, i dalje mu je ista hash vrednost
 // FALSE -> doslo je do izmene nad prosledjenim podatkom
-func checkChanges(mt *MerkleTree, data string) (bool, error) {
-	hash := fnv.New32()
-	_, err := hash.Write([]byte(data))
-
-	if err != nil {
-		return false, err
-	}
-	for i := 0; i < GetNumLeafs(mt); i++ {
-		if mt.tree[i].hashValue == uint64(hash.Sum32()) {
-			return true, nil
-		}
-
-	}
-	return false, nil
-}
+//func checkChanges(mt *MerkleTree, data string) (bool, error) {
+//	hash := fnv.New32()
+//	_, err := hash.Write([]byte(data))
+//
+//	if err != nil {
+//		return false, err
+//	}
+//	for i := 0; i < GetNumLeafs(mt); i++ {
+//		if mt.tree[i].hashValue == uint64(hash.Sum32()) {
+//			return true, nil
+//		}
+//
+//	}
+//	return false, nil
+//}

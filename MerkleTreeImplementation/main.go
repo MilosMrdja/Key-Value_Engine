@@ -6,22 +6,39 @@ import (
 )
 
 func main() {
+	fmt.Println("---------------------------------------------------------------------------")
 	fmt.Println("Merkle tree")
-	testArray := make([]string, 7)
-	testArray[0] = "milos"
-	testArray[1] = "milos1"
-	testArray[2] = "milos2"
-	testArray[3] = "milos3"
-	testArray[4] = "milos4"
-	testArray[5] = "milos5"
-	testArray[6] = "milos6"
-	_, err := MerkleTree.CreateMerkleTree(testArray)
+	fmt.Println("---------------------------------------------------------------------------")
+	testArray := [][]byte{
+		{1, 2, 3, 4, 5, 6},
+		{1, 1, 1, 1},
+		{23, 23, 33, 32},
+		{0, 0, 0, 0},
+		{0, 1, 1, 1, 1, 0},
+		{2, 3, 34, 1, 2},
+		{3, 8, 6, 5, 5},
+		{3, 8, 6, 5, 5},
+		{0, 1, 1, 1, 1, 0},
+		{2, 3, 34, 1, 2},
+		{3, 8, 6, 5, 5},
+		{3, 8, 6, 5, 5},
+	}
+	m, err := MerkleTree.CreateMerkleTree(testArray)
 	if err != nil {
 		fmt.Println(err)
 	}
-	//check, err1 := MerkleTree.SerializeMerkleTree(m)
-	//fmt.Println(check, err1)
-	//m1, check, _ := MerkleTree.DeserializeMerkleTree("MerkleTree.bin")
-	//fmt.Println(check)
-	//MerkleTree.PrintHashValues(m1)
+	fmt.Println("Kreirano merkle stablo: ")
+	MerkleTree.PrintMerkleTree(m)
+	_, err1 := MerkleTree.SerializeMerkleTree(m)
+	if err1 != nil {
+		fmt.Println("Nije doslo do serijalizacije merkle stabla!")
+		fmt.Println(err1)
+	}
+
+	fmt.Println("\n---------------------------------------------------------------------------")
+	fmt.Println("Serijalizovano i deserijalizovano to isto merkle stablo , uporedjivanje vrednosti: ")
+	m1, _, _ := MerkleTree.DeserializeMerkleTree("MerkleTree.bin")
+	MerkleTree.PrintMerkleTree(m1)
+	fmt.Println("\n---------------------------------------------------------------------------")
+
 }
