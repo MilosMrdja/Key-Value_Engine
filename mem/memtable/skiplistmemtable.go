@@ -15,18 +15,36 @@ func CreateSkipListMemtable(cap int) *SkipListMemtable {
 	}
 }
 
-func (slmem *SkipListMemtable) AddElement(key string, data []byte) bool {
-	//ukoliko ima mesta u memtable, samo se upisuje podatak
-	if slmem.length < slmem.capacity {
-		return slmem.data.Insert(key, data)
+// funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
+// i da isprazni memtable kad se podaci posalju
+func (slmem *SkipListMemtable) SendToSSTable() bool {
 
-		//ako je popunjen, postavlja se na read only
-	} else if slmem.length == slmem.capacity {
-		slmem.readOnly = true
-		return false
+	//.......
+	//.......
+	slmem.data = CreateSkipList(slmem.capacity)
+	slmem.length = 0
+	return true
+}
+func (slmem *SkipListMemtable) AddElement(key string, data []byte) bool {
+	found, elem := slmem.data.GetElement(key)
+	if found == false {
+		//ukoliko ima mesta u memtable, samo se upisuje podatak
+		if slmem.length < slmem.capacity {
+			if slmem.data.Insert(key, data) == true {
+				slmem.length++
+				return true
+			}
+			return false
+
+			//ako je popunjen, postavlja se na read only
+		} else if slmem.length == slmem.capacity {
+			slmem.readOnly = true
+			slmem.SendToSSTable()
+			return false
+		}
 	}
-	//ukoliko se nesto nije izvrsilo kako treba, vraca se false
-	return false
+	elem.UpdateDataType(data)
+	return true
 }
 func (slmem *SkipListMemtable) GetElement(key string) (bool, []byte) {
 	err, elem := slmem.data.GetElement(key)
@@ -37,9 +55,17 @@ func (slmem *SkipListMemtable) GetElement(key string) (bool, []byte) {
 }
 
 func (slmem *SkipListMemtable) DeleteElement(key string) bool {
-	return slmem.DeleteElement(key)
+	if slmem.DeleteElement(key) == true {
+		slmem.length--
+		return true
+	}
+	return false
 }
 
 func (slmem *SkipListMemtable) ShowSkipList() {
 	slmem.data.ShowSkipList()
+}
+
+func (slmem *SkipListMemtable) IsReadOnly() bool {
+	return slmem.readOnly
 }

@@ -34,43 +34,48 @@ func CreateSkipList(maxLevel int) *SkipList {
 }
 
 func (sl *SkipList) Insert(key string, data []byte) bool {
-	newLevel := 0
+	found, elem := sl.GetElement(key)
+	if found == false {
+		newLevel := 0
 
-	for newLevel < sl.level+1 && rand.Intn(2) == 1 {
-		newLevel++
-	}
-
-	if sl.level < newLevel {
-		sl.head.next = append(sl.head.next, make([]*SkiplistNode, newLevel-sl.level)...)
-		sl.level = newLevel
-	}
-
-	current := sl.head
-	update := make([]*SkiplistNode, sl.level+1)
-
-	for i := sl.level; i >= 0; i-- {
-
-		for current.next[i] != nil && current.next[i].key < key {
-			current = current.next[i]
+		for newLevel < sl.level+1 && rand.Intn(2) == 1 {
+			newLevel++
 		}
 
-		update[i] = current
-	}
-
-	current = current.next[0]
-
-	if current == nil || current.key != key {
-		newNode := CreateSkiplistNode(key, data, sl.level)
-
-		for i := 0; i <= newLevel; i++ {
-			newNode.next[i] = update[i].next[i]
-			update[i].next[i] = newNode
+		if sl.level < newLevel {
+			sl.head.next = append(sl.head.next, make([]*SkiplistNode, newLevel-sl.level)...)
+			sl.level = newLevel
 		}
 
-		return true
-	} else {
-		return false
+		current := sl.head
+		update := make([]*SkiplistNode, sl.level+1)
+
+		for i := sl.level; i >= 0; i-- {
+
+			for current.next[i] != nil && current.next[i].key < key {
+				current = current.next[i]
+			}
+
+			update[i] = current
+		}
+
+		current = current.next[0]
+
+		if current == nil || current.key != key {
+			newNode := CreateSkiplistNode(key, data, sl.level)
+
+			for i := 0; i <= newLevel; i++ {
+				newNode.next[i] = update[i].next[i]
+				update[i].next[i] = newNode
+			}
+
+			return true
+		} else {
+			return false
+		}
 	}
+	elem.UpdateDataType(data)
+	return true
 }
 
 func (sl *SkipList) DeleteElement(key string) bool {
@@ -104,7 +109,7 @@ func (sl *SkipList) GetElement(key string) (bool, *DataType) {
 		current.data.DeleteDataType()
 		return true, current.data
 	}
-	return false, current.data
+	return false, nil
 }
 
 func (sl *SkipList) ShowSkipList() {

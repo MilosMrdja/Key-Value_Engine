@@ -7,6 +7,9 @@
     <list default="true" id="992a02df-014a-433a-a017-d379f8fcd761" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mem/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/data.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/data.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/hashmem.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/hashmem.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/memtable.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/memtable.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mem/memtable/skiplist.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/skiplist.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mem/memtable/skiplistmemtable.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/skiplistmemtable.go" afterDir="false" />
     </list>

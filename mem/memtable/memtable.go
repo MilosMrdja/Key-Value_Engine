@@ -13,6 +13,7 @@ type Memtable interface {
 	GetElement(key string) (bool, []byte)
 	DeleteElement(key string) bool
 	SendToSSTable() bool
+	IsReadOnly() bool
 }
 
 // funkcija koja cita podatke iz config fajla i vraca tip memtable i nje podrazumevani kapacitet

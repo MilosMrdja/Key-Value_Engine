@@ -4,14 +4,14 @@ import "time"
 
 type DataType struct {
 	data       []byte
-	delete     byte
+	delete     bool
 	changeTime time.Time
 }
 
 func CreateDataType(data []byte) *DataType {
 	return &DataType{
 		data:       data,
-		delete:     0x00,
+		delete:     true,
 		changeTime: time.Now(),
 	}
 }
@@ -22,13 +22,10 @@ func (dt *DataType) UpdateDataType(data []byte) {
 }
 
 func (dt *DataType) DeleteDataType() {
-	dt.delete = 0x01
+	dt.delete = true
 	dt.changeTime = time.Now()
 }
 
 func (dt *DataType) IsDeleted() bool {
-	if dt.delete == 0x01 {
-		return true
-	}
-	return false
+	return dt.delete
 }
