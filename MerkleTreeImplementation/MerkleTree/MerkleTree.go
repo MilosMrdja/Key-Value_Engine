@@ -118,7 +118,8 @@ func getHeightOfMerkleTree(mt *MerkleTree) int {
 	return mt.height
 }
 
-// serijalizacija merkle stabla
+// serijalizacija merkle stabla - serijalizujemo duzinu niza i N hesirane vrednosti
+// {1B, 8B, 8B,...,8B}
 func SerializeMerkleTree(mt *MerkleTree) (bool, error) {
 	fileName := "MerkleTree.bin"
 	_, err := os.Stat(fileName)
@@ -153,6 +154,8 @@ func SerializeMerkleTree(mt *MerkleTree) (bool, error) {
 }
 
 // deserijalizacija merkle stabla
+// deserijalizujemo duzinu niza kao prvi bajt i svaki 8B kao hesiranu vrednost cvora
+// posle namestamo pokazivace
 func DeserializeMerkleTree(fileName string) (*MerkleTree, bool, error) {
 	_, err := os.Stat(fileName)
 	if err != nil {
@@ -211,30 +214,85 @@ func DeserializeMerkleTree(fileName string) (*MerkleTree, bool, error) {
 	return &Mtree, true, nil
 }
 
-func PrintMerkleTree(mt *MerkleTree) {
-	fmt.Println("Visina merkle stabla: ", mt.height)
-	fmt.Println("Broj cvorova u merkle stablu: ", GetNumNodes(mt))
-	fmt.Println("Broj podataka u merkle stablu: ", mt.numOfData)
-	for i := 0; i < len(mt.tree); i++ {
-		fmt.Print(mt.tree[i].hashValue, ",")
-	}
+// f-ja ispisuje samo hesiranu vrednost node-a, bez ispisa roditelja
+func PrintNode(node *Node) string {
+	return fmt.Sprint(node.hashValue)
 }
 
-// vraca da li je doslo do izmena nad podacima
-// TRUE -> nije doslo do izmene podatka, i dalje mu je ista hash vrednost
-// FALSE -> doslo je do izmene nad prosledjenim podatkom
-//func checkChanges(mt *MerkleTree, data string) (bool, error) {
-//	hash := fnv.New32()
-//	_, err := hash.Write([]byte(data))
-//
-//	if err != nil {
-//		return false, err
-//	}
-//	for i := 0; i < GetNumLeafs(mt); i++ {
-//		if mt.tree[i].hashValue == uint64(hash.Sum32()) {
-//			return true, nil
-//		}
-//
-//	}
-//	return false, nil
-//}
+// f-ja koja vraca string kao podatke
+func PrintMerkleTree(mt *MerkleTree) string {
+	res := "\nVisina merkle stabla: " + fmt.Sprint(mt.height)
+	res += "\nBroj cvorova u merkle stablu: " + fmt.Sprint(GetNumNodes(mt))
+	res += "\nBroj podataka u merkle stablu: " + fmt.Sprint(mt.numOfData)
+	res += "\nIspisane hash vrednosti cvorova(head, levo dete, desno dete): \n"
+	for i := 0; i < len(mt.tree); i++ {
+		res += PrintNode(mt.tree[i])
+		if i != len(mt.tree)-1 {
+			res += ","
+		}
+	}
+	return res
+}
+
+// f-ja koja uporedjuje dva stabla i vraca niz indeksa od elemenata cije su vrednosti promenjene
+// prvo stablo je originalno, a drugo da li je doslo do promene neke vrednosti
+// return nil -> stabla su ista
+// return len(array) > 0    ->   podaci su se negde promenili
+// return boo: true -> uporedjivanje je izvrseno, false -> uporedjivanje nije izvrsenog zbog necega
+func CheckChanges(mt1 *MerkleTree, mt2 *MerkleTree) ([]uint64, bool) {
+
+	// ako nisu iste visine nema smisla da proveravamo
+	if mt1.height != mt2.height {
+		return nil, false
+	}
+
+	var res []uint64                                           // rezultat koji vracam
+	var valuesByGivenLevel func(node *Node, level int) []*Node // rekurzija kroz stablo
+	var hashArr []*Node                                        // pomocna za pisanje hash vrednosti na odredjenom level-u
+
+	valuesByGivenLevel = func(node *Node, level int) []*Node {
+
+		if node == nil {
+			return hashArr
+		}
+		if level == 1 {
+			hashArr = append(hashArr, node)
+		} else if level > 1 {
+			valuesByGivenLevel(node.left, level-1)
+			valuesByGivenLevel(node.right, level-1)
+		}
+		return hashArr
+	}
+
+	tempRes := make([]*Node, 2)
+	tempRes[0] = mt1.merkleRoot
+	tempRes[1] = mt2.merkleRoot
+	var temp1 []*Node
+	var temp2 []*Node
+	for len(tempRes) != 0 {
+		if tempRes[0].hashValue == tempRes[1].hashValue {
+			return nil, true
+		}
+		if tempRes[0].left == nil {
+			for k := 0; k < len(tempRes); k++ {
+				res = append(res, tempRes[k].hashValue)
+			}
+			break
+		}
+		temp1 = valuesByGivenLevel(tempRes[0], 2)
+		hashArr = nil
+		temp2 = valuesByGivenLevel(tempRes[1], 2)
+		hashArr = nil
+
+		tempRes = tempRes[2:] // uklanjamo prva dva elementa
+
+		for i := 0; i < len(temp1); i++ {
+			if temp1[i].hashValue != temp2[i].hashValue {
+				tempRes = append(tempRes, temp1[i])
+				tempRes = append(tempRes, temp2[i])
+			}
+		}
+	}
+
+	return res, true
+}
