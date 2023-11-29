@@ -1,15 +1,17 @@
 package btreenode
 
-import "awesomeProject/btreenode/nodeelement"
+import (
+	"awesomeProject/btreenode/datatype"
+)
 
 type BTreeNode struct {
 	IsLeaf   bool
-	Keys     []*nodeelement.NodeElement
+	Keys     []*datatype.DataType
 	Children []*BTreeNode
 }
 
-func NewBTreeNode(list bool) *BTreeNode {
+func NewBTreeNode(leaf bool) *BTreeNode {
 	return &BTreeNode{
-		IsLeaf: list,
+		IsLeaf: leaf,
 	}
 }

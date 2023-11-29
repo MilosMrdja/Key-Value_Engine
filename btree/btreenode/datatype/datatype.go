@@ -9,7 +9,7 @@ type DataType struct {
 	changeTime time.Time
 }
 
-func (dt *DataType) Key() string {
+func (dt *DataType) GetKey() string {
 	return dt.key
 }
 
@@ -17,7 +17,7 @@ func (dt *DataType) SetKey(key string) {
 	dt.key = key
 }
 
-func (dt *DataType) Data() []byte {
+func (dt *DataType) GetData() []byte {
 	return dt.data
 }
 
@@ -25,7 +25,7 @@ func (dt *DataType) SetData(data []byte) {
 	dt.data = data
 }
 
-func (dt *DataType) Delete() bool {
+func (dt *DataType) GetDelete() bool {
 	return dt.delete
 }
 
@@ -33,7 +33,7 @@ func (dt *DataType) SetDelete(delete bool) {
 	dt.delete = delete
 }
 
-func (dt *DataType) ChangeTime() time.Time {
+func (dt *DataType) GetChangeTime() time.Time {
 	return dt.changeTime
 }
 
