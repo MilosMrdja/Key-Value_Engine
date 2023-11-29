@@ -9,15 +9,15 @@ import (
 func main() {
 
 	h := hyperloglog.CreateHyperLogLog(65536)
-	dis := make([]uint32, 100000000)
+	dis := make([]uint64, 100000000)
 	for i := 0; i < 100000000; i++ {
-		dis[i] = uint32(i + 1)
+		dis[i] = uint64(i + 1)
 	}
 	cd := hyperloglog.ClassicCountDistinct(dis)
 	fmt.Println("classic: %v\n", cd)
 	for i := 0; i < 100000000; i++ {
-		bs := make([]byte, 4)
-		binary.LittleEndian.PutUint32(bs, uint32(i))
+		bs := make([]byte, 8)
+		binary.LittleEndian.PutUint64(bs, uint64(i))
 
 		h.Add(bs)
 	}

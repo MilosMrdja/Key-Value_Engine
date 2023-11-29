@@ -10,13 +10,13 @@ import (
 	"time"
 )
 
-func leviAktivniBit(x uint32) int32 {
+func leviAktivniBit(x uint64) int64 {
 
-	return int32(1 + bits.TrailingZeros32(x))
+	return int64(1 + bits.TrailingZeros64(x))
 }
 
 type HyperLogLog struct {
-	registers []int32
+	registers []int64
 	m         uint64
 	b         uint64
 	alpha     float64
@@ -64,10 +64,10 @@ func SerializeHyperLogLog(hll *HyperLogLog, fileName string) error {
 		return err
 	}
 
-	registerArray := make([]byte, 4)
+	registerArray := make([]byte, 8)
 	var i uint64 = 0
 	for i = 0; i < hll.m; i++ {
-		binary.BigEndian.PutUint32(registerArray, uint32(hll.registers[i]))
+		binary.BigEndian.PutUint64(registerArray, uint64(hll.registers[i]))
 		_, err = file.Write(registerArray)
 		if err != nil {
 			return err
@@ -118,15 +118,15 @@ func DeserializeHyperLogLog(fileName string) (*HyperLogLog, error) {
 	}
 	numRegisters := binary.BigEndian.Uint64(b)
 
-	registerArray := make([]byte, 4)
+	registerArray := make([]byte, 8)
 	var i uint64 = 0
-	register := make([]int32, numRegisters)
+	register := make([]int64, numRegisters)
 	for i = 0; i < numRegisters; i++ {
 		err := binary.Read(file, binary.BigEndian, registerArray)
 		if err != nil {
 			return nil, err
 		}
-		register[i] = int32(binary.BigEndian.Uint32(registerArray))
+		register[i] = int64(binary.BigEndian.Uint64(registerArray))
 	}
 	hll := HyperLogLog{
 		registers: register, m: numRegisters, b: numBuckets, alpha: alphaVal,
@@ -136,15 +136,15 @@ func DeserializeHyperLogLog(fileName string) (*HyperLogLog, error) {
 
 func CreateHyperLogLog(m uint64) *HyperLogLog {
 	return &HyperLogLog{
-		registers: make([]int32, m),
+		registers: make([]int64, m),
 		m:         m,
 		b:         uint64(math.Ceil(math.Log2(float64(m)))),
 		alpha:     0.7213 / (1 + (1.079 / math.Pow(2.0, math.Ceil(math.Log2(float64(m))))))}
 }
 
 func (hyperloglog *HyperLogLog) Add(input []byte) {
-	hesh := hash32(input)
-	prvihBBita := 32 - hyperloglog.b
+	hesh := hash64(input)
+	prvihBBita := 64 - hyperloglog.b
 	result := leviAktivniBit(hesh)
 	j := hesh >> prvihBBita
 
@@ -164,15 +164,15 @@ func (hyperloglog *HyperLogLog) CountHLL() uint64 {
 func getRandom() (izlaz [][]byte) { //Funkicija za testiranje
 	for i := 0; i < math.MaxInt16; i++ {
 		rand.Seed(time.Now().UnixNano())
-		i := rand.Uint32()
-		bajts := make([]byte, 4)
-		binary.LittleEndian.PutUint32(bajts, i)
+		i := rand.Uint64()
+		bajts := make([]byte, 8)
+		binary.LittleEndian.PutUint64(bajts, i)
 		izlaz = append(izlaz, bajts)
 	}
 	return
 }
-func ClassicCountDistinct(input []uint32) int {
-	m := map[uint32]struct{}{}
+func ClassicCountDistinct(input []uint64) int {
+	m := map[uint64]struct{}{}
 	for _, i := range input {
 		if _, ok := m[i]; !ok {
 			m[i] = struct{}{}
@@ -180,14 +180,14 @@ func ClassicCountDistinct(input []uint32) int {
 	}
 	return len(m)
 }
-func hash32(input []byte) uint32 {
+func hash64(input []byte) uint64 {
 
-	hashFunc := murmur3.New32()
+	hashFunc := murmur3.New64()
 	_, err := hashFunc.Write(input)
 	if err != nil {
 		panic(err)
 	}
-	suma := hashFunc.Sum32()
+	suma := hashFunc.Sum64()
 	hashFunc.Reset()
 	return suma
 }
