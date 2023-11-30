@@ -2,8 +2,6 @@ package main
 
 import (
 	"awesomeProject/btree"
-	"awesomeProject/btreenode"
-	"awesomeProject/btreenode/datatype"
 	"fmt"
 	"math/rand"
 	"time"
@@ -23,17 +21,21 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 func main() {
-	tree := btree.NewBTree(btreenode.NewBTreeNode(true), 2)
-	testString := RandStringRunes(10)
-	testObj := datatype.CreateDataType(testString, make([]byte, 2))
-	tree.InsertTreeNode(testObj)
-	for i := 1; i < 10; i++ {
-		pom := RandStringRunes(10)
-		testString = pom
-		tree.InsertTreeNode(datatype.CreateDataType(testString, make([]byte, 2)))
+	t := btree.NewBTree(4) // A B-Tree with minimum degree 3
+
+	var testS string = ""
+	randa := rand.Intn(10000-1) + 1
+	for i := 1; i <= 10000; i++ {
+		if i == randa {
+			testS = RandStringRunes(10)
+			t.Insert(testS)
+		} else {
+			t.Insert(RandStringRunes(10))
+
+		}
 	}
 
-	output, outputNode, _ := tree.SearchKeyFromRoot(testString)
-	fmt.Println(output.IsLeaf)
-	fmt.Println(outputNode.GetKey())
+	output := t.Search(testS)
+	fmt.Println(output)
+
 }
