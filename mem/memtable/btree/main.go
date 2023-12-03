@@ -36,6 +36,8 @@ func main() {
 	}
 
 	output := t.Search(testS)
+	t.Delete(testS)
+	output = t.Search(testS)
 	fmt.Println(output)
 
 }

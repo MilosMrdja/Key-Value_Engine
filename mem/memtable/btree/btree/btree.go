@@ -52,6 +52,17 @@ func (t *BTree) Search(k string) *datatype.DataType {
 	return nil
 }
 
+func (t *BTree) Delete(k string) bool {
+
+	output := t.Search(k)
+	if output != nil {
+		output.DeleteDataType()
+		return true
+	}
+
+	return false
+}
+
 func (t *BTree) Traverse() {
 	if t.Root != nil {
 		t.Root.Traverse()
