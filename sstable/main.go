@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bloom/bloomfilter"
 	"fmt"
+	"sstable/bloomfilter/bloomfilter"
 )
 
 func main() {
