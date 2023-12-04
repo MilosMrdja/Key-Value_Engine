@@ -14,6 +14,14 @@ type Node struct {
 	hashValue uint64
 }
 
+func IsNodeLeaf(node *Node) bool {
+	if node.left == nil && node.right == nil {
+		return true
+	} else {
+		return false
+	}
+}
+
 type MerkleTree struct {
 	tree       []*Node // niz pokazivaca na Node-ove
 	merkleRoot *Node   // pokazivac na glavu
@@ -103,7 +111,7 @@ func GetMerkleRoot(mt *MerkleTree) *Node {
 	return mt.merkleRoot
 }
 
-// f-ja vraca broj elemenata u merkle stablu
+// f-ja vraca broj elemenata(cvorova) u merkle stablu
 func GetNumNodes(mt *MerkleTree) int {
 	return len(mt.tree)
 }
@@ -131,8 +139,11 @@ func SerializeMerkleTree(mt *MerkleTree) (bool, error) {
 	}
 
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		return false, err
+	}
 
-	defer file.Close()
+	defer file.Close() // defer ce ga zatvoriti svakako, ne treba proveravati err, ako bude error ispisace
 
 	duzinaNiza := make([]byte, 1)
 	duzinaNiza[0] = byte(len(mt.tree))
@@ -242,7 +253,8 @@ func PrintMerkleTree(mt *MerkleTree) string {
 func CheckChanges(mt1 *MerkleTree, mt2 *MerkleTree) ([]uint64, bool) {
 
 	// ako nisu iste visine nema smisla da proveravamo
-	if mt1.height != mt2.height {
+	// ili ako je nekako doslo do nepoklapanja broja elemenata, u slucaju da je stablo implementirano na drugi nacin
+	if mt1.height != mt2.height || len(mt1.tree) != len(mt2.tree) {
 		return nil, false
 	}
 
@@ -269,11 +281,15 @@ func CheckChanges(mt1 *MerkleTree, mt2 *MerkleTree) ([]uint64, bool) {
 	tempRes[1] = mt2.merkleRoot
 	var temp1 []*Node
 	var temp2 []*Node
+	// neka procena je da ce ici log2(x) - 1, ako imamo 64 podatka -> broj iteracija = 5
 	for len(tempRes) != 0 {
+		// bazni slucaj, koreni isti
 		if tempRes[0].hashValue == tempRes[1].hashValue {
 			return nil, true
 		}
-		if tempRes[0].left == nil {
+		if IsNodeLeaf(tempRes[0]) {
+			// neka konstanta c, nece svi elementi biti promenjeni, samo par njih
+			// ukupna kompleksnost O((log(n)-1) * (c)) = O(log(n))
 			for k := 0; k < len(tempRes); k++ {
 				res = append(res, tempRes[k].hashValue)
 			}
