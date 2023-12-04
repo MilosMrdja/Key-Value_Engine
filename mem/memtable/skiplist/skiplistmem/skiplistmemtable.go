@@ -1,14 +1,18 @@
-package memtable
+package skiplistmem
+
+import (
+	"mem/memtable/skiplist/skipliststruct"
+)
 
 type SkipListMemtable struct {
-	data             *SkipList
+	data             *skipliststruct.SkipList
 	capacity, length int
 	readOnly         bool
 }
 
 func CreateSkipListMemtable(cap int) *SkipListMemtable {
 	return &SkipListMemtable{
-		data:     CreateSkipList(cap),
+		data:     skipliststruct.CreateSkipList(cap),
 		capacity: cap,
 		length:   0,
 		readOnly: false,
@@ -21,7 +25,7 @@ func (slmem *SkipListMemtable) SendToSSTable() bool {
 
 	//.......
 	//.......
-	slmem.data = CreateSkipList(slmem.capacity)
+	slmem.data = skipliststruct.CreateSkipList(slmem.capacity)
 	slmem.length = 0
 	return true
 }
@@ -49,7 +53,7 @@ func (slmem *SkipListMemtable) AddElement(key string, data []byte) bool {
 func (slmem *SkipListMemtable) GetElement(key string) (bool, []byte) {
 	err, elem := slmem.data.GetElement(key)
 	if err == true {
-		return true, elem.data
+		return true, elem.GetData()
 	}
 	return false, nil
 }

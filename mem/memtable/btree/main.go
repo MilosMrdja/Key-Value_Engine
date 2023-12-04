@@ -1,8 +1,6 @@
 package main
 
 import (
-	"awesomeProject/btree"
-	"fmt"
 	"math/rand"
 	"time"
 )
@@ -21,21 +19,21 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 func main() {
-	t := btree.NewBTree(4) // A B-Tree with minimum degree 3
+	//t := btree.NewBTree(4) // A B-Tree with minimum degree 3
 
-	var testS string = ""
-	randa := rand.Intn(10000-1) + 1
-	for i := 1; i <= 10000; i++ {
-		if i == randa {
-			testS = RandStringRunes(10)
-			t.Insert(testS)
-		} else {
-			t.Insert(RandStringRunes(10))
-
-		}
-	}
-
-	output := t.Search(testS)
-	fmt.Println(output)
+	//var testS string = ""
+	//randa := rand.Intn(10000-1) + 1
+	//for i := 1; i <= 10000; i++ {
+	//	if i == randa {
+	//		testS = RandStringRunes(10)
+	//		t.Insert(testS)
+	//	} else {
+	//		t.Insert(RandStringRunes(10))
+	//
+	//	}
+	//}
+	//
+	//output := t.Search(testS)
+	//fmt.Println(output)
 
 }

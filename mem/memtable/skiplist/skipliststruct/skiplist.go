@@ -1,20 +1,21 @@
-package memtable
+package skipliststruct
 
 import (
 	"fmt"
 	"math/rand"
+	"mem/memtable/datatype"
 )
 
 type SkiplistNode struct {
 	key  string
-	data *DataType
+	data *datatype.DataType
 	next []*SkiplistNode
 }
 
 func CreateSkiplistNode(key string, data []byte, level int) *SkiplistNode {
 	return &SkiplistNode{
 		key:  key,
-		data: CreateDataType(data),
+		data: datatype.CreateDataType(key, data),
 		next: make([]*SkiplistNode, level+1),
 	}
 }
@@ -95,7 +96,7 @@ func (sl *SkipList) DeleteElement(key string) bool {
 	return false
 }
 
-func (sl *SkipList) GetElement(key string) (bool, *DataType) {
+func (sl *SkipList) GetElement(key string) (bool, *datatype.DataType) {
 	current := sl.head
 	for i := sl.level; i >= 0; i-- {
 		for current.next[i] != nil && current.next[i].key < key {

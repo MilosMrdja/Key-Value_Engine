@@ -1,4 +1,4 @@
-package memtable
+package hashmem
 
 import (
 	"bufio"

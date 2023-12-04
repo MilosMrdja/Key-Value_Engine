@@ -1,9 +1,9 @@
 package btreenode
 
 import (
-	"awesomeProject/btreenode/datatype"
-	"awesomeProject/myutils"
 	"fmt"
+	"mem/memtable/btree/myutils"
+	"mem/memtable/datatype"
 )
 
 type BTreeNode struct {
@@ -23,31 +23,31 @@ func NewBTreeNode(t int, leaf bool) *BTreeNode {
 		n:        0,
 	}
 }
-func (b *BTreeNode) InsertNonFull(k string) {
+func (b *BTreeNode) InsertNonFull(elem *datatype.DataType) {
 	i := b.n - 1
 	if b.isLeaf {
 
-		for i >= 0 && b.keys[i].GetKey() > k {
+		for i >= 0 && b.keys[i].GetKey() > elem.GetKey() {
 			b.keys[i+1] = b.keys[i]
 			i--
 		}
-		b.SetKeys(myutils.InsertInplaceD(b.keys, i+1, datatype.CreateDataType(k, make([]byte, 2))))
+		b.SetKeys(myutils.InsertInplaceD(b.keys, i+1, elem))
 		b.n++
 	} else {
-		for i >= 0 && b.keys[i].GetKey() > k {
+		for i >= 0 && b.keys[i].GetKey() > elem.GetKey() {
 			i--
 		}
 
 		// See if the found child is full
 		if b.children[i+1].n == 2*b.t-1 {
 			b.SplitChild(i+1, b.children[i+1])
-			if b.keys[i+1].GetKey() < k {
+			if b.keys[i+1].GetKey() < elem.GetKey() {
 				i++
 			}
 
 		}
 
-		b.children[i+1].InsertNonFull(k)
+		b.children[i+1].InsertNonFull(elem)
 
 	}
 

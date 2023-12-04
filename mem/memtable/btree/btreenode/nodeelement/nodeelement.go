@@ -1,6 +1,6 @@
 package nodeelement
 
-import "awesomeProject/btreenode/datatype"
+import "mem/memtable/datatype"
 
 type NodeElement struct {
 	key string
@@ -21,7 +21,7 @@ func (n *NodeElement) GetObj() *datatype.DataType {
 
 func (n *NodeElement) SetObj(obj *datatype.DataType) {
 	n.obj = obj
-	n.key = obj.Key()
+	n.key = obj.GetKey()
 }
 
 func NewNodeElement(key string, obj *datatype.DataType) *NodeElement {

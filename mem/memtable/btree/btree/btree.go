@@ -1,9 +1,9 @@
 package btree
 
 import (
-	"awesomeProject/btreenode"
-	"awesomeProject/btreenode/datatype"
-	"awesomeProject/myutils"
+	"mem/memtable/btree/btreenode"
+	"mem/memtable/btree/myutils"
+	"mem/memtable/datatype"
 )
 
 type BTree struct {
@@ -19,11 +19,20 @@ func InsertInplace(array []*btreenode.BTreeNode, i int, element *btreenode.BTree
 	array[i] = element
 	return array
 }
+func (t *BTree) Delete(k string) bool {
 
-func (t *BTree) Insert(k string) {
+	output, _ := t.Search(k)
+	if output != nil {
+		output.DeleteDataType()
+		return true
+	}
+
+	return false
+}
+func (t *BTree) Insert(elem *datatype.DataType) {
 	if t.Root == nil {
 		t.Root = btreenode.NewBTreeNode(t.Rang, true)
-		t.Root.SetKeys(myutils.InsertInplaceD(t.Root.Keys(), 0, datatype.CreateDataType(k, make([]byte, 2))))
+		t.Root.SetKeys(myutils.InsertInplaceD(t.Root.Keys(), 0, elem))
 		t.Root.SetN(1)
 	} else {
 		if t.Root.N() == 2*t.Rang-1 {
@@ -33,23 +42,35 @@ func (t *BTree) Insert(k string) {
 			s.SplitChild(0, t.Root)
 
 			i := 0
-			if s.Keys()[0].GetKey() < k {
+			if s.Keys()[0].GetKey() < elem.GetKey() {
 				i++
 			}
-			s.Children()[i].InsertNonFull(k)
+			s.Children()[i].InsertNonFull(elem)
 			t.Root = s
 		} else {
-			t.Root.InsertNonFull(k)
+			t.Root.InsertNonFull(elem)
 		}
 
 	}
 }
 
-func (t *BTree) Search(k string) *datatype.DataType {
+func (t *BTree) Search(k string) (*datatype.DataType, bool) {
 	if t.Root != nil {
-		return t.Root.Search(k)
+		data := t.Root.Search(k)
+		if data != nil {
+			return data, true
+		}
 	}
-	return nil
+	return nil, false
+}
+
+func (t *BTree) Update(k string, data []byte) bool {
+	if t.Root != nil {
+		e := t.Root.Search(k)
+		e.UpdateDataType(data)
+		return true
+	}
+	return false
 }
 
 func (t *BTree) Traverse() {

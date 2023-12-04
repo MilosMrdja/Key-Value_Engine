@@ -1,14 +1,18 @@
-package memtable
+package hashstruct
+
+import (
+	"mem/memtable/datatype"
+)
 
 type HashMemtable struct {
-	data             map[string]*DataType
+	data             map[string]*datatype.DataType
 	capacity, length int
 	readOnly         bool
 }
 
 func CreateHashMemtable(cap int) *HashMemtable {
 	return &HashMemtable{
-		data:     make(map[string]*DataType),
+		data:     make(map[string]*datatype.DataType),
 		capacity: cap,
 		length:   0,
 		readOnly: false,
@@ -21,7 +25,7 @@ func (mem *HashMemtable) SendToSSTable() bool {
 
 	//.......
 	//.......
-	mem.data = make(map[string]*DataType)
+	mem.data = make(map[string]*datatype.DataType)
 	mem.length = 0
 	return true
 }
@@ -32,7 +36,7 @@ func (mem *HashMemtable) AddElement(key string, data []byte) bool {
 	if elem == false {
 		//ukoliko ima mesta u memtable, samo se upisuje podatak
 		if mem.length < mem.capacity {
-			e := CreateDataType(data)
+			e := datatype.CreateDataType(key, data)
 			mem.data[key] = e
 			mem.length++
 			return true
@@ -53,7 +57,7 @@ func (mem *HashMemtable) GetElement(key string) (bool, []byte) {
 	if !err || elem.IsDeleted() {
 		return false, nil
 	}
-	return true, elem.data
+	return true, elem.GetData()
 }
 
 func (mem *HashMemtable) DeleteElement(key string) bool {

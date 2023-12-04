@@ -1,7 +1,7 @@
 package myutils
 
 import (
-	"awesomeProject/btreenode/datatype"
+	"mem/memtable/datatype"
 )
 
 func Insert[T any](array []T, i int, element T) []T {
