@@ -12,6 +12,7 @@ type Node struct {
 	left      *Node
 	right     *Node
 	hashValue uint64
+	index     int
 }
 
 func IsNodeLeaf(node *Node) bool {
@@ -68,6 +69,7 @@ func fillMerkleTree(numN int, data [][]byte, numL int) (*MerkleTree, error) {
 	}
 	hash := fnv.New32()
 	brData := 0
+	indexSeter := 0
 	for i := numN - numL; i < len(merkleTree.tree); i++ {
 
 		tempNode := Node{
@@ -75,15 +77,19 @@ func fillMerkleTree(numN int, data [][]byte, numL int) (*MerkleTree, error) {
 			right: nil,
 		}
 		//za ulazni niz podataka dodeljuje hes vrednost, za ostale postavlja na 0
+
 		if brData < len(data) {
 			_, err := hash.Write(data[brData])
 			if err != nil {
 				return nil, err
 			}
 			tempNode.hashValue = uint64(hash.Sum32())
+
 		} else {
 			tempNode.hashValue = 0
 		}
+		tempNode.index = indexSeter
+		indexSeter += 1
 
 		merkleTree.tree[i] = &tempNode
 		brData += 1
@@ -97,6 +103,7 @@ func fillMerkleTree(numN int, data [][]byte, numL int) (*MerkleTree, error) {
 			left:      merkleTree.tree[brData-1],
 			right:     merkleTree.tree[brData],
 			hashValue: merkleTree.tree[brData].hashValue + merkleTree.tree[brData-1].hashValue,
+			index:     -1,
 		}
 		merkleTree.tree[brData/2-1] = &tempNode
 		brData -= 2
@@ -227,7 +234,11 @@ func DeserializeMerkleTree(fileName string) (*MerkleTree, bool, error) {
 
 // f-ja ispisuje samo hesiranu vrednost node-a, bez ispisa roditelja
 func PrintNode(node *Node) string {
-	return fmt.Sprint(node.hashValue)
+	res := "Index: "
+	res += fmt.Sprint(node.index)
+	res += ", Hash: "
+	res += fmt.Sprint(node.hashValue)
+	return res
 }
 
 // f-ja koja vraca string kao podatke
@@ -241,6 +252,7 @@ func PrintMerkleTree(mt *MerkleTree) string {
 		if i != len(mt.tree)-1 {
 			res += ","
 		}
+		res += "\n"
 	}
 	return res
 }
@@ -250,7 +262,7 @@ func PrintMerkleTree(mt *MerkleTree) string {
 // return nil -> stabla su ista
 // return len(array) > 0    ->   podaci su se negde promenili
 // return boo: true -> uporedjivanje je izvrseno, false -> uporedjivanje nije izvrsenog zbog necega
-func CheckChanges(mt1 *MerkleTree, mt2 *MerkleTree) ([]uint64, bool) {
+func CheckChanges(mt1 *MerkleTree, mt2 *MerkleTree) ([]int, bool) {
 
 	// ako nisu iste visine nema smisla da proveravamo
 	// ili ako je nekako doslo do nepoklapanja broja elemenata, u slucaju da je stablo implementirano na drugi nacin
@@ -258,54 +270,46 @@ func CheckChanges(mt1 *MerkleTree, mt2 *MerkleTree) ([]uint64, bool) {
 		return nil, false
 	}
 
-	var res []uint64                                           // rezultat koji vracam
-	var valuesByGivenLevel func(node *Node, level int) []*Node // rekurzija kroz stablo
-	var hashArr []*Node                                        // pomocna za pisanje hash vrednosti na odredjenom level-u
+	var res []int // rezultat koji vracam <==> niz indexa elemenata koji su promenjeni
 
-	valuesByGivenLevel = func(node *Node, level int) []*Node {
-
-		if node == nil {
-			return hashArr
-		}
-		if level == 1 {
-			hashArr = append(hashArr, node)
-		} else if level > 1 {
-			valuesByGivenLevel(node.left, level-1)
-			valuesByGivenLevel(node.right, level-1)
-		}
-		return hashArr
-	}
-
-	tempRes := make([]*Node, 2)
+	tempRes := make([]*Node, 2) // glavni niz za prolazak kroz celo stablo
 	tempRes[0] = mt1.merkleRoot
 	tempRes[1] = mt2.merkleRoot
-	var temp1 []*Node
-	var temp2 []*Node
+
+	tree1Arr := make([]*Node, 2) // levo i desno dete za prvo stablo
+	tree2Arr := make([]*Node, 2) // levo i desno dete za drugo stablo
 	// neka procena je da ce ici log2(x) - 1, ako imamo 64 podatka -> broj iteracija = 5
+
+	// bazni slucaj ako su koreni isti
+	if tempRes[0].hashValue == tempRes[1].hashValue {
+		return nil, true
+	}
+
 	for len(tempRes) != 0 {
-		// bazni slucaj, koreni isti
-		if tempRes[0].hashValue == tempRes[1].hashValue {
-			return nil, true
-		}
+
 		if IsNodeLeaf(tempRes[0]) {
 			// neka konstanta c, nece svi elementi biti promenjeni, samo par njih
 			// ukupna kompleksnost O((log(n)-1) * (c)) = O(log(n))
 			for k := 0; k < len(tempRes); k++ {
-				res = append(res, tempRes[k].hashValue)
+				res = append(res, tempRes[k].index)
+				k += 1
 			}
 			break
 		}
-		temp1 = valuesByGivenLevel(tempRes[0], 2)
-		hashArr = nil
-		temp2 = valuesByGivenLevel(tempRes[1], 2)
-		hashArr = nil
+		tree1Arr[0] = tempRes[0].left
+		tree1Arr[1] = tempRes[0].right
+
+		tree2Arr[0] = tempRes[1].left
+		tree2Arr[1] = tempRes[1].right
 
 		tempRes = tempRes[2:] // uklanjamo prva dva elementa
 
-		for i := 0; i < len(temp1); i++ {
-			if temp1[i].hashValue != temp2[i].hashValue {
-				tempRes = append(tempRes, temp1[i])
-				tempRes = append(tempRes, temp2[i])
+		for i := 0; i < 2; i++ {
+			if tree1Arr[i].hashValue != tree2Arr[i].hashValue {
+				tempRes = append(tempRes, tree1Arr[i])
+				tempRes = append(tempRes, tree2Arr[i])
+			} else {
+				continue
 			}
 		}
 	}
