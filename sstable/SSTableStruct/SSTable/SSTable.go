@@ -1,15 +1,16 @@
 package SSTable
 
 import (
+	"sstable/MerkleTreeImplementation/MerkleTree"
 	"sstable/bloomfilter/bloomfilter"
 )
 
 type SSTable struct {
 	bloomFilter *bloomfilter.BloomFilter //referenca?
-	// MerkleTree
-	summary map[string]int
-	index   map[string]int
-	data    []byte
+	merkleTree  *MerkleTree.MerkleTree
+	summary     map[string]int
+	index       map[string]int
+	data        []byte
 }
 
 func NewSSTable(dataList []byte) bool {
@@ -27,5 +28,10 @@ func NewSSTable(dataList []byte) bool {
 
 	// [][]byte pravimo za merkle
 	// pravimo merkle
+	return true
+}
+
+// f-ja koja prima kljuc i propusta key kroz bloom
+func KeyExist(key string)bool{
 	return true
 }
