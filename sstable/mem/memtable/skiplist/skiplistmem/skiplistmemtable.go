@@ -1,6 +1,7 @@
 package skiplistmem
 
 import (
+	"mem/memtable/datatype"
 	"mem/memtable/skiplist/skipliststruct"
 )
 
@@ -23,8 +24,13 @@ func CreateSkipListMemtable(cap int) *SkipListMemtable {
 // i da isprazni memtable kad se podaci posalju
 func (slmem *SkipListMemtable) SendToSSTable() bool {
 
-	//.......
-	//.......
+	dataList := make([]datatype.DataType, slmem.length)
+	dataList = slmem.data.AllData(slmem.length)
+
+	//napravimo SSTable
+	//...
+	//...
+
 	slmem.data = skipliststruct.CreateSkipList(slmem.capacity)
 	slmem.length = 0
 	return true

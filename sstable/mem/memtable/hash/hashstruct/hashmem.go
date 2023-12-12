@@ -2,6 +2,7 @@ package hashstruct
 
 import (
 	"mem/memtable/datatype"
+	"sort"
 )
 
 type HashMemtable struct {
@@ -23,8 +24,20 @@ func CreateHashMemtable(cap int) *HashMemtable {
 // i da isprazni memtable kad se podaci posalju
 func (mem *HashMemtable) SendToSSTable() bool {
 
-	//.......
-	//.......
+	dataList := make([]datatype.DataType, mem.length)
+	i := 0
+	for _, data := range mem.data {
+		dataList[i] = *data
+		i++
+	}
+	sort.Slice(dataList, func(i, j int) bool {
+		return dataList[i].GetKey() < dataList[j].GetKey()
+	})
+
+	//napravimo SSTable
+	//...
+	//...
+
 	mem.data = make(map[string]*datatype.DataType)
 	mem.length = 0
 	return true

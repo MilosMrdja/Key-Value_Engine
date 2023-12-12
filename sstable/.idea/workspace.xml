@@ -5,29 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="966fcfc2-c2ab-46af-92a8-2f43f9f3c2dc" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../MerkleTreeImplementation/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MerkleTreeImplementation/.idea/MerkleTreeImplementation.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MerkleTreeImplementation/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MerkleTreeImplementation/.idea/vcs.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MerkleTreeImplementation/MerkleTree.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MerkleTreeImplementation/MerkleTree/MerkleTree.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MerkleTreeImplementation/go.mod" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MerkleTreeImplementation/main.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/config.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/go.mod" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/main.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/memtable/btree/btree/btree.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/memtable/btree/btreemem/btreememstruct.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/memtable/btree/btreenode/btreenode.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/memtable/btree/btreenode/nodeelement/nodeelement.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/memtable/btree/myutils/myutils.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/memtable/datatype/data.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/memtable/hash/hashmem/memtable.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/memtable/hash/hashstruct/hashmem.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/memtable/skiplist/skiplistmem/skiplistmemtable.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../mem/memtable/skiplist/skipliststruct/skiplist.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SSTableStruct/SSTable/SSTable.go" beforeDir="false" afterPath="$PROJECT_DIR$/SSTableStruct/SSTable/SSTable.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/config.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/btree/btree/btree.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/btree/btree/btree.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/btree/btreemem/btreememstruct.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/btree/btreemem/btreememstruct.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/btree/btreenode/btreenode.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/btree/btreenode/btreenode.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/hash/hashmem/memtable.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/hash/hashmem/memtable.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/hash/hashstruct/hashmem.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/hash/hashstruct/hashmem.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/skiplist/skiplistmem/skiplistmemtable.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/skiplist/skiplistmem/skiplistmemtable.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/skiplist/skipliststruct/skiplist.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/skiplist/skipliststruct/skiplist.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,24 +51,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;sstable&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/FAKS/3. semestar/Napredni algoritmi i strukture/Projekat/Key-Value_Engine/sstable&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "Merging sstable",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "D:/FAKS/3. semestar/Napredni algoritmi i strukture/Projekat/Key-Value_Engine/sstable",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\FAKS\3. semestar\Napredni algoritmi i strukture\Projekat\Key-Value_Engine\sstable" />
