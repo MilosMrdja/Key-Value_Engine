@@ -1,2 +1,0 @@
-type: hash
-cap: 10

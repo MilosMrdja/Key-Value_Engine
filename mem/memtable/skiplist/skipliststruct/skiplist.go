@@ -140,3 +140,15 @@ func (sl *SkipList) ShowSkipList() {
 	}
 	fmt.Println("")
 }
+
+func (sl *SkipList) AllData(len int) []datatype.DataType {
+	dataList := make([]datatype.DataType, len)
+	i := 0
+	current := sl.head.next[0]
+	for current != nil {
+		dataList[i] = *current.data
+		current = current.next[0]
+		i++
+	}
+	return dataList
+}

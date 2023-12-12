@@ -73,10 +73,12 @@ func (t *BTree) Update(k string, data []byte) bool {
 	return false
 }
 
-func (t *BTree) Traverse() {
+func (t *BTree) Traverse() []datatype.DataType {
+	dataList := make([]datatype.DataType, 0)
 	if t.Root != nil {
-		t.Root.Traverse()
+		dataList = append(t.Root.Traverse())
 	}
+	return dataList
 }
 
 func NewBTree(t int) *BTree {

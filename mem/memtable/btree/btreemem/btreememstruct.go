@@ -89,10 +89,16 @@ func (btmem *BTreeMemtable) DeleteElement(key string) bool {
 }
 
 func (btmem *BTreeMemtable) SendToSSTable() bool {
-	//.......
-	//.......
-	btmem.data = btree.NewBTree(4)
+	dataList := make([]datatype.DataType, btmem.length)
+	dataList = btmem.data.Traverse()
+
+	//napravimo SSTable
+	//...
+	//...
+
+	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
+
 	return true
 }
 

@@ -1,7 +1,6 @@
 package btreenode
 
 import (
-	"fmt"
 	"mem/memtable/btree/myutils"
 	"mem/memtable/datatype"
 )
@@ -97,18 +96,29 @@ func (b *BTreeNode) Search(k string) *datatype.DataType {
 	}
 	return b.children[i].Search(k)
 }
-func (b *BTreeNode) Traverse() {
+func (b *BTreeNode) Traverse() []datatype.DataType {
+	dataList := make([]datatype.DataType, 0)
 	var i = 0
 	for i = 0; i < b.n; i++ {
 		if b.isLeaf == false {
-			b.children[i].Traverse()
+			temp := b.children[i].Traverse()
+			for j := 0; j < len(temp); j++ {
+				dataList = append(dataList, temp[j])
+			}
+
 		}
-		fmt.Print(b.keys[i])
+		//fmt.Printf("%s\n", b.keys[i].GetKey())
+		//dataList[i] = *b.keys[i]
+		dataList = append(dataList, *b.keys[i])
 
 	}
 	if b.isLeaf == false {
-		b.children[i].Traverse()
+		temp := b.children[i].Traverse()
+		for j := 0; j < len(temp); j++ {
+			dataList = append(dataList, temp[j])
+		}
 	}
+	return dataList
 }
 func (b *BTreeNode) T() int {
 	return b.t
