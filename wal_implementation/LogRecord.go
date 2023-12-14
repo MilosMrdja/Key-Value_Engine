@@ -59,9 +59,13 @@ func (r *LogRecord) ToBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func
+
 func (r *LogRecord) AppendToFile(file *os.File) error {
 	// Serialize the LogRecord
 	data, err := r.ToBinary()
+	if len(data)+fileLen(file)>MAXSIZE:
+		
 	if err != nil {
 		return err
 	}

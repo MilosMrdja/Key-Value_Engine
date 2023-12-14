@@ -15,7 +15,7 @@ type WriteAheadLog struct {
 }
 
 const (
-	MAXLOGS        = 1
+	MAXSIZE        = 50
 	SEGMENTS_NAME  = "wal_"
 	LOW_WATER_MARK = 500 //index to which segments will be deleted
 )
@@ -42,7 +42,10 @@ func NewWriteAheadLog() *WriteAheadLog {
 	}
 
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
-
+	err = file.Truncate(MAXSIZE)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -65,6 +68,8 @@ func (wal *WriteAheadLog) Log(key string, value []byte, tombstone bool) error {
 	}
 	return nil
 }
+
+func
 
 func (wal *WriteAheadLog) DirectLog(record *LogRecord) error {
 	//to do segmentation by bytes
