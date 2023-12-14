@@ -59,17 +59,37 @@ func (r *LogRecord) ToBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func
+func addStartCommit(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	err := binary.Write(&buf, binary.BigEndian, "<START>")
+	if err != nil {
+		return nil, err
+	}
+	err = binary.Write(&buf, binary.BigEndian, data)
+	if err != nil {
+		return nil, err
+	}
+	err = binary.Write(&buf, binary.BigEndian, "<COMMIT>")
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
 
 func (r *LogRecord) AppendToFile(file *os.File) error {
 	// Serialize the LogRecord
 	data, err := r.ToBinary()
-	if len(data)+fileLen(file)>MAXSIZE:
-		
+	currentLen, err := fileLen(file)
 	if err != nil {
 		return err
 	}
-	currentLen, err := fileLen(file)
+	if int64(len(data))+currentLen > MAXSIZE {
+		data, err = addStartCommit(data)
+		if err != nil {
+			return err
+		}
+	}
+
 	if err != nil {
 		return err
 	}
