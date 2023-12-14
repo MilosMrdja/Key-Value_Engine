@@ -67,9 +67,7 @@ func (wal *WriteAheadLog) Log(key string, value []byte, tombstone bool) error {
 }
 
 func (wal *WriteAheadLog) DirectLog(record *LogRecord) error {
-	if len(wal.LastSegment) >= MAXLOGS {
-		wal.clearLog()
-	}
+	//to do segmentation by bytes
 
 	err := record.AppendToFile(wal.openedFile)
 	if err != nil {
