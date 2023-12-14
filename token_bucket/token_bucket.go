@@ -43,6 +43,10 @@ func (tb *TokenBucket) IsRequestAllowed(tokens int64) string {
 	return "Request Blocked"
 }
 
+func (tb *TokenBucket) Serialize() ([]byte, error) {
+	return json.Marshal(tb)
+}
+
 func main() {
 	tb := NewTokenBucket(3, 10)
 
