@@ -11,9 +11,8 @@ import (
 )
 
 type WriteAheadLog struct {
-	Segments    []string     //list of segments that are loaded in upon the creation of wal
-	LastSegment []*LogRecord //the last segment is loaded into memory
-	openedFile  *os.File
+	Segments   []string //list of segments that are loaded in upon the creation of wal
+	openedFile *os.File
 }
 
 const (
@@ -48,14 +47,9 @@ func NewWriteAheadLog() *WriteAheadLog {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	ls, err := DeserializeLogSegment(file)
-	if err != nil {
-		log.Fatalln(err)
-	}
 	return &WriteAheadLog{
-		Segments:    listOfSegments,
-		LastSegment: ls,
-		openedFile:  file,
+		Segments:   listOfSegments,
+		openedFile: file,
 	}
 }
 
@@ -75,7 +69,6 @@ func (wal *WriteAheadLog) DirectLog(record *LogRecord) error {
 	if err != nil {
 		return err
 	}
-	wal.LastSegment = append(wal.LastSegment, record)
 	return nil
 }
 
@@ -98,7 +91,6 @@ func (wal *WriteAheadLog) clearLog() error {
 	if err != nil {
 		return err
 	}
-	wal.LastSegment = make([]*LogRecord, 0)
 	return nil
 }
 
@@ -210,10 +202,10 @@ func main() {
 	//wal.Log(record)
 	//record = NewLogRecord("PSOslefajsfh", []byte("posledniji"), false)
 	//wal.Log(record)
-
-	for i := 0; i < len(wal.LastSegment); i++ {
-		fmt.Println(wal.LastSegment[0].Key)
-	}
+	//
+	//for i := 0; i < len(wal.LastSegment); i++ {
+	//	fmt.Println(wal.LastSegment[0].Key)
+	//}
 
 	//record1 := NewLogRecord(key1, value1, true)
 	//record1.AppendToFile()
