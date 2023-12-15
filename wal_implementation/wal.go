@@ -70,8 +70,8 @@ func (wal *WriteAheadLog) Log(key string, value []byte, tombstone bool) error {
 
 func (wal *WriteAheadLog) DirectLog(record *LogRecord) error {
 	//to do segmentation by bytes
-
-	err := record.AppendToFile(wal.openedFile)
+	var err error
+	wal.openedFile, err = record.AppendToFile(wal.openedFile)
 	if err != nil {
 		return err
 	}

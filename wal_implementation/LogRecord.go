@@ -59,21 +59,31 @@ func (r *LogRecord) ToBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (r *LogRecord) AppendToFile(file *os.File) error {
+func (r *LogRecord) AppendToFile(file *os.File) (*os.File, error) {
 	// Serialize the LogRecord
 	data, err := r.ToBinary()
 	currentLen, err := fileLen(file)
+	mmapf, err := mmap.Map(file, mmap.RDWR, 0)
+	defer mmapf.Unmap()
+	if currentLen == 0 {
+		err = file.Truncate(7)
+		copy(mmapf[0:7], []byte("<START>"))
+		err = mmapf.Flush()
+		if err != nil {
+			return file, err
+		}
+	}
 	if err != nil {
-		return err
+		return file, err
 	}
 	if int64(len(data))+currentLen > MAXSIZE {
 		if err != nil {
-			return err
+			return file, err
 		}
 	}
 
 	if err != nil {
-		return err
+		return file, err
 	}
 	var lenToTruncate int64
 	lenToTruncate = int64(len(data))
@@ -82,19 +92,23 @@ func (r *LogRecord) AppendToFile(file *os.File) error {
 	}
 	err = file.Truncate(currentLen + lenToTruncate)
 	if err != nil {
-		return err
+		return file, err
 	}
-	mmapf, err := mmap.Map(file, mmap.RDWR, 0)
+
 	if err != nil {
-		return err
+		return file, err
 	}
-	defer mmapf.Unmap()
-	copy(mmapf[currentLen:MAXSIZE], data[:MAXSIZE-currentLen])
+
+	copy(mmapf[currentLen:MAXSIZE], data[:lenToTruncate])
+	data = data[lenToTruncate:]
+	for len(data) > 0 {
+
+	}
 	err = mmapf.Flush()
 	if err != nil {
-		return err
+		return file, err
 	}
-	return nil
+	return file, nil
 }
 
 func NewLogRecord(key string, value []byte, tombstone bool) *LogRecord {
