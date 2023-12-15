@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
+	"github.com/edsrzf/mmap-go"
 	"log"
 	"os"
 	"strconv"
@@ -15,7 +17,7 @@ type WriteAheadLog struct {
 }
 
 const (
-	MAXSIZE        = 50
+	MAXSIZE        = 10
 	SEGMENTS_NAME  = "wal_"
 	LOW_WATER_MARK = 500 //index to which segments will be deleted
 )
@@ -42,10 +44,7 @@ func NewWriteAheadLog() *WriteAheadLog {
 	}
 
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
-	err = file.Truncate(MAXSIZE)
-	if err != nil {
-		log.Fatalln(err)
-	}
+
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -68,8 +67,6 @@ func (wal *WriteAheadLog) Log(key string, value []byte, tombstone bool) error {
 	}
 	return nil
 }
-
-func
 
 func (wal *WriteAheadLog) DirectLog(record *LogRecord) error {
 	//to do segmentation by bytes
@@ -148,6 +145,50 @@ func (wal *WriteAheadLog) DeleteSegmentsTilWatermark() error {
 	return nil
 }
 
+func DeserializeLogSegment(file *os.File) ([]*LogRecord, error) {
+	fileInfo, err := os.Stat(file.Name())
+	if err != nil {
+		return nil, err
+	}
+	if fileInfo.Size() == 0 {
+		return make([]*LogRecord, 0), nil
+	}
+	mmapf, err := mmap.Map(file, mmap.RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+	defer mmapf.Unmap()
+	allRecords := make([]*LogRecord, 0)
+	startIndex := 0
+	endIndex := 37
+	for endIndex < len(mmapf) {
+		var r LogRecord
+		buffer := make([]byte, endIndex-startIndex)
+		copy(buffer, mmapf[startIndex:endIndex])
+		r.CRC = binary.BigEndian.Uint32(buffer[0:4])
+		r.Timestamp = buffer[4:20]
+		r.Tombstone = buffer[20]
+		r.KeySize = binary.BigEndian.Uint64(buffer[21:29])
+		r.ValueSize = binary.BigEndian.Uint64(buffer[29:37])
+		buffer = make([]byte, r.KeySize)
+		startIndex += 37
+		endIndex += int(int64(r.KeySize))
+		copy(buffer, mmapf[startIndex:endIndex])
+		r.Key = string(buffer)
+		startIndex += int(int64(r.KeySize))
+		endIndex += int(int64(r.ValueSize))
+		buffer = make([]byte, r.ValueSize)
+		copy(buffer, mmapf[startIndex:endIndex])
+		r.Value = buffer
+		if CRC32(r.Value) == r.CRC {
+			allRecords = append(allRecords, &r)
+		}
+		startIndex += int(int64(r.ValueSize))
+		endIndex += 37
+	}
+	return allRecords, nil
+}
+
 func main() {
 	// Example usage
 	wal := NewWriteAheadLog()
@@ -170,9 +211,9 @@ func main() {
 	//record = NewLogRecord("PSOslefajsfh", []byte("posledniji"), false)
 	//wal.Log(record)
 
-	//for i := 0; i < len(wal.LastSegment); i++ {
-	//	fmt.Println(wal.LastSegment[0].Key)
-	//}
+	for i := 0; i < len(wal.LastSegment); i++ {
+		fmt.Println(wal.LastSegment[0].Key)
+	}
 
 	//record1 := NewLogRecord(key1, value1, true)
 	//record1.AppendToFile()
