@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/edsrzf/mmap-go"
 	"log"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/edsrzf/mmap-go"
 )
 
 type WriteAheadLog struct {
@@ -16,7 +19,7 @@ type WriteAheadLog struct {
 }
 
 const (
-	MAXSIZE        = 10
+	MAXSIZE        = 100
 	SEGMENTS_NAME  = "wal_"
 	LOW_WATER_MARK = 500 //index to which segments will be deleted
 )
@@ -65,7 +68,7 @@ func (wal *WriteAheadLog) Log(key string, value []byte, tombstone bool) error {
 func (wal *WriteAheadLog) DirectLog(record *LogRecord) error {
 	//to do segmentation by bytes
 	var err error
-	wal.openedFile, err = record.AppendToFile(wal.openedFile)
+	err = record.AppendToFile(wal)
 	if err != nil {
 		return err
 	}
@@ -181,73 +184,187 @@ func DeserializeLogSegment(file *os.File) ([]*LogRecord, error) {
 	return allRecords, nil
 }
 
-func (r *LogRecord) AppendToFile(file *os.File) (*os.File, error) {
+func (r *LogRecord) AppendToFile(wal *WriteAheadLog) error {
 	// Serialize the LogRecord
 	data, err := r.ToBinary()
-	currentLen, err := fileLen(file)
-	mmapf, err := mmap.Map(file, mmap.RDWR, 0)
-	defer mmapf.Unmap()
-	if currentLen == 0 {
-		err = file.Truncate(7)
+	currentLen, err := fileLen(wal.openedFile)
+
+	if currentLen == 0 { //ako je novi fajl, dodaj start
+		err = wal.openedFile.Truncate(7)
+		mmapf, err := mmap.Map(wal.openedFile, mmap.RDWR, 0)
+		defer mmapf.Unmap()
 		copy(mmapf[0:7], []byte("<START>"))
 		err = mmapf.Flush()
 		if err != nil {
-			return file, err
+			return err
 		}
 	}
-	if err != nil {
-		return file, err
-	}
-	if int64(len(data))+currentLen > MAXSIZE {
+	var lenToEnd int64
+	lenToEnd = int64(len(data))
+	if lenToEnd+currentLen > MAXSIZE {
+		lenToEnd = int64(MAXSIZE) - currentLen
+		var buf bytes.Buffer
+		err = binary.Write(&buf, binary.BigEndian, data)
 		if err != nil {
-			return file, err
+			return err
 		}
+		err = binary.Write(&buf, binary.BigEndian, []byte("<START>"))
+		if err != nil {
+			return err
+		}
+		data = buf.Bytes()
 	}
-
+	currentLen, err = fileLen(wal.openedFile)
 	if err != nil {
-		return file, err
+		return err
 	}
-	var lenToTruncate int64
-	lenToTruncate = int64(len(data))
-	if lenToTruncate+currentLen > MAXSIZE {
-		lenToTruncate = int64(MAXSIZE) - currentLen
-	}
-	err = file.Truncate(currentLen + lenToTruncate)
+	err = wal.openedFile.Truncate(currentLen + lenToEnd)
+	mmapf, err := mmap.Map(wal.openedFile, mmap.RDWR, 0)
+	defer mmapf.Unmap()
 	if err != nil {
-		return file, err
+		return err
 	}
 
-	if err != nil {
-		return file, err
-	}
-
-	copy(mmapf[currentLen:MAXSIZE], data[:lenToTruncate])
-	data = data[lenToTruncate:]
-	for len(data) > 0 {
-
-	}
+	copy(mmapf[currentLen:currentLen+lenToEnd], data[:lenToEnd])
 	err = mmapf.Flush()
 	if err != nil {
-		return file, err
+		return err
 	}
-	return file, nil
+	if lenToEnd < int64(len(data)) {
+		data = data[lenToEnd:]
+	} else {
+		data = data[:0]
+	}
+	for len(data) > 0 {
+		wal.clearLog()
+		var lenToEnd int64
+		lenToEnd = int64(len(data))
+		if lenToEnd > MAXSIZE {
+			lenToEnd = int64(MAXSIZE)
+		}
+		err = wal.openedFile.Truncate(lenToEnd)
+		mmapf, err := mmap.Map(wal.openedFile, mmap.RDWR, 0)
+		copy(mmapf[:lenToEnd], data[:lenToEnd])
+		err = mmapf.Flush()
+		if err != nil {
+			return err
+		}
+		if lenToEnd < int64(len(data)) {
+			data = data[lenToEnd:]
+		} else {
+			data = data[:0]
+		}
+
+	}
+
+	return nil
+}
+
+func (wal *WriteAheadLog) ReadOneByOne(args ...string) <-chan *LogRecord {
+	ch := make(chan *LogRecord)
+
+	go func() {
+		defer close(ch)
+		startFilePath := fmt.Sprintf("wal%c%s%s.log", os.PathSeparator, SEGMENTS_NAME, "00001")
+		num := 1
+		var err error
+		if len(args) != 0 {
+			num, err = strconv.Atoi(args[0])
+			if err != nil {
+				log.Fatalln()
+			}
+			logsNumber := fmt.Sprintf("%05d", num)
+			startFilePath = fmt.Sprintf("wal%c%s%s.log", os.PathSeparator, SEGMENTS_NAME, logsNumber)
+		}
+		startFile, err := os.OpenFile(startFilePath, os.O_RDWR, 0644)
+		if err != nil {
+			log.Fatalln()
+		}
+		mmapf, err := mmap.Map(startFile, mmap.RDONLY, 0)
+		tempEndIndex := 7
+		foundIndex := strings.Index(string(mmapf[:tempEndIndex]), "<START>")
+		tempEndIndex += 7
+		for true {
+			for tempEndIndex < MAXSIZE && (foundIndex == -1) {
+				foundIndex = strings.Index(string(mmapf[:tempEndIndex]), "<START>")
+				tempEndIndex += 7
+			}
+			if foundIndex != -1 {
+				break
+			}
+			foundIndex = strings.Index(string(mmapf[MAXSIZE-14:MAXSIZE]), "<START>")
+			if foundIndex != -1 {
+				break
+			}
+			//proveri edge case, kad je deo <start> u prvom fajlu a deo u drugom
+
+			num++
+			tempString := string(mmapf[MAXSIZE-6:])
+			logsNumber := fmt.Sprintf("%05d", num)
+			startFilePath = fmt.Sprintf("wal%c%s%s.log", os.PathSeparator, SEGMENTS_NAME, logsNumber)
+			if slices.Contains(wal.Segments, fmt.Sprintf("%s%s.log", SEGMENTS_NAME, logsNumber)) {
+				startFile, err = os.OpenFile(startFilePath, os.O_RDWR, 0644)
+				if err != nil {
+					log.Fatalln()
+				}
+			} else {
+				break
+			}
+			mmapf, err = mmap.Map(startFile, mmap.RDONLY, 0)
+			if err != nil {
+				log.Fatalln()
+			}
+			foundIndex = strings.Index(tempString+string(mmapf[:7]), "<START>")
+			if foundIndex != -1 {
+				foundIndex++
+				break
+			}
+			tempEndIndex = 7
+
+		}
+		if foundIndex == -1 { //od mesta trazenja pa do kraja nema celih logova
+			ch <- nil
+		}
+		for true {
+			maxLength := 37
+			if maxLength > MAXSIZE {
+				maxLength = MAXSIZE
+			}
+			data := mmapf[:maxLength]
+		}
+
+		//data := make([]byte, 0)
+		//startIndex:=foundIndex+7
+		//for len(data)<37{
+		//	lenToEnd:=
+		//}
+		//ch <- NewLogRecord("kk", []byte("nesto"), false)
+		//kreni od prvog fajla, ako je dat parametar startFile onda od tog fajla krecem, ako je dat parametar startLog onda od tog rednog broja loga u tom fajlu, ako nije dat endRead citam do kraja
+
+	}()
+
+	return ch
 }
 
 func main() {
 	// Example usage
 	wal := NewWriteAheadLog()
-	wal.DeleteSegmentsTilWatermark()
-
-	//fmt.Println(len(wal.LastSegment))
-	//fmt.Println(wal.LastSegment)
-	key := "mykey"
-	value := []byte("myvalue")
-	////key1 := "mykey1"
-	////value1 := []byte("myvalue1")
-	////
-	record := NewLogRecord(key, value, false)
-	wal.DirectLog(record)
-	wal.Log("kljuc", []byte("vrednost"), true)
+	gen := wal.ReadOneByOne()
+	for j := range gen {
+		fmt.Println(j.Key)
+	}
+	//wal.DeleteSegmentsTilWatermark()
+	//
+	////fmt.Println(len(wal.LastSegment))
+	////fmt.Println(wal.LastSegment)
+	//key := "mykey"
+	//value := []byte("myvalue")
+	////////key1 := "mykey1"
+	////////value1 := []byte("myvalue1")
+	////////
+	//record := NewLogRecord(key, value, false)
+	//wal.DirectLog(record)
+	//wal.Log("kljuc", []byte("vrednost"), true)
 	//wal.Log(record)
 	//wal.Log(record)
 	//wal.Log(record)
