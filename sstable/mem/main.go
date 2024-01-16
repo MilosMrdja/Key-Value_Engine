@@ -1,9 +1,9 @@
 package main
 
 import (
-	"mem/memtable/btree/btreemem"
-	"mem/memtable/hash/hashstruct"
-	"mem/memtable/skiplist/skiplistmem"
+	"sstable/mem/memtable/btree/btreemem"
+	"sstable/mem/memtable/hash/hashstruct"
+	"sstable/mem/memtable/skiplist/skiplistmem"
 )
 
 func main() {
@@ -61,4 +61,7 @@ func main() {
 	//	fmt.Printf("%s ", datalist[i].GetData())
 	//	fmt.Printf("\n")
 	//}
+
+	btmem.DeleteElement("10")
+	btmem.SendToSSTable()
 }

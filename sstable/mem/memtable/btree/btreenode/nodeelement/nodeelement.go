@@ -1,6 +1,6 @@
 package nodeelement
 
-import "mem/memtable/datatype"
+import "sstable/mem/memtable/datatype"
 
 type NodeElement struct {
 	key string

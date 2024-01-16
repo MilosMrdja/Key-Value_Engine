@@ -1,7 +1,7 @@
 package myutils
 
 import (
-	"mem/memtable/datatype"
+	"sstable/mem/memtable/datatype"
 )
 
 func Insert[T any](array []T, i int, element T) []T {

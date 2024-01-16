@@ -3,7 +3,7 @@ package skipliststruct
 import (
 	"fmt"
 	"math/rand"
-	"mem/memtable/datatype"
+	"sstable/mem/memtable/datatype"
 )
 
 type SkiplistNode struct {

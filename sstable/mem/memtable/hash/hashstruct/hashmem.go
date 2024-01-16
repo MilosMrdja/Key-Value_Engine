@@ -1,8 +1,8 @@
 package hashstruct
 
 import (
-	"mem/memtable/datatype"
 	"sort"
+	"sstable/mem/memtable/datatype"
 )
 
 type HashMemtable struct {

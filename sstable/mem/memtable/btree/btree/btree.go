@@ -1,9 +1,9 @@
 package btree
 
 import (
-	"mem/memtable/btree/btreenode"
-	"mem/memtable/btree/myutils"
-	"mem/memtable/datatype"
+	"sstable/mem/memtable/btree/btreenode"
+	"sstable/mem/memtable/btree/myutils"
+	"sstable/mem/memtable/datatype"
 )
 
 type BTree struct {

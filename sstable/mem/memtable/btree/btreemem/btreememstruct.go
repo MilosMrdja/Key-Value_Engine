@@ -1,8 +1,9 @@
 package btreemem
 
 import (
-	"mem/memtable/btree/btree"
-	"mem/memtable/datatype"
+	"sstable/SSTableStruct/SSTable"
+	"sstable/mem/memtable/btree/btree"
+	"sstable/mem/memtable/datatype"
 )
 
 type BTreeMemtable struct {
@@ -84,7 +85,7 @@ func (btmem *BTreeMemtable) GetElement(key string) (bool, []byte) {
 }
 
 func (btmem *BTreeMemtable) DeleteElement(key string) bool {
-	found := btmem.DeleteElement(key)
+	found := btmem.data.Delete(key)
 	return found
 }
 
@@ -95,7 +96,8 @@ func (btmem *BTreeMemtable) SendToSSTable() bool {
 	//napravimo SSTable
 	//...
 	//...
-
+	SSTable.NewSSTable(dataList, 10, 10)
+	SSTable.ReadSSTable()
 	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
 

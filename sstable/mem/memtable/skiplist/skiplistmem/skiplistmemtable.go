@@ -1,8 +1,9 @@
 package skiplistmem
 
 import (
-	"mem/memtable/datatype"
-	"mem/memtable/skiplist/skipliststruct"
+	"sstable/SSTableStruct/SSTable"
+	"sstable/mem/memtable/datatype"
+	"sstable/mem/memtable/skiplist/skipliststruct"
 )
 
 type SkipListMemtable struct {
@@ -30,6 +31,9 @@ func (slmem *SkipListMemtable) SendToSSTable() bool {
 	//napravimo SSTable
 	//...
 	//...
+
+	SSTable.NewSSTable(dataList, 10, 10)
+	SSTable.ReadSSTable()
 
 	slmem.data = skipliststruct.CreateSkipList(slmem.capacity)
 	slmem.length = 0
