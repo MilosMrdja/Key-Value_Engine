@@ -1,6 +1,7 @@
 package MerkleTree
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"hash/fnv"
@@ -135,8 +136,7 @@ func getHeightOfMerkleTree(mt *MerkleTree) int {
 
 // serijalizacija merkle stabla - serijalizujemo duzinu niza i N hesirane vrednosti
 // {1B, 8B, 8B,...,8B}
-func SerializeMerkleTree(mt *MerkleTree) (bool, error) {
-	fileName := "MerkleTree.bin"
+func SerializeMerkleTree(mt *MerkleTree, fileName string) (bool, error) {
 	_, err := os.Stat(fileName)
 	if err == nil {
 		err1 := os.Remove(fileName)
@@ -158,7 +158,7 @@ func SerializeMerkleTree(mt *MerkleTree) (bool, error) {
 	if errF != nil {
 		return false, errF
 	}
-
+	var result bytes.Buffer
 	for i := 0; i < len(mt.tree); i++ {
 		bytes := make([]byte, 8)
 		binary.BigEndian.PutUint64(bytes, mt.tree[i].hashValue)
@@ -166,6 +166,7 @@ func SerializeMerkleTree(mt *MerkleTree) (bool, error) {
 		if err != nil {
 			return false, err
 		}
+		result.Write(bytes)
 	}
 
 	return true, nil

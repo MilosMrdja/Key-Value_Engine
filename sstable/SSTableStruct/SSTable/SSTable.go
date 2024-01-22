@@ -24,56 +24,168 @@ func NewSSTable(dataList []datatype.DataType, N, M int) bool {
 
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
-	var serializedData []byte
-	var duzinaPodatka, acc, duzinaDataList int
+	var serializedData, indexData []byte
+	var duzinaPodatka, acc, accIndex, duzinaDataList int
 	acc = 0
+	accIndex = 0
 	duzinaDataList = len(dataList)
+	var err error
+	bloomFilter := bloomfilter.CreateBloomFilter(duzinaDataList)
 
-	sstable := &SSTable{
-		bloomFilter: bloomfilter.CreateBloomFilter(duzinaDataList),
-		merkleTree:  nil,
-		index:       make(map[string]int),
-		summary:     make(map[string]int),
-		data:        make([]byte, 0),
-	}
-
-	fileName := "SSTable1.bin"
+	//Data fajl
+	fileName := "DataSSTable/Data.bin"
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return false
 	}
 	defer file.Close()
 
+	//Index fajl
+	fileName = "DataSSTable/Index.bin"
+	fileIndex, err2 := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
+	if err2 != nil {
+		return false
+	}
+	defer fileIndex.Close()
+
+	//Symmary fajl
+	fileName = "DataSSTable/Summary.bin"
+	fileSummary, err3 := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
+	if err3 != nil {
+		return false
+	}
+	defer fileSummary.Close()
+
+	//Bloom Filter fajl
+	fileBloom := "DataSSTable/BloomFilter.bin"
 	// glavna petlja
 	for i := 0; i < duzinaDataList; i++ {
 		// dodali smo kljuc u bloomf
-		AddKeyToBloomFilter(dataList[i].GetKey())
+		AddKeyToBloomFilter(bloomFilter, dataList[i].GetKey())
 
 		// serijaliacija podatka
 		serializedData, err = SerializeDataType(dataList[i])
 		if err != nil {
 			return false
 		}
+
+		// upisujemo podatak u Data.bin fajl
 		duzinaPodatka, err = file.Write(serializedData)
-		//sstable.data = append(sstable.data,serializedData...)
 		if err != nil {
 			return false
 		}
-		if i%N == 0 || i+1 == duzinaDataList {
-			sstable.index[dataList[i].GetKey()] = acc
+
+		//Upis odgovarajucih vrednosti u Summary
+		if i%M == 0 {
+			indexData, err = SerializeIndexData(dataList[i].GetKey(), accIndex)
+			if err != nil {
+				return false
+			}
+			fileSummary.Write(indexData)
 		}
+		//Upis odgovarajucih vrednosti u Index
+		if i%N == 0 {
+			indexData, err = SerializeIndexData(dataList[i].GetKey(), acc)
+			if err != nil {
+				return false
+			}
+			fileIndex.Write(indexData)
+			accIndex += len(indexData)
+
+		}
+
 		acc += duzinaPodatka
 
 		// pomocni niz koji presludjemo za MerkleTree
 		arrToMerkle = append(arrToMerkle, serializedData)
 
 	}
-	CreateMerkleTree(arrToMerkle)
+	//Kreiranje i upis Merkle Stabla
+	CreateMerkleTree(arrToMerkle, "DataSSTable/Merkle.bin")
+	//Serijalizacija i upis bloom filtera
+	err = bloomfilter.SerializeBloomFilter(bloomFilter, fileBloom)
+	if err != nil {
+		return false
+	}
+	fmt.Printf("%d\n", acc)
+	return true
+}
+func ReadIndex(fileName string, key string) bool {
+	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	fileInfo, err := os.Stat(fileName)
+	if err != nil {
+		panic(err)
+	}
+
+	var currentRead int64
+	currentRead = 0
+	end := fileInfo.Size()
+	fmt.Printf("%d\n", end)
+	for currentRead != end {
+		// read key size
+		bytes := make([]byte, 4)
+		_, err = file.Read(bytes)
+		if err != nil {
+			panic(err)
+		}
+		currentRead += 4
+		keySize := binary.BigEndian.Uint32(bytes)
+
+		//Read key
+		bytes = make([]byte, keySize)
+		_, err = file.Read(bytes)
+		if err != nil {
+			panic(err)
+		}
+		currentRead += int64(keySize)
+		fmt.Printf("Kljuc : %s ", bytes)
+
+		//Read offset
+		bytes = make([]byte, 4)
+		_, err = file.Read(bytes)
+		if err != nil {
+			panic(err)
+		}
+		currentRead += 4
+		fmt.Printf("Offset: %d \n", binary.BigEndian.Uint32(bytes))
+	}
 	return true
 }
 
+// funkcija za upis podatka u Index
+func SerializeIndexData(key string, length int) ([]byte, error) {
+	var result bytes.Buffer
+	// write key size
+	err := binary.Write(&result, binary.BigEndian, uint32(len(key)))
+	if err != nil {
+		return []byte(""), err
+	}
+	// write key
+	result.Write([]byte(key))
+	//Write length
+	err = binary.Write(&result, binary.BigEndian, uint32(length))
+	if err != nil {
+		return []byte(""), err
+	}
+	return result.Bytes(), nil
+}
+
 // f-ja koja kreira merkle stablo, vraca True ako je uspesno kreirano, u suprotnom False
-func CreateMerkleTree(data [][]byte) bool {
+func CreateMerkleTree(data [][]byte, fileName string) bool {
+	merkleTree, err := MerkleTree.CreateMerkleTree(data)
+
+	if err != nil {
+		return false
+	}
+	_, err3 := MerkleTree.SerializeMerkleTree(merkleTree, fileName)
+	if err3 != nil {
+		return false
+	}
 	return true
 }
 
@@ -128,17 +240,13 @@ func SerializeDataType(data datatype.DataType) ([]byte, error) {
 }
 
 // f-ja koja dodaje kljuc u bloomfilter i vraca True ako je uspesno dodao
-func AddKeyToBloomFilter(key string) bool {
-	return true
-}
-
-// f-ja koja proverava da li kljuc postoji
-func IfKeyExist(key string) bool {
+func AddKeyToBloomFilter(bloomFilter *bloomfilter.BloomFilter, key string) bool {
+	bloomFilter.Set([]byte(key))
 	return true
 }
 
 func ReadSSTable() bool {
-	fileName := "SSTable1.bin"
+	fileName := "DataSSTable/Data.bin"
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
 	if err != nil {
 		return false

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"MerkleTreeImplementation/MerkleTree"
 	"fmt"
+	"sstable/MerkleTreeImplementation/MerkleTree"
 )
 
 func main() {
@@ -49,7 +49,7 @@ func main() {
 	}
 	fmt.Println("Kreirano merkle stablo: ")
 	fmt.Println(MerkleTree.PrintMerkleTree(m))
-	_, err1 := MerkleTree.SerializeMerkleTree(m)
+	_, err1 := MerkleTree.SerializeMerkleTree(m, "MerkleTree.bin")
 	if err1 != nil {
 		fmt.Println("Nije doslo do serijalizacije merkle stabla!")
 		fmt.Println(err1)

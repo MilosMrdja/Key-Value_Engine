@@ -64,4 +64,5 @@ func main() {
 
 	btmem.DeleteElement("10")
 	btmem.SendToSSTable()
+
 }
