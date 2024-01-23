@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math"
+	"strings"
 	"time"
 )
 
@@ -36,6 +38,7 @@ func (tb *TokenBucket) refill() {
 
 func (tb *TokenBucket) IsRequestAllowed(tokens int64) string {
 	tb.refill()
+
 	if tb.currentTokens >= tokens {
 		tb.currentTokens -= tokens
 		return "Request Allowed"
@@ -43,8 +46,26 @@ func (tb *TokenBucket) IsRequestAllowed(tokens int64) string {
 	return "Request Blocked"
 }
 
-func (tb *TokenBucket) Serialize() ([]byte, error) {
-	return json.Marshal(tb)
+type Log struct {
+	Hours   int
+	Minutes int
+	Seconds int
+	Value   int64
+}
+
+func (tb *TokenBucket) Serialize(data []Log) ([]byte, error) {
+	var lines []string
+
+	for _, entry := range data {
+		line := fmt.Sprintf("%02d:%02d:%02d,%d", entry.Hours, entry.Minutes, entry.Seconds, entry.Value)
+		lines = append(lines, line)
+	}
+
+	return []byte(strings.Join(lines, "\n")), nil
+}
+
+func (tb *TokenBucket) WriteToFile(filename string, data []byte) error {
+	return ioutil.WriteFile(filename, data, 0644)
 }
 
 func main() {
@@ -52,6 +73,6 @@ func main() {
 
 	for i := 1; i <= 30; i++ {
 		fmt.Println(i, tb.IsRequestAllowed(4), " at ", time.Now().Format("15:04:05"))
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
