@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -38,7 +40,13 @@ func (tb *TokenBucket) refill() {
 
 func (tb *TokenBucket) IsRequestAllowed(tokens int64) string {
 	tb.refill()
-
+	data, _ := tb.Deserialize()
+	for _, value := range data {
+		fmt.Println(value)
+	}
+	data = append(data, Log{Hours: time.Now().Hour(), Minutes: time.Now().Minute(), Seconds: time.Now().Second(), Value: tokens})
+	serializedData, _ := tb.Serialize(data)
+	tb.WriteToFile("requests.bin", serializedData)
 	if tb.currentTokens >= tokens {
 		tb.currentTokens -= tokens
 		return "Request Allowed"
@@ -68,6 +76,67 @@ func (tb *TokenBucket) WriteToFile(filename string, data []byte) error {
 	return ioutil.WriteFile(filename, data, 0644)
 }
 
+func (tb *TokenBucket) Deserialize() ([]Log, error) {
+
+	file, err := os.Open("requests.bin")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	fileSize := fileInfo.Size()
+	readData := make([]byte, fileSize)
+
+	_, err = file.Read(readData)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []Log
+
+	dataStr := string(readData)
+
+	// Split lines
+	lines := strings.Split(dataStr, "\n")
+
+	for _, line := range lines {
+		// Split each line into hours:minutes,value
+		parts := strings.Split(line, ",")
+
+		// Extract hours, minutes, and value from the split parts
+		timeParts := strings.Split(parts[0], ":")
+		hours, err := strconv.Atoi(timeParts[0])
+		if err != nil {
+			return nil, err
+		}
+
+		minutes, err := strconv.Atoi(timeParts[1])
+		if err != nil {
+			return nil, err
+		}
+
+		seconds, err := strconv.Atoi(timeParts[2])
+		if err != nil {
+			return nil, err
+		}
+
+		value, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return nil, err
+		}
+
+		// Create a MyData instance and add it to the result
+		result = append(result, Log{Hours: hours, Minutes: minutes, Seconds: seconds, Value: int64(value)})
+	}
+
+	return result, nil
+}
+
 func main() {
 	tb := NewTokenBucket(3, 10)
 
@@ -76,3 +145,4 @@ func main() {
 		time.Sleep(1000 * time.Millisecond)
 	}
 }
+
