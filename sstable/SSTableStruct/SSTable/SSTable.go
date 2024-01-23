@@ -1,10 +1,8 @@
 package SSTable
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
-	"hash/crc32"
 	"os"
 	"sstable/MerkleTreeImplementation/MerkleTree"
 	"sstable/bloomfilter/bloomfilter"
@@ -20,7 +18,7 @@ type SSTable struct {
 }
 
 // N i M su nam redom razudjenost u index-u, i u summary-ju
-func NewSSTable(dataList []datatype.DataType, N, M int) bool {
+func NewSSTable(dataList []datatype.DataType, N, M int, compres bool) bool {
 
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
@@ -77,7 +75,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int) bool {
 
 		//Upis odgovarajucih vrednosti u Summary
 		if i%M == 0 {
-			indexData, err = SerializeIndexData(dataList[i].GetKey(), accIndex)
+			indexData, err = SerializeIndexData(dataList[i].GetKey(), accIndex, compres)
 			if err != nil {
 				return false
 			}
@@ -85,7 +83,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int) bool {
 		}
 		//Upis odgovarajucih vrednosti u Index
 		if i%N == 0 {
-			indexData, err = SerializeIndexData(dataList[i].GetKey(), acc)
+			indexData, err = SerializeIndexData(dataList[i].GetKey(), acc, compres)
 			if err != nil {
 				return false
 			}
@@ -126,15 +124,32 @@ func ReadIndex(fileName string, key string) bool {
 	currentRead = 0
 	end := fileInfo.Size()
 	fmt.Printf("%d\n", end)
+	var keySize uint64
+	var n int
+	var flag bool
 	for currentRead != end {
+		// deser
+		arrTemp := make([]byte, 1)
+		n, err = file.Read(arrTemp)
+		numBitsToDeser := 0
+		flag = true
+		for flag == true {
+			if n&256 == 1 {
+				numBitsToDeser += 1
+			} else {
+				flag = false
+			}
+		}
+		buff := make([]byte, numBitsToDeser)
 		// read key size
-		bytes := make([]byte, 4)
+		keySize, n = binary.Uvarint(buff)
+		bytes := make([]byte, n)
 		_, err = file.Read(bytes)
 		if err != nil {
 			panic(err)
 		}
-		currentRead += 4
-		keySize := binary.BigEndian.Uint32(bytes)
+		currentRead += int64(numBitsToDeser)
+		//keySize := binary.BigEndian.Uint32(bytes)
 
 		//Read key
 		bytes = make([]byte, keySize)
@@ -146,33 +161,30 @@ func ReadIndex(fileName string, key string) bool {
 		fmt.Printf("Kljuc : %s ", bytes)
 
 		//Read offset
-		bytes = make([]byte, 4)
+		arrTemp = make([]byte, 1)
+		n, err = file.Read(arrTemp)
+		numBitsToDeser = 0
+		flag = true
+		for flag == true {
+			if n&256 == 1 {
+				numBitsToDeser += 1
+			} else {
+				flag = false
+			}
+		}
+
+		buf1 := make([]byte, numBitsToDeser)
+		var offset uint64
+		offset, n = binary.Uvarint(buf1)
+		bytes = make([]byte, n)
 		_, err = file.Read(bytes)
 		if err != nil {
 			panic(err)
 		}
-		currentRead += 4
-		fmt.Printf("Offset: %d \n", binary.BigEndian.Uint32(bytes))
+		currentRead += int64(numBitsToDeser)
+		fmt.Printf("Offset: %d \n", offset)
 	}
 	return true
-}
-
-// funkcija za upis podatka u Index
-func SerializeIndexData(key string, length int) ([]byte, error) {
-	var result bytes.Buffer
-	// write key size
-	err := binary.Write(&result, binary.BigEndian, uint32(len(key)))
-	if err != nil {
-		return []byte(""), err
-	}
-	// write key
-	result.Write([]byte(key))
-	//Write length
-	err = binary.Write(&result, binary.BigEndian, uint32(length))
-	if err != nil {
-		return []byte(""), err
-	}
-	return result.Bytes(), nil
 }
 
 // f-ja koja kreira merkle stablo, vraca True ako je uspesno kreirano, u suprotnom False
@@ -187,56 +199,6 @@ func CreateMerkleTree(data [][]byte, fileName string) bool {
 		return false
 	}
 	return true
-}
-
-// f-ja koja serijalizuje jedan podatak iz memtabele
-func SerializeDataType(data datatype.DataType) ([]byte, error) {
-	var result bytes.Buffer
-
-	//create and write CRC
-	crc := crc32.ChecksumIEEE(data.GetData())
-	err := binary.Write(&result, binary.BigEndian, crc)
-	if err != nil {
-		return nil, nil
-	}
-
-	//create and write timestamp
-	TimeBytes := make([]byte, 16)
-	binary.BigEndian.PutUint64(TimeBytes[8:], uint64(data.GetChangeTime().Unix()))
-	result.Write(TimeBytes)
-
-	// Write tombstone
-	tomb := byte(0)
-	if data.GetDelete() == true {
-		tomb = 1
-	}
-	result.WriteByte(tomb)
-
-	currentData := data.GetData()
-	currentKey := data.GetKey()
-	// write key size
-	err = binary.Write(&result, binary.BigEndian, uint64(len(currentKey)))
-	if err != nil {
-		return nil, err
-	}
-
-	if tomb == 0 {
-		// write value size
-		err = binary.Write(&result, binary.BigEndian, uint64(len(currentData)))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// write key
-	result.Write([]byte(currentKey))
-
-	if tomb == 0 {
-		// write value
-		result.Write(currentData)
-	}
-
-	return result.Bytes(), nil
 }
 
 // f-ja koja dodaje kljuc u bloomfilter i vraca True ako je uspesno dodao
