@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"hash/crc32"
+	"os"
 	"sstable/mem/memtable/datatype"
 )
 
@@ -103,4 +104,63 @@ func SerializeDataType(data datatype.DataType, compres bool) ([]byte, error) {
 	}
 
 	return result.Bytes(), nil
+}
+
+// Dodati u conf file sledece konstante pri citanju
+// 0 - Bloomfilter
+// 1 - summary deo
+// 2 - index deo
+// 3 - data deo
+// 4 - Merkle tree
+func WriteToOneFile(bloom, summary, index, data, merkle string) ([]byte, error) {
+	var result bytes.Buffer
+	var tempArr []byte
+
+	tempArr = getFileInfo(bloom, 0)
+	result.Write(tempArr)
+
+	tempArr = getFileInfo(summary, 1)
+	result.Write(tempArr)
+
+	tempArr = getFileInfo(index, 2)
+	result.Write(tempArr)
+
+	tempArr = getFileInfo(data, 3)
+	result.Write(tempArr)
+
+	tempArr = getFileInfo(merkle, 4)
+	result.Write(tempArr)
+
+	return result.Bytes(), nil
+}
+
+func getFileInfo(fileName string, n int) []byte {
+
+	var result bytes.Buffer
+	file, err := os.OpenFile(fileName, os.O_RDONLY, 0777)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	fileInfo, err := os.Stat(fileName)
+	if err != nil {
+		panic(err)
+	}
+
+	id := make([]byte, 1)
+	id[0] = byte(n)
+	result.Write(id)
+
+	end := fileInfo.Size()
+
+	byteArr := make([]byte, end)
+	_, err = file.Read(byteArr)
+	if err != nil {
+		panic(err)
+	}
+
+	result.Write(byteArr)
+
+	return result.Bytes()
 }

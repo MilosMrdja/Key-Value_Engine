@@ -106,6 +106,22 @@ func NewSSTable(dataList []datatype.DataType, N, M int, compres bool) bool {
 		return false
 	}
 	fmt.Printf("%d\n", acc)
+
+	// u slucaju da korisnik odabere sve u jedan fajl
+
+	serializedInOneFile, err := WriteToOneFile("DataSSTable/BloomFilter.bin", "DataSSTable/Summary.bin", "DataSSTable/Index.bin", "DataSSTable/Data.bin", "DataSSTable/Merkle.bin")
+	if err != nil {
+		panic(err)
+	}
+	// One file
+	fileNameOneFile := "DataSSTable/SSTable.bin"
+	fileOne, err2 := os.OpenFile(fileNameOneFile, os.O_WRONLY|os.O_CREATE, 0666)
+	if err2 != nil {
+		fmt.Println("Adsas")
+	}
+	defer fileOne.Close()
+	fileOne.Write(serializedInOneFile)
+
 	return true
 }
 func ReadIndex(fileName string, key string, compres bool) bool {
