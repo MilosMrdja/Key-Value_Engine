@@ -3,7 +3,6 @@ package SSTable
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"hash/crc32"
 	"sstable/mem/memtable/datatype"
 )
@@ -14,9 +13,9 @@ func SerializeIndexData(key string, length int, compres bool) ([]byte, error) {
 	// write key size
 	// if an user wants to compres file
 	if compres {
-		buf := make([]byte, 3)
+		buf := make([]byte, 4)
 		n := binary.PutVarint(buf, int64(len(key)))
-		fmt.Printf(" 1.  %d", n)
+		//fmt.Printf(" 1.  %d", n)
 		result.Write(buf[:n])
 	} else {
 
@@ -29,10 +28,10 @@ func SerializeIndexData(key string, length int, compres bool) ([]byte, error) {
 	result.Write([]byte(key))
 	//Write length
 	if compres {
-		buf1 := make([]byte, 4)
-		n := binary.PutVarint(buf1, int64(length))
-		fmt.Printf(" 2.  %d", n)
-		result.Write(buf1[:n])
+		buf := make([]byte, 4)
+		n := binary.PutVarint(buf, int64(length))
+		//fmt.Printf(" 2.  %d", n)
+		result.Write(buf[:n])
 	} else {
 		err := binary.Write(&result, binary.BigEndian, uint32(length))
 		if err != nil {
@@ -43,9 +42,9 @@ func SerializeIndexData(key string, length int, compres bool) ([]byte, error) {
 	return result.Bytes(), nil
 }
 
-// key size, value size, tspemt
+// key size, value size, timestamp - kompresija
 // f-ja koja serijalizuje jedan podatak iz memtabele
-func SerializeDataType(data datatype.DataType) ([]byte, error) {
+func SerializeDataType(data datatype.DataType, compres bool) ([]byte, error) {
 	var result bytes.Buffer
 
 	//create and write CRC
@@ -70,16 +69,28 @@ func SerializeDataType(data datatype.DataType) ([]byte, error) {
 	currentData := data.GetData()
 	currentKey := data.GetKey()
 	// write key size
-	err = binary.Write(&result, binary.BigEndian, uint64(len(currentKey)))
-	if err != nil {
-		return nil, err
+	if compres {
+		buff := make([]byte, 8)
+		n := binary.PutVarint(buff, int64(len(currentKey)))
+		result.Write(buff[:n])
+	} else {
+		err = binary.Write(&result, binary.BigEndian, uint64(len(currentKey)))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if tomb == 0 {
 		// write value size
-		err = binary.Write(&result, binary.BigEndian, uint64(len(currentData)))
-		if err != nil {
-			return nil, err
+		if compres {
+			buff := make([]byte, 8)
+			n := binary.PutVarint(buff, int64(len(currentData)))
+			result.Write(buff[:n])
+		} else {
+			err = binary.Write(&result, binary.BigEndian, uint64(len(currentData)))
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

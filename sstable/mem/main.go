@@ -35,7 +35,7 @@ func main() {
 	//datalist = slmem.SendToSSTable()
 
 	btmem := btreemem.NewBTreeMemtable(j)
-	btmem.AddElement("1", []byte("1"))
+	btmem.AddElement("11", []byte("1"))
 	btmem.AddElement("2", []byte("2"))
 	btmem.AddElement("3", []byte("3"))
 	btmem.AddElement("4", []byte("4"))

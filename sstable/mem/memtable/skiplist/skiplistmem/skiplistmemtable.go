@@ -33,7 +33,7 @@ func (slmem *SkipListMemtable) SendToSSTable() bool {
 	//...
 
 	SSTable.NewSSTable(dataList, 10, 10, true)
-	SSTable.ReadSSTable()
+	SSTable.ReadSSTable(true)
 
 	slmem.data = skipliststruct.CreateSkipList(slmem.capacity)
 	slmem.length = 0

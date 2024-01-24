@@ -97,9 +97,9 @@ func (btmem *BTreeMemtable) SendToSSTable() bool {
 	//...
 	//...
 	SSTable.NewSSTable(dataList, 1, 2, true)
-	SSTable.ReadSSTable()
-	SSTable.ReadIndex("DataSSTable/Index.bin", "")
-	SSTable.ReadIndex("DataSSTable/Summary.bin", "")
+	SSTable.ReadSSTable(true)
+	SSTable.ReadIndex("DataSSTable/Index.bin", "", true)
+	SSTable.ReadIndex("DataSSTable/Summary.bin", "", true)
 	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
 
