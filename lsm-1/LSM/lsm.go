@@ -3,7 +3,6 @@ package LSM
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 )
@@ -13,22 +12,18 @@ func FindDestination(layer int) (string, bool) {
 	if _, err := os.Stat("./DataSStable/L" + strconv.Itoa(layer)); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir("./DataSStable/L"+strconv.Itoa(layer), os.ModePerm)
 		if err != nil {
-			log.Println(err)
+			panic(err)
 		}
 	}
 	layerEntries, err := os.ReadDir("./DataSStable/L" + strconv.Itoa(layer))
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	for _, e := range layerEntries {
-		fmt.Println(e.Name())
-
-	}
 	newSstableName := "./DataSStable/L" + strconv.Itoa(layer) + "/sstable" + string(strconv.Itoa(len(layerEntries)+1))
 	errMkdir := os.Mkdir(newSstableName, os.ModePerm)
 	if errMkdir != nil {
-		log.Println(err)
+		panic(err)
 	}
 	return newSstableName, false
 }
@@ -95,11 +90,17 @@ func deleteLayer(layerName string) {
 	dirNames, _ := file.Readdirnames(-1)
 	for _, name := range dirNames {
 		err := os.RemoveAll(layerName + "/" + name)
-		if err != nil {
-			panic(err)
+		for err != nil {
+			err = os.RemoveAll(layerName + "/" + name)
 		}
+
 	}
 }
+
+func Compact() {
+
+}
+
 func createLayer(layerName string) {
 	if _, err := os.Stat(layerName); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir(layerName, os.ModePerm)

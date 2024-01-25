@@ -8,10 +8,8 @@ import (
 
 func main() {
 
-	for i := 0; i < 101; i++ {
-		dasdas, aa := LSM.FindDestination(0)
-		fmt.Println(dasdas)
-		fmt.Println(aa)
+	for i := 0; i < 1000; i++ {
+		LSM.FindDestination(0)
 		LSM.CompactSstable()
 	}
 
