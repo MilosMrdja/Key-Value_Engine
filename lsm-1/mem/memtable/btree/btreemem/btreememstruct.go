@@ -89,17 +89,17 @@ func (btmem *BTreeMemtable) DeleteElement(key string) bool {
 	return found
 }
 
-func (btmem *BTreeMemtable) SendToSSTable() bool {
+func (btmem *BTreeMemtable) SendToSSTable(compres, oneFile bool) bool {
 	dataList := make([]datatype.DataType, btmem.length)
 	dataList = btmem.data.Traverse()
 
 	//napravimo SSTable
 	//...
 	//...
-	SSTable.NewSSTable(dataList, 1, 2, true)
-	SSTable.ReadSSTable()
-	SSTable.ReadIndex("DataSSTable/Index.bin", "")
-	SSTable.ReadIndex("DataSSTable/Summary.bin", "")
+	SSTable.NewSSTable(dataList, 1, 2, compres, oneFile)
+	SSTable.ReadSSTable(compres, oneFile)
+	SSTable.ReadIndex("DataSSTable/Index.bin", "", compres, 1, oneFile)
+	SSTable.ReadIndex("DataSSTable/Summary.bin", "", compres, 2, oneFile)
 	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
 

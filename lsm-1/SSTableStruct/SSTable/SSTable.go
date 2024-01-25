@@ -18,7 +18,7 @@ type SSTable struct {
 }
 
 // N i M su nam redom razudjenost u index-u, i u summary-ju
-func NewSSTable(dataList []datatype.DataType, N, M int, compres bool) bool {
+func NewSSTable(dataList []datatype.DataType, N, M int, compres, oneFile bool) bool {
 
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
@@ -57,12 +57,13 @@ func NewSSTable(dataList []datatype.DataType, N, M int, compres bool) bool {
 	//Bloom Filter fajl
 	fileBloom := "DataSSTable/BloomFilter.bin"
 	// glavna petlja
+
 	for i := 0; i < duzinaDataList; i++ {
 		// dodali smo kljuc u bloomf
 		AddKeyToBloomFilter(bloomFilter, dataList[i].GetKey())
 
 		// serijaliacija podatka
-		serializedData, err = SerializeDataType(dataList[i])
+		serializedData, err = SerializeDataType(dataList[i], compres)
 		if err != nil {
 			return false
 		}
@@ -105,10 +106,31 @@ func NewSSTable(dataList []datatype.DataType, N, M int, compres bool) bool {
 	if err != nil {
 		return false
 	}
-	fmt.Printf("%d\n", acc)
+	//fmt.Printf("%d\n", acc)
+
+	// u slucaju da korisnik odabere sve u jedan fajl
+
+	if oneFile {
+		serializedInOneFile, err := WriteToOneFile("DataSSTable/BloomFilter.bin", "DataSSTable/Summary.bin", "DataSSTable/Index.bin", "DataSSTable/Data.bin", "DataSSTable/Merkle.bin")
+		if err != nil {
+			panic(err)
+		}
+		// One file
+		fileNameOneFile := "DataSSTable/SSTable.bin"
+		fileOne, err2 := os.OpenFile(fileNameOneFile, os.O_WRONLY|os.O_CREATE, 0666)
+		if err2 != nil {
+			fmt.Println("Adsas")
+		}
+		defer fileOne.Close()
+		fileOne.Write(serializedInOneFile)
+	}
+
 	return true
 }
-func ReadIndex(fileName string, key string) bool {
+func ReadIndex(fileName string, key string, compres bool, elem int, oneFile bool) bool {
+	if oneFile {
+		fileName = "DataSSTable/SSTable.bin"
+	}
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
 	if err != nil {
 		return false
@@ -123,66 +145,82 @@ func ReadIndex(fileName string, key string) bool {
 	var currentRead int64
 	currentRead = 0
 	end := fileInfo.Size()
-	fmt.Printf("%d\n", end)
-	var keySize uint64
-	var n int
-	var flag bool
+
+	// var
+
+	var size, sizeEnd int64
+	if oneFile {
+		size, sizeEnd = positionInSSTable(*file, elem)
+		end = sizeEnd - size
+		_, err1 := file.Seek(size, 0)
+		if err1 != nil {
+			return false
+		}
+	} else {
+		_, err = file.Seek(0, 0)
+		if err != nil {
+			return false
+		}
+	}
+	bytesFile := make([]byte, end)
+	_, err = file.Read(bytesFile)
+	if err != nil {
+		panic(err)
+	}
+	file.Seek(size, 0)
+	fmt.Printf("Velicina: %d\n", (end))
 	for currentRead != end {
-		// deser
-		arrTemp := make([]byte, 1)
-		n, err = file.Read(arrTemp)
-		numBitsToDeser := 0
-		flag = true
-		for flag == true {
-			if n&256 == 1 {
-				numBitsToDeser += 1
-			} else {
-				flag = false
+
+		if compres == true {
+			// read key size
+			keySize, n := binary.Varint(bytesFile[currentRead:])
+			//fmt.Printf("procitano: %d", n)
+			currentRead += int64(n)
+
+			//Read keys
+			bytes := make([]byte, keySize)
+			file.Seek(currentRead+size, 0)
+			_, err = file.Read(bytes)
+			if err != nil {
+				panic(err)
 			}
-		}
-		buff := make([]byte, numBitsToDeser)
-		// read key size
-		keySize, n = binary.Uvarint(buff)
-		bytes := make([]byte, n)
-		_, err = file.Read(bytes)
-		if err != nil {
-			panic(err)
-		}
-		currentRead += int64(numBitsToDeser)
-		//keySize := binary.BigEndian.Uint32(bytes)
 
-		//Read key
-		bytes = make([]byte, keySize)
-		_, err = file.Read(bytes)
-		if err != nil {
-			panic(err)
-		}
-		currentRead += int64(keySize)
-		fmt.Printf("Kljuc : %s ", bytes)
+			currentRead += int64(keySize)
+			fmt.Printf("Kljuc : %s ", bytes)
 
-		//Read offset
-		arrTemp = make([]byte, 1)
-		n, err = file.Read(arrTemp)
-		numBitsToDeser = 0
-		flag = true
-		for flag == true {
-			if n&256 == 1 {
-				numBitsToDeser += 1
-			} else {
-				flag = false
+			//Read offset
+			offset, m := binary.Varint(bytesFile[currentRead:])
+			currentRead += int64(m)
+			fmt.Printf("Offset: %d \n", offset)
+		} else {
+			// read key size
+			bytes := make([]byte, 4)
+			_, err = file.Read(bytes)
+			if err != nil {
+				panic(err)
 			}
+			currentRead += 4
+			keySize := binary.BigEndian.Uint32(bytes)
+
+			//Read key
+			bytes = make([]byte, keySize)
+			_, err = file.Read(bytes)
+			if err != nil {
+				panic(err)
+			}
+			currentRead += int64(keySize)
+			fmt.Printf("Kljuc : %s ", bytes)
+
+			//Read offset
+			bytes = make([]byte, 8)
+			_, err = file.Read(bytes)
+			if err != nil {
+				panic(err)
+			}
+			currentRead += 8
+			fmt.Printf("Offset: %d \n", binary.BigEndian.Uint64(bytes))
 		}
 
-		buf1 := make([]byte, numBitsToDeser)
-		var offset uint64
-		offset, n = binary.Uvarint(buf1)
-		bytes = make([]byte, n)
-		_, err = file.Read(bytes)
-		if err != nil {
-			panic(err)
-		}
-		currentRead += int64(numBitsToDeser)
-		fmt.Printf("Offset: %d \n", offset)
 	}
 	return true
 }
@@ -207,8 +245,39 @@ func AddKeyToBloomFilter(bloomFilter *bloomfilter.BloomFilter, key string) bool 
 	return true
 }
 
-func ReadSSTable() bool {
+func positionInSSTable(file os.File, position int) (int64, int64) {
+	var bytes []byte
+	var size, sizeEnd int64
+	file.Seek(0, 0)
+	size = 0
+	for i := 0; i < position; i++ {
+		bytes = make([]byte, 8)
+		_, err := file.Read(bytes)
+		if err != nil {
+			panic(err)
+		}
+		size += 8
+		size += int64(binary.BigEndian.Uint64(bytes))
+
+		file.Seek(size, 0)
+	}
+	bytes = make([]byte, 8)
+	_, err := file.Read(bytes)
+	if err != nil {
+		panic(err)
+	}
+	size += 8
+	sizeEnd = size + int64(binary.BigEndian.Uint64(bytes))
+
+	return size, sizeEnd
+}
+
+func ReadSSTable(compres, oneFile bool) bool {
+
 	fileName := "DataSSTable/Data.bin"
+	if oneFile {
+		fileName = "DataSSTable/SSTable.bin"
+	}
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
 	if err != nil {
 		return false
@@ -223,6 +292,30 @@ func ReadSSTable() bool {
 	var currentRead int64
 	currentRead = 0
 	end := fileInfo.Size()
+
+	// var
+
+	var size, sizeEnd int64
+	if oneFile {
+		size, sizeEnd = positionInSSTable(*file, 3)
+		end = sizeEnd - size
+		_, err1 := file.Seek(size, 0)
+		if err1 != nil {
+			return false
+		}
+	} else {
+		_, err = file.Seek(0, 0)
+		if err != nil {
+			return false
+		}
+	}
+	bytesFile := make([]byte, end)
+	_, err = file.Read(bytesFile)
+	if err != nil {
+		panic(err)
+	}
+	file.Seek(size, 0)
+	fmt.Printf("Velicina: %d\n", (end))
 	for currentRead != end {
 		//read CRC
 		bytes := make([]byte, 4)
@@ -249,45 +342,80 @@ func ReadSSTable() bool {
 		tomb := int(bytes[0])
 		currentRead += 1
 		//fmt.Printf("%d", bytes)
-		// read key size
-		bytes = make([]byte, 8)
-		_, err = file.Read(bytes)
-		if err != nil {
-			panic(err)
-		}
-		currentRead += 8
-		keySize := binary.BigEndian.Uint64(bytes)
-		//fmt.Printf("%d", bytes)
-		var valueSize uint64
-		if tomb == 0 {
+
+		if compres {
+			// read key size
+			keySize, n := binary.Varint(bytesFile[currentRead:])
+			currentRead += int64(n)
 			// read value size
+			var valueSize int64
+			var m int
+			if tomb == 0 {
+				valueSize, m = binary.Varint(bytesFile[currentRead:])
+				currentRead += int64(m)
+			}
+			// read key
+			bytes = make([]byte, keySize)
+			file.Seek(currentRead+size, 0)
+			_, err = file.Read(bytes)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("Key: %s ", bytes)
+			currentRead += keySize
+			// read value
+			if tomb == 0 {
+				bytes = make([]byte, valueSize)
+				file.Seek(currentRead+size, 0)
+				_, err = file.Read(bytes)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Printf("Value: %s", bytes)
+				currentRead += valueSize
+			}
+
+		} else {
 			bytes = make([]byte, 8)
 			_, err = file.Read(bytes)
 			if err != nil {
 				panic(err)
 			}
-			valueSize = binary.BigEndian.Uint64(bytes)
 			currentRead += 8
+			keySize := binary.BigEndian.Uint64(bytes)
 			//fmt.Printf("%d", bytes)
-		}
-		// read key
-		bytes = make([]byte, keySize)
-		_, err = file.Read(bytes)
-		if err != nil {
-			panic(err)
-		}
-		currentRead += int64(keySize)
-		fmt.Printf("Key: %s ", bytes)
-		// read value
-		if tomb == 0 {
-			bytes = make([]byte, valueSize)
+			var valueSize uint64
+			if tomb == 0 {
+				// read value size
+				bytes = make([]byte, 8)
+				_, err = file.Read(bytes)
+				if err != nil {
+					panic(err)
+				}
+				valueSize = binary.BigEndian.Uint64(bytes)
+				currentRead += 8
+				//fmt.Printf("%d", bytes)
+			}
+			// read key
+			bytes = make([]byte, keySize)
 			_, err = file.Read(bytes)
 			if err != nil {
 				panic(err)
 			}
+			currentRead += int64(keySize)
+			fmt.Printf("Key: %s ", bytes)
+			// read value
+			if tomb == 0 {
+				bytes = make([]byte, valueSize)
+				_, err = file.Read(bytes)
+				if err != nil {
+					panic(err)
+				}
 
-			fmt.Printf("Value: %s", bytes)
-			currentRead += int64(valueSize)
+				fmt.Printf("Value: %s", bytes)
+				currentRead += int64(valueSize)
+			}
+
 		}
 		fmt.Printf("\n")
 

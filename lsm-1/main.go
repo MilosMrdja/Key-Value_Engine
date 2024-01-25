@@ -22,4 +22,6 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(bf.Get([]byte("Nikola")))
+
+
 }

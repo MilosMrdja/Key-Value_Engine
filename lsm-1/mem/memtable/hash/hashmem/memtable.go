@@ -12,7 +12,7 @@ type Memtable interface {
 	AddElement(key string, data []byte) bool
 	GetElement(key string) (bool, []byte)
 	DeleteElement(key string) bool
-	SendToSSTable() []bool
+	SendToSSTable(compres bool) []bool
 	IsReadOnly() bool
 }
 
