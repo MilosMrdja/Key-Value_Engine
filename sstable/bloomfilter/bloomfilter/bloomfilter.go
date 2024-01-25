@@ -46,7 +46,7 @@ type BloomFilter struct {
 	probability   float64
 }
 
-func DeserializeBloomFilter(fileName string) (*BloomFilter, error) {
+func DeserializeBloomFilter(fileName string, oneFile bool) (*BloomFilter, error) {
 	_, err := os.Stat(fileName)
 	if err != nil {
 		return nil, err
@@ -55,11 +55,16 @@ func DeserializeBloomFilter(fileName string) (*BloomFilter, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	_, err = file.Seek(0, 0)
-
-	if err != nil {
-		return nil, err
+	if oneFile {
+		_, err = file.Seek(8, 0)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		_, err = file.Seek(0, 0)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	b := make([]byte, 8)
@@ -198,9 +203,9 @@ func (f *BloomFilter) Get(s []byte) bool { // Proverava da li na osnovu dobijeni
 
 	hesovane := f.hashPosition(s)
 	for i := 0; i < len(hesovane); i++ {
-		if f.bitset[hesovane[i]] == 1 {
-			return true
+		if f.bitset[hesovane[i]] == 0 {
+			return false
 		}
 	}
-	return false
+	return true
 }

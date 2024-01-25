@@ -18,7 +18,7 @@ type SSTable struct {
 }
 
 // N i M su nam redom razudjenost u index-u, i u summary-ju
-func NewSSTable(dataList []datatype.DataType, N, M int, compres bool) bool {
+func NewSSTable(dataList []datatype.DataType, N, M int, compres, oneFile bool) bool {
 
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
@@ -57,12 +57,13 @@ func NewSSTable(dataList []datatype.DataType, N, M int, compres bool) bool {
 	//Bloom Filter fajl
 	fileBloom := "DataSSTable/BloomFilter.bin"
 	// glavna petlja
+
 	for i := 0; i < duzinaDataList; i++ {
 		// dodali smo kljuc u bloomf
 		AddKeyToBloomFilter(bloomFilter, dataList[i].GetKey())
 
 		// serijaliacija podatka
-		serializedData, err = SerializeDataType(dataList[i], true)
+		serializedData, err = SerializeDataType(dataList[i], compres)
 		if err != nil {
 			return false
 		}
@@ -105,26 +106,31 @@ func NewSSTable(dataList []datatype.DataType, N, M int, compres bool) bool {
 	if err != nil {
 		return false
 	}
-	fmt.Printf("%d\n", acc)
+	//fmt.Printf("%d\n", acc)
 
 	// u slucaju da korisnik odabere sve u jedan fajl
 
-	serializedInOneFile, err := WriteToOneFile("DataSSTable/BloomFilter.bin", "DataSSTable/Summary.bin", "DataSSTable/Index.bin", "DataSSTable/Data.bin", "DataSSTable/Merkle.bin")
-	if err != nil {
-		panic(err)
+	if oneFile {
+		serializedInOneFile, err := WriteToOneFile("DataSSTable/BloomFilter.bin", "DataSSTable/Summary.bin", "DataSSTable/Index.bin", "DataSSTable/Data.bin", "DataSSTable/Merkle.bin")
+		if err != nil {
+			panic(err)
+		}
+		// One file
+		fileNameOneFile := "DataSSTable/SSTable.bin"
+		fileOne, err2 := os.OpenFile(fileNameOneFile, os.O_WRONLY|os.O_CREATE, 0666)
+		if err2 != nil {
+			fmt.Println("Adsas")
+		}
+		defer fileOne.Close()
+		fileOne.Write(serializedInOneFile)
 	}
-	// One file
-	fileNameOneFile := "DataSSTable/SSTable.bin"
-	fileOne, err2 := os.OpenFile(fileNameOneFile, os.O_WRONLY|os.O_CREATE, 0666)
-	if err2 != nil {
-		fmt.Println("Adsas")
-	}
-	defer fileOne.Close()
-	fileOne.Write(serializedInOneFile)
 
 	return true
 }
-func ReadIndex(fileName string, key string, compres bool) bool {
+func ReadIndex(fileName string, key string, compres bool, elem int, oneFile bool) bool {
+	if oneFile {
+		fileName = "DataSSTable/SSTable.bin"
+	}
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
 	if err != nil {
 		return false
@@ -137,16 +143,32 @@ func ReadIndex(fileName string, key string, compres bool) bool {
 	}
 
 	var currentRead int64
-
 	currentRead = 0
 	end := fileInfo.Size()
+
+	// var
+
+	var size, sizeEnd int64
+	if oneFile {
+		size, sizeEnd = positionInSSTable(*file, elem)
+		end = sizeEnd - size
+		_, err1 := file.Seek(size, 0)
+		if err1 != nil {
+			return false
+		}
+	} else {
+		_, err = file.Seek(0, 0)
+		if err != nil {
+			return false
+		}
+	}
 	bytesFile := make([]byte, end)
 	_, err = file.Read(bytesFile)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%d\n", end)
-
+	file.Seek(size, 0)
+	fmt.Printf("Velicina: %d\n", (end))
 	for currentRead != end {
 
 		if compres == true {
@@ -157,7 +179,7 @@ func ReadIndex(fileName string, key string, compres bool) bool {
 
 			//Read keys
 			bytes := make([]byte, keySize)
-			file.Seek(currentRead, 0)
+			file.Seek(currentRead+size, 0)
 			_, err = file.Read(bytes)
 			if err != nil {
 				panic(err)
@@ -171,72 +193,32 @@ func ReadIndex(fileName string, key string, compres bool) bool {
 			currentRead += int64(m)
 			fmt.Printf("Offset: %d \n", offset)
 		} else {
-			//read CRC
+			// read key size
 			bytes := make([]byte, 4)
 			_, err = file.Read(bytes)
 			if err != nil {
 				panic(err)
 			}
 			currentRead += 4
-			//fmt.Printf("%d", bytes)
-			// read timestamp
-			bytes = make([]byte, 16)
-			_, err = file.Read(bytes)
-			if err != nil {
-				panic(err)
-			}
-			currentRead += 16
-			//fmt.Printf("%d", bytes)
-			// read tombstone
-			bytes = make([]byte, 1)
-			_, err = file.Read(bytes)
-			if err != nil {
-				panic(err)
-			}
-			tomb := int(bytes[0])
-			currentRead += 1
-			//fmt.Printf("%d", bytes)
-			// read key size
-			bytes = make([]byte, 8)
-			_, err = file.Read(bytes)
-			if err != nil {
-				panic(err)
-			}
-			currentRead += 8
-			keySize := binary.BigEndian.Uint64(bytes)
-			//fmt.Printf("%d", bytes)
-			var valueSize uint64
-			if tomb == 0 {
-				// read value size
-				bytes = make([]byte, 8)
-				_, err = file.Read(bytes)
-				if err != nil {
-					panic(err)
-				}
-				valueSize = binary.BigEndian.Uint64(bytes)
-				currentRead += 8
-				//fmt.Printf("%d", bytes)
-			}
-			// read key
+			keySize := binary.BigEndian.Uint32(bytes)
+
+			//Read key
 			bytes = make([]byte, keySize)
 			_, err = file.Read(bytes)
 			if err != nil {
 				panic(err)
 			}
 			currentRead += int64(keySize)
-			fmt.Printf("Key: %s ", bytes)
-			// read value
-			if tomb == 0 {
-				bytes = make([]byte, valueSize)
-				_, err = file.Read(bytes)
-				if err != nil {
-					panic(err)
-				}
+			fmt.Printf("Kljuc : %s ", bytes)
 
-				fmt.Printf("Value: %s", bytes)
-				currentRead += int64(valueSize)
+			//Read offset
+			bytes = make([]byte, 8)
+			_, err = file.Read(bytes)
+			if err != nil {
+				panic(err)
 			}
-			fmt.Printf("\n")
+			currentRead += 8
+			fmt.Printf("Offset: %d \n", binary.BigEndian.Uint64(bytes))
 		}
 
 	}
@@ -263,8 +245,39 @@ func AddKeyToBloomFilter(bloomFilter *bloomfilter.BloomFilter, key string) bool 
 	return true
 }
 
-func ReadSSTable(compres bool) bool {
+func positionInSSTable(file os.File, position int) (int64, int64) {
+	var bytes []byte
+	var size, sizeEnd int64
+	file.Seek(0, 0)
+	size = 0
+	for i := 0; i < position; i++ {
+		bytes = make([]byte, 8)
+		_, err := file.Read(bytes)
+		if err != nil {
+			panic(err)
+		}
+		size += 8
+		size += int64(binary.BigEndian.Uint64(bytes))
+
+		file.Seek(size, 0)
+	}
+	bytes = make([]byte, 8)
+	_, err := file.Read(bytes)
+	if err != nil {
+		panic(err)
+	}
+	size += 8
+	sizeEnd = size + int64(binary.BigEndian.Uint64(bytes))
+
+	return size, sizeEnd
+}
+
+func ReadSSTable(compres, oneFile bool) bool {
+
 	fileName := "DataSSTable/Data.bin"
+	if oneFile {
+		fileName = "DataSSTable/SSTable.bin"
+	}
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
 	if err != nil {
 		return false
@@ -280,14 +293,29 @@ func ReadSSTable(compres bool) bool {
 	currentRead = 0
 	end := fileInfo.Size()
 
+	// var
+
+	var size, sizeEnd int64
+	if oneFile {
+		size, sizeEnd = positionInSSTable(*file, 3)
+		end = sizeEnd - size
+		_, err1 := file.Seek(size, 0)
+		if err1 != nil {
+			return false
+		}
+	} else {
+		_, err = file.Seek(0, 0)
+		if err != nil {
+			return false
+		}
+	}
 	bytesFile := make([]byte, end)
 	_, err = file.Read(bytesFile)
 	if err != nil {
 		panic(err)
 	}
-
-	// var
-	file.Seek(0, 0)
+	file.Seek(size, 0)
+	fmt.Printf("Velicina: %d\n", (end))
 	for currentRead != end {
 		//read CRC
 		bytes := make([]byte, 4)
@@ -327,23 +355,23 @@ func ReadSSTable(compres bool) bool {
 				currentRead += int64(m)
 			}
 			// read key
-			bytes := make([]byte, keySize)
-			file.Seek(currentRead, 0)
+			bytes = make([]byte, keySize)
+			file.Seek(currentRead+size, 0)
 			_, err = file.Read(bytes)
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("Key: %s\n", bytes)
+			fmt.Printf("Key: %s ", bytes)
 			currentRead += keySize
 			// read value
 			if tomb == 0 {
-				bytes := make([]byte, valueSize)
-				file.Seek(currentRead, 0)
+				bytes = make([]byte, valueSize)
+				file.Seek(currentRead+size, 0)
 				_, err = file.Read(bytes)
 				if err != nil {
 					panic(err)
 				}
-				fmt.Printf("Value: %s\n", bytes)
+				fmt.Printf("Value: %s", bytes)
 				currentRead += valueSize
 			}
 
@@ -387,8 +415,9 @@ func ReadSSTable(compres bool) bool {
 				fmt.Printf("Value: %s", bytes)
 				currentRead += int64(valueSize)
 			}
-			fmt.Printf("\n")
+
 		}
+		fmt.Printf("\n")
 
 	}
 	return true

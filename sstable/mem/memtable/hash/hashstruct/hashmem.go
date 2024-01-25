@@ -22,7 +22,7 @@ func CreateHashMemtable(cap int) *HashMemtable {
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju
-func (mem *HashMemtable) SendToSSTable() bool {
+func (mem *HashMemtable) SendToSSTable(compres bool) bool {
 
 	dataList := make([]datatype.DataType, mem.length)
 	i := 0

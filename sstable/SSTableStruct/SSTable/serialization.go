@@ -29,12 +29,12 @@ func SerializeIndexData(key string, length int, compres bool) ([]byte, error) {
 	result.Write([]byte(key))
 	//Write length
 	if compres {
-		buf := make([]byte, 4)
+		buf := make([]byte, 8)
 		n := binary.PutVarint(buf, int64(length))
 		//fmt.Printf(" 2.  %d", n)
 		result.Write(buf[:n])
 	} else {
-		err := binary.Write(&result, binary.BigEndian, uint32(length))
+		err := binary.Write(&result, binary.BigEndian, int64(length))
 		if err != nil {
 			return []byte(""), err
 		}
@@ -148,11 +148,18 @@ func getFileInfo(fileName string, n int) []byte {
 		panic(err)
 	}
 
-	id := make([]byte, 1)
-	id[0] = byte(n)
-	result.Write(id)
+	//id := make([]byte, 1)
+	//id[0] = byte(n)
+	//result.Write(id)
 
 	end := fileInfo.Size()
+
+	//upisuje duzinu dela
+	err = binary.Write(&result, binary.BigEndian, uint64(end))
+	if err != nil {
+		result.Reset()
+		return result.Bytes()
+	}
 
 	byteArr := make([]byte, end)
 	_, err = file.Read(byteArr)

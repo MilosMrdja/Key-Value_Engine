@@ -1,8 +1,6 @@
 package skiplistmem
 
 import (
-	"sstable/SSTableStruct/SSTable"
-	"sstable/mem/memtable/datatype"
 	"sstable/mem/memtable/skiplist/skipliststruct"
 )
 
@@ -23,17 +21,14 @@ func CreateSkipListMemtable(cap int) *SkipListMemtable {
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju
-func (slmem *SkipListMemtable) SendToSSTable() bool {
+func (slmem *SkipListMemtable) SendToSSTable(compres, oneFile bool) bool {
 
-	dataList := make([]datatype.DataType, slmem.length)
-	dataList = slmem.data.AllData(slmem.length)
+	//dataList := make([]datatype.DataType, slmem.length)
+	//dataList = slmem.data.AllData(slmem.length)
 
 	//napravimo SSTable
 	//...
 	//...
-
-	SSTable.NewSSTable(dataList, 10, 10, true)
-	SSTable.ReadSSTable(true)
 
 	slmem.data = skipliststruct.CreateSkipList(slmem.capacity)
 	slmem.length = 0
@@ -53,7 +48,6 @@ func (slmem *SkipListMemtable) AddElement(key string, data []byte) bool {
 			//ako je popunjen, postavlja se na read only
 		} else if slmem.length == slmem.capacity {
 			slmem.readOnly = true
-			slmem.SendToSSTable()
 			return false
 		}
 	}
