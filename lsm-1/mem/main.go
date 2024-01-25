@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"sstable/SSTableStruct/SSTable"
+	"sstable/LSM"
 	"sstable/mem/memtable/btree/btreemem"
 	"sstable/mem/memtable/hash/hashstruct"
 	"sstable/mem/memtable/skiplist/skiplistmem"
@@ -64,17 +63,21 @@ func main() {
 	//	fmt.Printf("\n")
 	//}
 
-	key := "1"
+	//key := "1"
 	compres := true
 	oneFile := true
 	btmem.DeleteElement("10")
+	LSM.CompactSstable()
+
 	btmem.SendToSSTable(compres, oneFile)
 
-	data, err4 := SSTable.GetData("DataSSTable", key, compres, oneFile)
-	if err4 == true {
-		fmt.Printf("Key: %s\n", data.GetKey())
-		fmt.Printf("Value: %s\n", data.GetData())
-		fmt.Printf("Time: %s\n", data.GetChangeTime())
-	}
-	fmt.Printf("Ne postoji podatak sa kljucem %s", key)
+	//data, err4 := SSTable.GetData("DataSSTable/L0/sstable1", key, compres, oneFile)
+	//if err4 == true {
+	//	fmt.Printf("Key: %s\n", data.GetKey())
+	//	fmt.Printf("Value: %s\n", data.GetData())
+	//	fmt.Printf("Time: %s\n", data.GetChangeTime())
+	//} else {
+	//	fmt.Printf("Ne postoji podatak sa kljucem %s", key)
+	//}
+
 }

@@ -17,11 +17,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	bf, err := bloomfilter.DeserializeBloomFilter("bloomfilter.bin")
+	bf, err := bloomfilter.DeserializeBloomFilter("bloomfilter.bin", false)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(bf.Get([]byte("Nikola")))
-
 
 }

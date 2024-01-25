@@ -18,7 +18,7 @@ type SSTable struct {
 }
 
 // N i M su nam redom razudjenost u index-u, i u summary-ju
-func NewSSTable(dataList []datatype.DataType, N, M int, compres, oneFile bool) bool {
+func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres, oneFile bool) bool {
 
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
@@ -31,31 +31,31 @@ func NewSSTable(dataList []datatype.DataType, N, M int, compres, oneFile bool) b
 	bloomFilter := bloomfilter.CreateBloomFilter(duzinaDataList)
 
 	//Data fajl
-	fileName := "DataSSTable/Data.bin"
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
+
+	file, err := os.OpenFile(fileName+"/Data.bin", os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return false
 	}
 	defer file.Close()
 
 	//Index fajl
-	fileName = "DataSSTable/Index.bin"
-	fileIndex, err2 := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
+
+	fileIndex, err2 := os.OpenFile(fileName+"/Index.bin", os.O_WRONLY|os.O_CREATE, 0666)
 	if err2 != nil {
 		return false
 	}
 	defer fileIndex.Close()
 
 	//Symmary fajl
-	fileName = "DataSSTable/Summary.bin"
-	fileSummary, err3 := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
+
+	fileSummary, err3 := os.OpenFile(fileName+"/Summary.bin", os.O_WRONLY|os.O_CREATE, 0666)
 	if err3 != nil {
 		return false
 	}
 	defer fileSummary.Close()
 
 	//Bloom Filter fajl
-	fileBloom := "DataSSTable/BloomFilter.bin"
+
 	// glavna petlja
 
 	for i := 0; i < duzinaDataList; i++ {
@@ -100,9 +100,9 @@ func NewSSTable(dataList []datatype.DataType, N, M int, compres, oneFile bool) b
 
 	}
 	//Kreiranje i upis Merkle Stabla
-	CreateMerkleTree(arrToMerkle, "DataSSTable/Merkle.bin")
+	CreateMerkleTree(arrToMerkle, fileName+"/Merkle.bin")
 	//Serijalizacija i upis bloom filtera
-	err = bloomfilter.SerializeBloomFilter(bloomFilter, fileBloom)
+	err = bloomfilter.SerializeBloomFilter(bloomFilter, fileName+"/BloomFilter.bin")
 	if err != nil {
 		return false
 	}
@@ -111,12 +111,12 @@ func NewSSTable(dataList []datatype.DataType, N, M int, compres, oneFile bool) b
 	// u slucaju da korisnik odabere sve u jedan fajl
 
 	if oneFile {
-		serializedInOneFile, err := WriteToOneFile("DataSSTable/BloomFilter.bin", "DataSSTable/Summary.bin", "DataSSTable/Index.bin", "DataSSTable/Data.bin", "DataSSTable/Merkle.bin")
+		serializedInOneFile, err := WriteToOneFile(fileName+"/BloomFilter.bin", fileName+"/Summary.bin", fileName+"/Index.bin", fileName+"/Data.bin", fileName+"/Merkle.bin")
 		if err != nil {
 			panic(err)
 		}
 		// One file
-		fileNameOneFile := "DataSSTable/SSTable.bin"
+		fileNameOneFile := fileName + "/SSTable.bin"
 		fileOne, err2 := os.OpenFile(fileNameOneFile, os.O_WRONLY|os.O_CREATE, 0666)
 		if err2 != nil {
 			fmt.Println("Adsas")
@@ -129,7 +129,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int, compres, oneFile bool) b
 }
 func ReadIndex(fileName string, key string, compres bool, elem int, oneFile bool) bool {
 	if oneFile {
-		fileName = "DataSSTable/SSTable.bin"
+		fileName = fileName + "/SSTable.bin"
 	}
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
 	if err != nil {
@@ -272,11 +272,10 @@ func positionInSSTable(file os.File, position int) (int64, int64) {
 	return size, sizeEnd
 }
 
-func ReadSSTable(compres, oneFile bool) bool {
+func ReadSSTable(compres bool, fileName string, oneFile bool) bool {
 
-	fileName := "DataSSTable/Data.bin"
 	if oneFile {
-		fileName = "DataSSTable/SSTable.bin"
+		fileName = fileName + "/SSTable.bin"
 	}
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
 	if err != nil {

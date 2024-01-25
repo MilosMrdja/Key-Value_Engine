@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func FindDestination(layer int) (string, bool) {
+func FindNextDestination(layer int) (string, bool) {
 
 	if _, err := os.Stat("./DataSStable/L" + strconv.Itoa(layer)); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir("./DataSStable/L"+strconv.Itoa(layer), os.ModePerm)
@@ -28,20 +28,6 @@ func FindDestination(layer int) (string, bool) {
 	return newSstableName, false
 }
 
-func returnLayersAndLength() *map[string]int {
-	resultMap := make(map[string]int)
-	dataDir, err := os.Open("./DataSStable")
-	if err != nil {
-		panic(err)
-	}
-
-	layers, err := dataDir.ReadDir(0)
-	for _, entry := range layers {
-		resultMap[entry.Name()] = len(layers)
-	}
-	return &resultMap
-
-}
 func CompactSstable() {
 
 	//ovako za gore u entrijim
@@ -74,7 +60,7 @@ func CompactSstable() {
 					panic(err)
 				}
 			}
-			newSstableName, _ := FindDestination(i + 1)
+			newSstableName, _ := FindNextDestination(i + 1)
 			fmt.Println(newSstableName)
 			deleteLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
 			createLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
