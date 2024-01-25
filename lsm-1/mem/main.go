@@ -8,7 +8,6 @@ import (
 
 func main() {
 	j := 10
-
 	mem := hashstruct.CreateHashMemtable(j)
 	mem.AddElement("1", []byte("1"))
 	mem.AddElement("2", []byte("2"))

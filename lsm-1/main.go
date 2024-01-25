@@ -2,17 +2,10 @@ package main
 
 import (
 	"fmt"
-	"sstable/LSM"
 	"sstable/bloomfilter/bloomfilter"
 )
 
 func main() {
-
-	for i := 0; i < 1000; i++ {
-		LSM.FindDestination(0)
-		LSM.CompactSstable()
-	}
-
 	bitsetSize := 10
 	bloom := bloomfilter.CreateBloomFilter(bitsetSize)
 	a := bloom.Get([]byte("Nikola"))
