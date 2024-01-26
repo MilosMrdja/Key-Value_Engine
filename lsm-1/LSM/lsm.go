@@ -3,6 +3,7 @@ package LSM
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 )
@@ -28,7 +29,7 @@ func FindNextDestination(layer int) (string, bool) {
 	return newSstableName, false
 }
 
-func CompactSstable() {
+func CompactSstable(numTables int) {
 
 	//ovako za gore u entrijim
 	dataDir, err := os.Open("./DataSStable")
@@ -53,7 +54,8 @@ func CompactSstable() {
 		if errNames != nil {
 			panic(errNames)
 		}
-		if len(sstableName) >= 10 {
+
+		if len(sstableName) >= numTables*int(math.Pow10(i)) {
 			if _, err := os.Stat(dataDir.Name() + "/L" + strconv.Itoa(i+1)); errors.Is(err, os.ErrNotExist) {
 				err := os.Mkdir(dataDir.Name()+"/L"+strconv.Itoa(i+1), os.ModePerm)
 				if err != nil {
@@ -62,11 +64,15 @@ func CompactSstable() {
 			}
 			newSstableName, _ := FindNextDestination(i + 1)
 			fmt.Println(newSstableName)
+
 			deleteLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
 			createLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
 		}
 
 	}
+}
+func createSstableNextLayer(layer int) {
+	
 }
 func deleteLayer(layerName string) {
 	file, err := os.Open(layerName)

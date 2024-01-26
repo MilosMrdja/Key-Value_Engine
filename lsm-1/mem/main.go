@@ -67,10 +67,9 @@ func main() {
 	compres := true
 	oneFile := true
 	btmem.DeleteElement("10")
-	LSM.CompactSstable()
 
 	btmem.SendToSSTable(compres, oneFile)
-
+	LSM.CompactSstable(10)
 	//data, err4 := SSTable.GetData("DataSSTable/L0/sstable1", key, compres, oneFile)
 	//if err4 == true {
 	//	fmt.Printf("Key: %s\n", data.GetKey())
