@@ -18,7 +18,7 @@ type SSTable struct {
 }
 
 // N i M su nam redom razudjenost u index-u, i u summary-ju
-func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres, oneFile bool) bool {
+func NewSSTable(dataList []datatype.DataType, N, M int, compres, oneFile bool) bool {
 
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
@@ -31,27 +31,31 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	bloomFilter := bloomfilter.CreateBloomFilter(duzinaDataList)
 
 	//Data fajl
-	file, err := os.OpenFile(fileName+"/Data.bin", os.O_WRONLY|os.O_CREATE, 0666)
+	fileName := "DataSSTable/Data.bin"
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return false
 	}
 	defer file.Close()
 
 	//Index fajl
-	fileIndex, err2 := os.OpenFile(fileName+"/Index.bin", os.O_WRONLY|os.O_CREATE, 0666)
+	fileName = "DataSSTable/Index.bin"
+	fileIndex, err2 := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
 	if err2 != nil {
 		return false
 	}
 	defer fileIndex.Close()
 
 	//Symmary fajl
-	fileSummary, err3 := os.OpenFile(fileName+"/Summary.bin", os.O_WRONLY|os.O_CREATE, 0666)
+	fileName = "DataSSTable/Summary.bin"
+	fileSummary, err3 := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
 	if err3 != nil {
 		return false
 	}
 	defer fileSummary.Close()
 
 	//Bloom Filter fajl
+	fileBloom := "DataSSTable/BloomFilter.bin"
 	// glavna petlja
 
 	for i := 0; i < duzinaDataList; i++ {
@@ -96,9 +100,9 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 
 	}
 	//Kreiranje i upis Merkle Stabla
-	CreateMerkleTree(arrToMerkle, fileName+"/Merkle.bin")
+	CreateMerkleTree(arrToMerkle, "DataSSTable/Merkle.bin")
 	//Serijalizacija i upis bloom filtera
-	err = bloomfilter.SerializeBloomFilter(bloomFilter, fileName+"/BloomFilter.bin")
+	err = bloomfilter.SerializeBloomFilter(bloomFilter, fileBloom)
 	if err != nil {
 		return false
 	}
@@ -107,12 +111,12 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	// u slucaju da korisnik odabere sve u jedan fajl
 
 	if oneFile {
-		serializedInOneFile, err := WriteToOneFile(fileName+"/BloomFilter.bin", fileName+"/Summary.bin", fileName+"/Index.bin", fileName+"/Data.bin", fileName+"/Merkle.bin")
+		serializedInOneFile, err := WriteToOneFile("DataSSTable/BloomFilter.bin", "DataSSTable/Summary.bin", "DataSSTable/Index.bin", "DataSSTable/Data.bin", "DataSSTable/Merkle.bin")
 		if err != nil {
 			panic(err)
 		}
 		// One file
-		fileNameOneFile := fileName + "/SSTable.bin"
+		fileNameOneFile := "DataSSTable/SSTable.bin"
 		fileOne, err2 := os.OpenFile(fileNameOneFile, os.O_WRONLY|os.O_CREATE, 0666)
 		if err2 != nil {
 			fmt.Println("Adsas")

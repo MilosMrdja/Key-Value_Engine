@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"sstable/SSTableStruct/SSTable"
 	"strconv"
 )
 
@@ -29,7 +30,7 @@ func FindNextDestination(layer int) (string, bool) {
 	return newSstableName, false
 }
 
-func CompactSstable(numTables int) {
+func CompactSstable(numTables int, compres, oneFile bool) {
 
 	//ovako za gore u entrijim
 	dataDir, err := os.Open("./DataSStable")
@@ -64,15 +65,16 @@ func CompactSstable(numTables int) {
 			}
 			newSstableName, _ := FindNextDestination(i + 1)
 			fmt.Println(newSstableName)
-
+			createSstableNextLayer(newSstableName, dataDir.Name()+"/L"+strconv.Itoa(i), compres, oneFile)
 			deleteLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
 			createLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
 		}
 
 	}
 }
-func createSstableNextLayer(layer int) {
-	
+func createSstableNextLayer(newSstableName, oldFilePath string, compres, oneFile bool) {
+	SSTable.NewSSTableCompact(newSstableName, 1, oldFilePath, 1, 1, 10, compres, oneFile)
+
 }
 func deleteLayer(layerName string) {
 	file, err := os.Open(layerName)

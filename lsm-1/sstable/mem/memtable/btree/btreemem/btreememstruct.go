@@ -1,7 +1,6 @@
 package btreemem
 
 import (
-	"sstable/LSM"
 	"sstable/SSTableStruct/SSTable"
 	"sstable/mem/memtable/btree/btree"
 	"sstable/mem/memtable/datatype"
@@ -97,16 +96,11 @@ func (btmem *BTreeMemtable) SendToSSTable(compres, oneFile bool) bool {
 	//napravimo SSTable
 	//...
 	//...
-	newSstableName, _ := LSM.FindNextDestination(0)
-	SSTable.NewSSTable(dataList, 1, 2, newSstableName, compres, oneFile)
-	SSTable.ReadSSTable(newSstableName, compres, oneFile)
-	if !oneFile {
-		SSTable.ReadIndex(newSstableName+"/Index.bin", "", compres, 1, oneFile)
-		SSTable.ReadIndex(newSstableName+"/Summary.bin", "", compres, 2, oneFile)
-	} else {
-		SSTable.ReadIndex(newSstableName, "", compres, 1, oneFile)
-		SSTable.ReadIndex(newSstableName, "", compres, 2, oneFile)
-	}
+	SSTable.NewSSTable(dataList, 1, 2, compres, oneFile)
+	SSTable.ReadSSTable("DataSSTable", compres, oneFile)
+	SSTable.ReadIndex("DataSSTable/Summary.bin", "", compres, 1, oneFile)
+	SSTable.ReadIndex("DataSSTable/Index.bin", "", compres, 2, oneFile)
+
 	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
 

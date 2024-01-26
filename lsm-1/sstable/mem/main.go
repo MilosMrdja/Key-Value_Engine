@@ -1,7 +1,8 @@
 package main
 
 import (
-	"sstable/LSM"
+	"fmt"
+	"sstable/SSTableStruct/SSTable"
 	"sstable/mem/memtable/btree/btreemem"
 	"sstable/mem/memtable/hash/hashstruct"
 	"sstable/mem/memtable/skiplist/skiplistmem"
@@ -63,37 +64,23 @@ func main() {
 	//	fmt.Printf("\n")
 	//}
 
-	//key := "1"
-	compres := true
+	key := "9"
+	compres := false
 	oneFile := true
-	//btmem.DeleteElement("10")
-
-	//btmem.SendToSSTable(compres, oneFile)
-	//data, err4 := SSTable.GetData("DataSSTable/L0/sstable1", key, compres, oneFile)
-	//if err4 == true {
-	//	fmt.Printf("Key: %s\n", data.GetKey())
-	//	fmt.Printf("Value: %s\n", data.GetData())
-	//	fmt.Printf("Time: %s\n", data.GetChangeTime())
-	//} else {
-	//	fmt.Printf("Ne postoji podatak sa kljucem %s", key)
-	//}
-
-	//key := "9"
 	btmem.DeleteElement("10")
 	btmem.SendToSSTable(compres, oneFile)
-	LSM.CompactSstable(10, compres, oneFile)
 
-	//SSTable.ReadSSTable("DataSSTableCompact", compres, oneFile)
-	//SSTable.ReadIndex("DataSSTableCompact/Summary.bin", "", compres, 1, oneFile)
-	//SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compres, 2, oneFile)
-	//
-	//data, err4 := SSTable.GetData("DataSSTableCompact", key, compres, oneFile)
-	//if err4 == true {
-	//	fmt.Printf("Key: %s\n", data.GetKey())
-	//	fmt.Printf("Value: %s\n", data.GetData())
-	//	fmt.Printf("Time: %s\n", data.GetChangeTime())
-	//} else {
-	//	fmt.Printf("Ne postoji podatak sa kljucem %s", key)
-	//}
+	SSTable.NewSSTableCompact("DataSSTableCompact", 1, "DataSSTable", 1, 1, 10, compres, oneFile)
+	SSTable.ReadSSTable("DataSSTableCompact", compres, oneFile)
+	SSTable.ReadIndex("DataSSTableCompact/Summary.bin", "", compres, 1, oneFile)
+	SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compres, 2, oneFile)
 
+	data, err4 := SSTable.GetData("DataSSTableCompact", key, compres, oneFile)
+	if err4 == true {
+		fmt.Printf("Key: %s\n", data.GetKey())
+		fmt.Printf("Value: %s\n", data.GetData())
+		fmt.Printf("Time: %s\n", data.GetChangeTime())
+	} else {
+		fmt.Printf("Ne postoji podatak sa kljucem %s", key)
+	}
 }
