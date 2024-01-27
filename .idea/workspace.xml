@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="301f516c-0b05-4e04-93bd-2a2cab25bfe1" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/BloomFilter.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/Data.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/Index.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/Merkle.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/SSTable.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/Summary.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/SSTableStruct/SSTable/SSTable.go" beforeDir="false" afterPath="$PROJECT_DIR$/lsm-1/SSTableStruct/SSTable/SSTable.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/SSTableStruct/SSTable/serialization.go" beforeDir="false" afterPath="$PROJECT_DIR$/lsm-1/SSTableStruct/SSTable/serialization.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/mem/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/lsm-1/mem/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/mem/memtable/btree/btreemem/btreememstruct.go" beforeDir="false" afterPath="$PROJECT_DIR$/lsm-1/mem/memtable/btree/btreemem/btreememstruct.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="GOROOT" url="file://C:/Program Files/Go" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 8
+}]]></component>
+  <component name="ProjectId" id="2bXN6SSOEOk3ojQuMtnsVUDnX9o" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "lsm",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "D:/FAKS/3. semestar/Napredni algoritmi i strukture/Projekat/Key-Value_Engine",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)"
+  }
+}]]></component>
+  <component name="RunManager" selected="Go Build.go build sstable/mem">
+    <configuration name="go build sstable" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="Key-Value_Engine" />
+      <working_directory value="$PROJECT_DIR$/lsm-1" />
+      <kind value="PACKAGE" />
+      <package value="sstable" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/lsm-1/main.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go build sstable/mem" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="Key-Value_Engine" />
+      <working_directory value="$PROJECT_DIR$/lsm-1" />
+      <kind value="PACKAGE" />
+      <package value="sstable/mem" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/lsm-1/mem/main.go" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Build.go build sstable/mem" />
+        <item itemvalue="Go Build.go build sstable" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/lsm-1/SSTableStruct/SSTable/SSTable.go</url>
+          <line>309</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

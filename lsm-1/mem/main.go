@@ -9,7 +9,7 @@ import (
 func main() {
 	j := 10
 	mem := hashstruct.CreateHashMemtable(j)
-	mem.AddElement("1", []byte("1"))
+	mem.AddElement("11", []byte("1"))
 	mem.AddElement("2", []byte("2"))
 	mem.AddElement("3", []byte("3"))
 	mem.AddElement("4", []byte("4"))
@@ -21,7 +21,7 @@ func main() {
 	mem.AddElement("10", []byte("10"))
 	//datalist := mem.SendToSSTable()
 	slmem := skiplistmem.CreateSkipListMemtable(j)
-	slmem.AddElement("1", []byte("1"))
+	slmem.AddElement("11", []byte("1"))
 	slmem.AddElement("2", []byte("2"))
 	slmem.AddElement("3", []byte("3"))
 	slmem.AddElement("4", []byte("4"))
@@ -35,8 +35,8 @@ func main() {
 	//datalist = slmem.SendToSSTable()
 
 	btmem := btreemem.NewBTreeMemtable(j)
-	btmem.AddElement("1", []byte("1"))
-	btmem.AddElement("2", []byte("2"))
+	btmem.AddElement("11", []byte("1"))
+	btmem.AddElement("22", []byte("2"))
 	btmem.AddElement("3", []byte("3"))
 	btmem.AddElement("4", []byte("4"))
 	btmem.AddElement("7", []byte("7"))
@@ -63,9 +63,7 @@ func main() {
 	//}
 
 	//key := "1"
-	compress1 := false
-	compress2 := false
-	oneFile := true
+
 	//btmem.DeleteElement("10")
 
 	//btmem.SendToSSTable(compres, oneFile)
@@ -79,7 +77,10 @@ func main() {
 	//}
 
 	//key := "9"
-	btmem.DeleteElement("10")
+	compress1 := true
+	compress2 := true
+	oneFile := false
+	btmem.DeleteElement("22")
 	btmem.SendToSSTable(compress1, compress2, oneFile)
 	//LSM.CompactSstable(10, compress1, oneFile)
 

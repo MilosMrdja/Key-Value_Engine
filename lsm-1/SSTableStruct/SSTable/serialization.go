@@ -6,6 +6,7 @@ import (
 	"hash/crc32"
 	"os"
 	"sstable/mem/memtable/datatype"
+	"unsafe"
 )
 
 // funkcija za upis podatka u Index
@@ -13,17 +14,18 @@ func SerializeIndexData(key string, length int, compress1, compress2 bool, keyDi
 	var result bytes.Buffer
 	// write key size
 	// if an user wants to compres file
+
+	// write keysize
 	var nCompres2 int
 	if compress2 {
 		if compress1 {
 			buff := make([]byte, 4)
 			nCompres2 = binary.PutVarint(buff, int64(keyDict))
-			err := binary.Write(&result, binary.BigEndian, uint64(nCompres2)) // tacno onoliko koliko treba bajtova
-			if err != nil {
-				return nil, err
-			}
+			buff1 := make([]byte, 1)
+			buff1[0] = byte(nCompres2)
+			result.Write(buff1)
 		} else {
-			err := binary.Write(&result, binary.BigEndian, uint64(4)) // jer je maks 4 bajta
+			err := binary.Write(&result, binary.BigEndian, int8(4)) // jer je maks 4 bajta
 			if err != nil {
 				return nil, err
 			}
@@ -41,7 +43,16 @@ func SerializeIndexData(key string, length int, compress1, compress2 bool, keyDi
 		}
 	}
 	// write key
-	result.Write([]byte(key))
+	if compress2 {
+		if compress1 {
+			buff := make([]byte, 4) // niz velicine keySize
+			n := binary.PutVarint(buff, int64(keyDict))
+			result.Write(buff[:n])
+		}
+
+	} else {
+		result.Write([]byte(key))
+	}
 	//Write length
 	if compress1 {
 		buf := make([]byte, 8)
@@ -91,10 +102,9 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 		if compress1 {
 			buff := make([]byte, 4)
 			nCompres2 = binary.PutVarint(buff, int64(keyDict))
-			err = binary.Write(&result, binary.BigEndian, uint64(nCompres2)) // tacno onoliko koliko treba bajtova
-			if err != nil {
-				return nil, err
-			}
+			buff1 := make([]byte, 1)
+			buff1[0] = byte(nCompres2)
+			result.Write(buff1)
 		} else {
 			err = binary.Write(&result, binary.BigEndian, uint64(4)) // jer je maks 4 bajta
 			if err != nil {
@@ -131,9 +141,10 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 	// write key
 	if compress2 {
 		if compress1 {
-			buff := make([]byte, 4)
-			nCompres2 = binary.PutVarint(buff, int64(keyDict))
-			result.Write(buff[:nCompres2])
+			buff := make([]byte, 4) // niz velicine keySize
+			n := binary.PutVarint(buff, int64(keyDict))
+			result.Write(buff[:n])
+
 		} else {
 			err = binary.Write(&result, binary.BigEndian, uint64(keyDict))
 			if err != nil {
@@ -151,6 +162,16 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 	}
 
 	return result.Bytes(), nil
+}
+
+func IntToByteArray(num int32) []byte {
+	size := int(unsafe.Sizeof(num))
+	arr := make([]byte, size)
+	for i := 0; i < size; i++ {
+		byt := *(*uint8)(unsafe.Pointer(uintptr(unsafe.Pointer(&num)) + uintptr(i)))
+		arr[i] = byt
+	}
+	return arr
 }
 
 // Dodati u conf file sledece konstante pri citanju i njihove sizeof

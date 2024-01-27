@@ -99,13 +99,13 @@ func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool) bo
 	//...
 	newSstableName, _ := LSM.FindNextDestination(0)
 	SSTable.NewSSTable(dataList, 1, 2, newSstableName, compress1, compress2, oneFile)
-	SSTable.ReadSSTable(newSstableName, compress1, oneFile)
+	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
 	if !oneFile {
-		SSTable.ReadIndex(newSstableName+"/Index.bin", "", compress1, 1, oneFile)
-		SSTable.ReadIndex(newSstableName+"/Summary.bin", "", compress1, 2, oneFile)
+		SSTable.ReadIndex(newSstableName+"/Index.bin", "", compress1, compress2, 1, oneFile)
+		SSTable.ReadIndex(newSstableName+"/Summary.bin", "", compress1, compress2, 2, oneFile)
 	} else {
-		SSTable.ReadIndex(newSstableName, "", compress1, 1, oneFile)
-		SSTable.ReadIndex(newSstableName, "", compress1, 2, oneFile)
+		SSTable.ReadIndex(newSstableName, "", compress1, compress2, 1, oneFile)
+		SSTable.ReadIndex(newSstableName, "", compress1, compress2, 2, oneFile)
 	}
 	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
