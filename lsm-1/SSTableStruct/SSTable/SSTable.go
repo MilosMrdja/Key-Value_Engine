@@ -2,6 +2,7 @@ package SSTable
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sstable/MerkleTreeImplementation/MerkleTree"
@@ -15,10 +16,11 @@ type SSTable struct {
 	summary     map[string]int
 	index       map[string]int
 	data        []byte
+	dictionary  map[string]int32 // jel ok 32 btina vrednost
 }
 
 // N i M su nam redom razudjenost u index-u, i u summary-ju
-func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres, oneFile bool) bool {
+func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compress1, compress2, oneFile bool) bool {
 
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
@@ -29,6 +31,10 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	duzinaDataList = len(dataList)
 	var err error
 	bloomFilter := bloomfilter.CreateBloomFilter(duzinaDataList)
+	// brojac za mapu i mapa za enkodirane vrednost
+	var brojacMapa int32
+	brojacMapa = 0
+	dictionary := make(map[string]int32)
 
 	//Data fajl
 	file, err := os.OpenFile(fileName+"/Data.bin", os.O_WRONLY|os.O_CREATE, 0666)
@@ -55,11 +61,13 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	// glavna petlja
 
 	for i := 0; i < duzinaDataList; i++ {
+		// u mapu dodamo encodiranu vrednost kljuca
+		dictionary[dataList[i].GetKey()] = brojacMapa
 		// dodali smo kljuc u bloomf
 		AddKeyToBloomFilter(bloomFilter, dataList[i].GetKey())
 
 		// serijaliacija podatka
-		serializedData, err = SerializeDataType(dataList[i], compres)
+		serializedData, err = SerializeDataType(dataList[i], compress1, compress2, brojacMapa)
 		if err != nil {
 			return false
 		}
@@ -72,7 +80,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 
 		//Upis odgovarajucih vrednosti u Summary
 		if (i+1)%M == 0 {
-			indexData, err = SerializeIndexData(dataList[i].GetKey(), accIndex, compres)
+			indexData, err = SerializeIndexData(dataList[i].GetKey(), accIndex, compress1, compress2, brojacMapa)
 			if err != nil {
 				return false
 			}
@@ -80,7 +88,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 		}
 		//Upis odgovarajucih vrednosti u Index
 		if (i+1)%N == 0 {
-			indexData, err = SerializeIndexData(dataList[i].GetKey(), acc, compres)
+			indexData, err = SerializeIndexData(dataList[i].GetKey(), acc, compress1, compress2, brojacMapa)
 			if err != nil {
 				return false
 			}
@@ -90,6 +98,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 		}
 
 		acc += duzinaPodatka
+		brojacMapa += 1
 
 		// pomocni niz koji presludjemo za MerkleTree
 		arrToMerkle = append(arrToMerkle, serializedData)
@@ -121,8 +130,11 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 		fileOne.Write(serializedInOneFile)
 	}
 
+	bs, _ := json.Marshal(dictionary)
+	fmt.Println(string(bs))
 	return true
 }
+
 func ReadIndex(fileName string, key string, compres bool, elem int, oneFile bool) bool {
 	if oneFile {
 		fileName = fileName + "/SSTable.bin"

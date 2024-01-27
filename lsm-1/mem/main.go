@@ -1,7 +1,6 @@
 package main
 
 import (
-	"sstable/LSM"
 	"sstable/mem/memtable/btree/btreemem"
 	"sstable/mem/memtable/hash/hashstruct"
 	"sstable/mem/memtable/skiplist/skiplistmem"
@@ -64,7 +63,8 @@ func main() {
 	//}
 
 	//key := "1"
-	compres := true
+	compress1 := false
+	compress2 := false
 	oneFile := true
 	//btmem.DeleteElement("10")
 
@@ -80,8 +80,8 @@ func main() {
 
 	//key := "9"
 	btmem.DeleteElement("10")
-	btmem.SendToSSTable(compres, oneFile)
-	LSM.CompactSstable(10, compres, oneFile)
+	btmem.SendToSSTable(compress1, compress2, oneFile)
+	//LSM.CompactSstable(10, compress1, oneFile)
 
 	//SSTable.ReadSSTable("DataSSTableCompact", compres, oneFile)
 	//SSTable.ReadIndex("DataSSTableCompact/Summary.bin", "", compres, 1, oneFile)

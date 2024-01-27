@@ -9,26 +9,41 @@ import (
 )
 
 // funkcija za upis podatka u Index
-func SerializeIndexData(key string, length int, compres bool) ([]byte, error) {
+func SerializeIndexData(key string, length int, compress1, compress2 bool, keyDict int32) ([]byte, error) {
 	var result bytes.Buffer
 	// write key size
 	// if an user wants to compres file
-	if compres {
-		buf := make([]byte, 4)
-		n := binary.PutVarint(buf, int64(len(key)))
-		//fmt.Printf(" 1.  %d", n)
-		result.Write(buf[:n])
+	var nCompres2 int
+	if compress2 {
+		if compress1 {
+			buff := make([]byte, 4)
+			nCompres2 = binary.PutVarint(buff, int64(keyDict))
+			err := binary.Write(&result, binary.BigEndian, uint64(nCompres2)) // tacno onoliko koliko treba bajtova
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err := binary.Write(&result, binary.BigEndian, uint64(4)) // jer je maks 4 bajta
+			if err != nil {
+				return nil, err
+			}
+		}
 	} else {
-
-		err := binary.Write(&result, binary.BigEndian, uint32(len(key)))
-		if err != nil {
-			return []byte(""), err
+		if compress1 {
+			buff := make([]byte, 8)
+			n := binary.PutVarint(buff, int64(len(key)))
+			result.Write(buff[:n])
+		} else {
+			err := binary.Write(&result, binary.BigEndian, uint64(len(key)))
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	// write key
 	result.Write([]byte(key))
 	//Write length
-	if compres {
+	if compress1 {
 		buf := make([]byte, 8)
 		n := binary.PutVarint(buf, int64(length))
 		//fmt.Printf(" 2.  %d", n)
@@ -45,7 +60,7 @@ func SerializeIndexData(key string, length int, compres bool) ([]byte, error) {
 
 // key size, value size, timestamp - kompresija
 // f-ja koja serijalizuje jedan podatak iz memtabele
-func SerializeDataType(data datatype.DataType, compres bool) ([]byte, error) {
+func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDict int32) ([]byte, error) {
 	var result bytes.Buffer
 
 	//create and write CRC
@@ -69,21 +84,39 @@ func SerializeDataType(data datatype.DataType, compres bool) ([]byte, error) {
 
 	currentData := data.GetData()
 	currentKey := data.GetKey()
+	var nCompres2 int
 	// write key size
-	if compres {
-		buff := make([]byte, 8)
-		n := binary.PutVarint(buff, int64(len(currentKey)))
-		result.Write(buff[:n])
+
+	if compress2 {
+		if compress1 {
+			buff := make([]byte, 4)
+			nCompres2 = binary.PutVarint(buff, int64(keyDict))
+			err = binary.Write(&result, binary.BigEndian, uint64(nCompres2)) // tacno onoliko koliko treba bajtova
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err = binary.Write(&result, binary.BigEndian, uint64(4)) // jer je maks 4 bajta
+			if err != nil {
+				return nil, err
+			}
+		}
 	} else {
-		err = binary.Write(&result, binary.BigEndian, uint64(len(currentKey)))
-		if err != nil {
-			return nil, err
+		if compress1 {
+			buff := make([]byte, 8)
+			n := binary.PutVarint(buff, int64(len(currentKey)))
+			result.Write(buff[:n])
+		} else {
+			err = binary.Write(&result, binary.BigEndian, uint64(len(currentKey)))
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	if tomb == 0 {
 		// write value size
-		if compres {
+		if compress1 {
 			buff := make([]byte, 8)
 			n := binary.PutVarint(buff, int64(len(currentData)))
 			result.Write(buff[:n])
@@ -96,7 +129,21 @@ func SerializeDataType(data datatype.DataType, compres bool) ([]byte, error) {
 	}
 
 	// write key
-	result.Write([]byte(currentKey))
+	if compress2 {
+		if compress1 {
+			buff := make([]byte, 4)
+			nCompres2 = binary.PutVarint(buff, int64(keyDict))
+			result.Write(buff[:nCompres2])
+		} else {
+			err = binary.Write(&result, binary.BigEndian, uint64(keyDict))
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		// u slucaju i sa i bez prve kompresije radi ovo
+		result.Write([]byte(currentKey))
+	}
 
 	if tomb == 0 {
 		// write value
@@ -106,7 +153,7 @@ func SerializeDataType(data datatype.DataType, compres bool) ([]byte, error) {
 	return result.Bytes(), nil
 }
 
-// Dodati u conf file sledece konstante pri citanju
+// Dodati u conf file sledece konstante pri citanju i njihove sizeof
 // 0 - Bloomfilter
 // 1 - summary deo
 // 2 - index deo

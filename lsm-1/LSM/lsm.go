@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"sstable/SSTableStruct/SSTable"
 	"strconv"
 )
 
@@ -73,7 +72,7 @@ func CompactSstable(numTables int, compres, oneFile bool) {
 	}
 }
 func createSstableNextLayer(newSstableName, oldFilePath string, compres, oneFile bool) {
-	SSTable.NewSSTableCompact(newSstableName, 1, oldFilePath, 1, 1, 10, compres, oneFile)
+	//SSTable.NewSSTableCompact(newSstableName, 1, oldFilePath, 1, 1, 10, compres, oneFile)
 
 }
 func deleteLayer(layerName string) {

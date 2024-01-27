@@ -90,7 +90,7 @@ func (btmem *BTreeMemtable) DeleteElement(key string) bool {
 	return found
 }
 
-func (btmem *BTreeMemtable) SendToSSTable(compres, oneFile bool) bool {
+func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool) bool {
 	dataList := make([]datatype.DataType, btmem.length)
 	dataList = btmem.data.Traverse()
 
@@ -98,14 +98,14 @@ func (btmem *BTreeMemtable) SendToSSTable(compres, oneFile bool) bool {
 	//...
 	//...
 	newSstableName, _ := LSM.FindNextDestination(0)
-	SSTable.NewSSTable(dataList, 1, 2, newSstableName, compres, oneFile)
-	SSTable.ReadSSTable(newSstableName, compres, oneFile)
+	SSTable.NewSSTable(dataList, 1, 2, newSstableName, compress1, compress2, oneFile)
+	SSTable.ReadSSTable(newSstableName, compress1, oneFile)
 	if !oneFile {
-		SSTable.ReadIndex(newSstableName+"/Index.bin", "", compres, 1, oneFile)
-		SSTable.ReadIndex(newSstableName+"/Summary.bin", "", compres, 2, oneFile)
+		SSTable.ReadIndex(newSstableName+"/Index.bin", "", compress1, 1, oneFile)
+		SSTable.ReadIndex(newSstableName+"/Summary.bin", "", compress1, 2, oneFile)
 	} else {
-		SSTable.ReadIndex(newSstableName, "", compres, 1, oneFile)
-		SSTable.ReadIndex(newSstableName, "", compres, 2, oneFile)
+		SSTable.ReadIndex(newSstableName, "", compress1, 1, oneFile)
+		SSTable.ReadIndex(newSstableName, "", compress1, 2, oneFile)
 	}
 	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
