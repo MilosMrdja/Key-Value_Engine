@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"hash/crc32"
+	"log"
 	"os"
 	"time"
 )
@@ -68,8 +69,37 @@ func NewLogRecord(key string, value []byte, tombstone bool) *LogRecord {
 	// Serialize the current time into the byte slice
 	binary.BigEndian.PutUint64(currentTimeBytes[8:], uint64(currentTime.Unix()))
 
+	var buf bytes.Buffer
+
+	// Write timestamp
+	err := binary.Write(&buf, binary.BigEndian, currentTimeBytes)
+	if err != nil {
+		log.Fatal()
+	}
+
+	// Write tombstone
+	buf.WriteByte(t)
+
+	// Write key size
+	err = binary.Write(&buf, binary.BigEndian, uint64(len(key)))
+	if err != nil {
+		log.Fatal()
+	}
+
+	// Write value size
+	err = binary.Write(&buf, binary.BigEndian, uint64(len(value)))
+	if err != nil {
+		log.Fatal()
+	}
+
+	// Write key
+	buf.Write([]byte(key))
+
+	// Write value
+	buf.Write(value)
+
 	return &LogRecord{
-		CRC:       CRC32(value),
+		CRC:       CRC32(buf.Bytes()),
 		Timestamp: currentTimeBytes,
 		Tombstone: t,
 		KeySize:   uint64(len(key)),
