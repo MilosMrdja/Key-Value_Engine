@@ -1,7 +1,5 @@
-module KeyValueEngine
+module scanning
 
 go 1.21.3
 
-require github.com/bbalet/stopwords v1.0.0
-
-require golang.org/x/text v0.14.0 // indirect
+require gopkg.in/yaml.v2 v2.4.0
