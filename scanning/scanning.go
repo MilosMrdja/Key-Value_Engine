@@ -7,7 +7,7 @@ import (
 )
 
 // Function to perform PREFIX_SCAN
-func PREFIX_SCAN(prefix string, pageNumber, pageSize int) []DataType {
+func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []DataType {
 	var result []DataType
 
 	i := 0
@@ -16,7 +16,23 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int) []DataType {
 	startIndex := (pageNumber - 1) * pageSize
 	endIndex := startIndex + pageSize
 
-	// mem, hes, sstable, tim redom
+	n := pageNumber * pageSize
+
+	memPodaci := memtable.CitajPodateke(prefix, n)
+
+	lruData := lru.GetAll()
+
+	kesPodaci := lru.CitajPodateke(prefix, n-len(memPodaci))
+
+	offset := 0
+	path := ""
+
+	for (len(memPodaci) + len(kesPodaci) + len(ssPodaci)) < n {
+		ssPodaci, offset, path = sstable.CitajPodateke(prefix, n-len(memPodaci)-len(kesPodaci), offset, path)
+	}
+
+	// proveriti jel vec postoji u listi i delete flag
+	// mem, lru, sstable, tim redom
 	for key := range table {
 		if i >= startIndex {
 			if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
@@ -38,14 +54,12 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int) []DataType {
 	return result[startIndex:endIndex]
 }
 
-func RANGE_SCAN(keyRange [2]int, pageNumber, pageSize int) []DataType {
+func RANGE_SCAN(keyRange [2]string, pageNumber, pageSize int, cursor *Cursor) []DataType {
 	var result []DataType
 
-	// Implement pagination
 	startIndex := (pageNumber - 1) * pageSize
 	endIndex := startIndex + pageSize
 
-	// iterate through resources and find elements
 	for key := range table {
 		if strings.Compare(key, keyRange) >= 0 {
 			result = append(result, DataType{Key: key, Value: value})
@@ -56,12 +70,10 @@ func RANGE_SCAN(keyRange [2]int, pageNumber, pageSize int) []DataType {
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Key < result[j].Key
 	})
-	
+
 	if endIndex > len(result) {
 		endIndex = len(result)
 	}
-
-	// Return the paginated result
 	return result[startIndex:endIndex]
 }
 
@@ -71,20 +83,11 @@ func main() {
 	pageNumber := 1
 	pageSize := 2
 
-	range := [2]int{10, 50}
+	result := PREFIX_SCAN(prefix, pageNumber, pageSize)
 
-	prefix_result := PREFIX_SCAN(prefix, pageNumber, pageSize)
-	range_result := RANGE_SCAN(range, pageNumber, pageSize)
-
-	// Display the result of PREFIX_SCAN
+	// Display the result
 	fmt.Printf("Results for prefix '%s', page %d, page size %d:\n", prefix, pageNumber, pageSize)
-	for _, dt := range prefix_result {
-		fmt.Printf("%s: %s\n", dt.Key, dt.Value, dt.Time)
-	}
-
-	// Display the result of RANGE_SCAN
-	fmt.Printf("Results for range ['%d', '%d'], page %d, page size %d:\n", range[0], range[1], pageNumber, pageSize)
-	for _, dt := range range_result {
+	for _, dt := range result {
 		fmt.Printf("%s: %s\n", dt.Key, dt.Value, dt.Time)
 	}
 }
