@@ -1,6 +1,9 @@
 package skiplistmem
 
 import (
+	"sstable/LSM"
+	"sstable/SSTableStruct/SSTable"
+	"sstable/mem/memtable/datatype"
 	"sstable/mem/memtable/skiplist/skipliststruct"
 )
 
@@ -21,14 +24,14 @@ func CreateSkipListMemtable(cap int) *SkipListMemtable {
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju
-func (slmem *SkipListMemtable) SendToSSTable(compres, oneFile bool) bool {
+func (slmem *SkipListMemtable) SendToSSTable(compress1, compress2, oneFile bool) bool {
 
-	//dataList := make([]datatype.DataType, slmem.length)
-	//dataList = slmem.data.AllData(slmem.length)
+	dataList := make([]datatype.DataType, slmem.length)
+	dataList = slmem.data.AllData(slmem.length)
 
-	//napravimo SSTable
-	//...
-	//...
+	newSstableName, _ := LSM.FindNextDestination(0)
+	SSTable.NewSSTable(dataList, 1, 2, newSstableName, compress1, compress2, oneFile)
+	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
 
 	slmem.data = skipliststruct.CreateSkipList(slmem.capacity)
 	slmem.length = 0
@@ -76,4 +79,9 @@ func (slmem *SkipListMemtable) ShowSkipList() {
 
 func (slmem *SkipListMemtable) IsReadOnly() bool {
 	return slmem.readOnly
+}
+
+func (slmem *SkipListMemtable) GetElementByPrefix(prefix string) []*datatype.DataType {
+	return slmem.data.GetByPrefix(prefix)
+
 }

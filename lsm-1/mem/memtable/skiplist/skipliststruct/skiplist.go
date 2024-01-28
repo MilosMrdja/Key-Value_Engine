@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sstable/mem/memtable/datatype"
+	"strings"
 )
 
 type SkiplistNode struct {
@@ -139,6 +140,20 @@ func (sl *SkipList) ShowSkipList() {
 		fmt.Print("\n")
 	}
 	fmt.Println("")
+}
+
+func (sl *SkipList) GetByPrefix(prefix string) []*datatype.DataType {
+	var dataList []*datatype.DataType
+	i := 0
+	current := sl.head.next[0]
+	for current != nil {
+		if strings.HasPrefix(current.key, prefix) {
+			dataList = append(dataList, current.data)
+		}
+		current = current.next[0]
+		i++
+	}
+	return dataList
 }
 
 func (sl *SkipList) AllData(len int) []datatype.DataType {

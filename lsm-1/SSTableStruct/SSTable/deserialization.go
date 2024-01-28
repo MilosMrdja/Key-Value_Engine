@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"os"
 )
@@ -34,7 +33,12 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 
 	var size, sizeEnd int64
 	if oneFile {
-		size, sizeEnd = positionInSSTable(*file, 3)
+		if compress2 == true {
+			size, sizeEnd = positionInSSTable(*file, 4)
+		} else {
+			size, sizeEnd = positionInSSTable(*file, 3)
+		}
+
 		end = sizeEnd - size
 		_, err1 := file.Seek(size, 0)
 		if err1 != nil {
@@ -64,7 +68,6 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 			return false
 		}
 		defer file.Close()
-
 		fileInfoHash, err := os.Stat(fileNameHash)
 		if err != nil {
 			panic(err)
@@ -83,24 +86,21 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 		if err != nil {
 			panic(err)
 		}
-		bs, _ := json.Marshal(decodeMap)
-		fmt.Println(string(bs))
 	}
-
+	file.Seek(size, 0)
 	for currentRead != end {
 		//read CRC
 		bytes := make([]byte, 4)
-		file.Seek(currentRead, 0)
+		file.Seek(currentRead+size, 0)
 		_, err = file.Read(bytes)
 		if err != nil {
 			panic(err)
 		}
 		currentRead += 4
-		//fmt.Printf("%d", bytes)
 
 		// read timestamp
 		bytes = make([]byte, 16)
-		file.Seek(currentRead, 0)
+		file.Seek(currentRead+size, 0)
 		_, err = file.Read(bytes)
 		if err != nil {
 			panic(err)
@@ -110,7 +110,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 
 		// read tombstone
 		bytes = make([]byte, 1)
-		file.Seek(currentRead, 0)
+		file.Seek(currentRead+size, 0)
 		_, err = file.Read(bytes)
 		if err != nil {
 			panic(err)
@@ -139,7 +139,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 				// read value
 				if tomb == 0 {
 					bytes = make([]byte, valueSize)
-					file.Seek(currentRead, 0)
+					file.Seek(currentRead+size, 0)
 					_, err = file.Read(bytes)
 					if err != nil {
 						panic(err)
@@ -172,7 +172,8 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 				}
 				currentRead += 4
 				key := binary.BigEndian.Uint32(buff)
-				fmt.Printf("Key : %d ", key)
+				ss := getKeyByValue(&decodeMap, int32(key))
+				fmt.Printf("Key : %s ", ss)
 
 				// read value
 				if tomb == 0 {

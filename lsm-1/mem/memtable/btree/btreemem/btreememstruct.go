@@ -94,19 +94,9 @@ func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool) bo
 	dataList := make([]datatype.DataType, btmem.length)
 	dataList = btmem.data.Traverse()
 
-	//napravimo SSTable
-	//...
-	//...
 	newSstableName, _ := LSM.FindNextDestination(0)
 	SSTable.NewSSTable(dataList, 1, 2, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
-	if !oneFile {
-		SSTable.ReadIndex(newSstableName+"/Index.bin", "", compress1, compress2, 1, oneFile)
-		SSTable.ReadIndex(newSstableName+"/Summary.bin", "", compress1, compress2, 2, oneFile)
-	} else {
-		SSTable.ReadIndex(newSstableName, "", compress1, compress2, 1, oneFile)
-		SSTable.ReadIndex(newSstableName, "", compress1, compress2, 2, oneFile)
-	}
 	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
 
@@ -115,4 +105,8 @@ func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool) bo
 
 func (btmem *BTreeMemtable) IsReadOnly() bool {
 	return btmem.ReadOnly()
+}
+
+func (btmem *BTreeMemtable) GetElementByPrefix(prefix string) []*datatype.DataType {
+	return btmem.data.GetByPrefix(prefix)
 }

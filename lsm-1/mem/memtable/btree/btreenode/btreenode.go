@@ -3,6 +3,7 @@ package btreenode
 import (
 	"sstable/mem/memtable/btree/myutils"
 	"sstable/mem/memtable/datatype"
+	"strings"
 )
 
 type BTreeNode struct {
@@ -107,8 +108,6 @@ func (b *BTreeNode) Traverse() []datatype.DataType {
 			}
 
 		}
-		//fmt.Printf("%s\n", b.keys[i].GetKey())
-		//dataList[i] = *b.keys[i]
 		dataList = append(dataList, *b.keys[i])
 
 	}
@@ -120,6 +119,33 @@ func (b *BTreeNode) Traverse() []datatype.DataType {
 	}
 	return dataList
 }
+
+func (b *BTreeNode) GetByPrefix(prefix string) []*datatype.DataType {
+	var dataList []*datatype.DataType
+	var i = 0
+	for i = 0; i < b.n; i++ {
+		if b.isLeaf == false {
+			temp := b.children[i].GetByPrefix(prefix)
+			for j := 0; j < len(temp); j++ {
+				if strings.HasPrefix(temp[i].GetKey(), prefix) {
+					dataList = append(dataList, temp[j])
+				}
+
+			}
+
+		}
+		dataList = append(dataList, b.keys[i])
+
+	}
+	if b.isLeaf == false {
+		temp := b.children[i].GetByPrefix(prefix)
+		for j := 0; j < len(temp); j++ {
+			dataList = append(dataList, temp[j])
+		}
+	}
+	return dataList
+}
+
 func (b *BTreeNode) T() int {
 	return b.t
 }

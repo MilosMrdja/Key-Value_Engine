@@ -131,7 +131,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	if oneFile {
 		var serializedInOneFile []byte
 		if compress2 {
-			serializedInOneFile, err = WriteToOneFile(fileName+"/BloomFilter.bin", fileName+"/Hash.bin", fileName+"/Summary.bin", fileName+"/Index.bin", fileName+"/Data.bin", fileName+"/Merkle.bin")
+			serializedInOneFile, err = WriteToOneFile(fileName+"/BloomFilter.bin", fileName+"/HashMap.bin", fileName+"/Summary.bin", fileName+"/Index.bin", fileName+"/Data.bin", fileName+"/Merkle.bin")
 			if err != nil {
 				panic(err)
 			}

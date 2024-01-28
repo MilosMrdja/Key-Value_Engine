@@ -2,7 +2,10 @@ package hashstruct
 
 import (
 	"sort"
+	"sstable/LSM"
+	"sstable/SSTableStruct/SSTable"
 	"sstable/mem/memtable/datatype"
+	"strings"
 )
 
 type HashMemtable struct {
@@ -22,7 +25,7 @@ func CreateHashMemtable(cap int) *HashMemtable {
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju
-func (mem *HashMemtable) SendToSSTable(compres bool) bool {
+func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool) bool {
 
 	dataList := make([]datatype.DataType, mem.length)
 	i := 0
@@ -34,9 +37,9 @@ func (mem *HashMemtable) SendToSSTable(compres bool) bool {
 		return dataList[i].GetKey() < dataList[j].GetKey()
 	})
 
-	//napravimo SSTable
-	//...
-	//...
+	newSstableName, _ := LSM.FindNextDestination(0)
+	SSTable.NewSSTable(dataList, 1, 2, newSstableName, compress1, compress2, oneFile)
+	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
 
 	mem.data = make(map[string]*datatype.DataType)
 	mem.length = 0
@@ -84,4 +87,14 @@ func (mem *HashMemtable) DeleteElement(key string) bool {
 
 func (mem *HashMemtable) IsReadOnly() bool {
 	return mem.readOnly
+}
+
+func (mem *HashMemtable) GetElementByPrefix(prefix string) []*datatype.DataType {
+	var dataList []*datatype.DataType
+	for key, value := range mem.data {
+		if strings.HasPrefix(key, prefix) {
+			dataList = append(dataList, value)
+		}
+	}
+	return dataList
 }

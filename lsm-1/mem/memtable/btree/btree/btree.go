@@ -81,6 +81,14 @@ func (t *BTree) Traverse() []datatype.DataType {
 	return dataList
 }
 
+func (t *BTree) GetByPrefix(prefix string) []*datatype.DataType {
+	var dataList []*datatype.DataType
+	if t.Root != nil {
+		dataList = append(t.Root.GetByPrefix(prefix))
+	}
+	return dataList
+}
+
 func NewBTree(t int) *BTree {
 	return &BTree{Root: nil, Rang: t}
 }
