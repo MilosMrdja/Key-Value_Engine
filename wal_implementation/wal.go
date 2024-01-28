@@ -151,21 +151,7 @@ func (wal *WriteAheadLog) DeleteSegmentsTilWatermark() error {
 	if err != nil {
 		return err
 	}
-	for i := 1; i < lwm; i++ {
-		s := wal.Segments[i-1]
-		parts := strings.Split(s, "_")
-		numStr := strings.TrimLeft(parts[1], "0")
-		num, err := strconv.Atoi(strings.Split(numStr, ".")[0])
-		if err != nil {
-			return err
-		}
-		logsNumber := fmt.Sprintf("%05d", num)
-		filePath := fmt.Sprintf("wal%c%s%s.log", os.PathSeparator, SEGMENTS_NAME, logsNumber)
-		err = os.Remove(filePath)
-		if err != nil {
-			return err
-		}
-	}
+	// If newpath already exists and is not a directory, Rename replaces it.
 	wal.Segments = wal.Segments[lwm-1:]
 	newSegments := make([]string, 0)
 	for i := 0; i < len(wal.Segments); i++ {
@@ -385,19 +371,26 @@ func main() {
 	// Example usage
 
 	wal := NewWriteAheadLog()
-	for i := 0; i < 10; i++ {
-		key := "kljuc" + strconv.Itoa(i)
-		value_string := "vrednost" + strconv.Itoa(i)
-		value := []byte(value_string)
-		wal.Log(key, value, false)
-	}
-	//records, err := wal.ReadAllRecords()
-	//if err != nil {
-	//	fmt.Println(err)
+	//for i := 0; i < 10; i++ {
+	//	key := "kljuc" + strconv.Itoa(i)
+	//	value_string := "vrednost" + strconv.Itoa(i)
+	//	value := []byte(value_string)
+	//	wal.Log(key, value, false)
 	//}
-	//fmt.Println(records[14].Key)
 	err := wal.DeleteSegmentsTilWatermark()
-	fmt.Println(err)
+	if err != nil {
+		fmt.Println(err)
+	}
+	records, err := wal.ReadAllRecords()
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, rec := range records {
+		fmt.Println(rec)
+	}
+	//fmt.Println(records[14].Key)
+
+	//fmt.Println(err)
 	//wal.Log("kljuc3", []byte("vrednost"), true)
 	//wal.Log("kljuc2", []byte("vrednost2"), true)
 	//rec, err := wal.ReadRecord()
