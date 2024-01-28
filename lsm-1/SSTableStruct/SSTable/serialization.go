@@ -16,14 +16,14 @@ func SerializeIndexData(key string, length int, compress1, compress2 bool, keyDi
 	// if an user wants to compres file
 
 	// write keysize
-	var nCompres2 int
+	//var nCompres2 int
 	if compress2 {
 		if compress1 {
-			buff := make([]byte, 4)
-			nCompres2 = binary.PutVarint(buff, int64(keyDict))
-			buff1 := make([]byte, 1)
-			buff1[0] = byte(nCompres2)
-			result.Write(buff1)
+			//buff := make([]byte, 4)
+			//nCompres2 = binary.PutVarint(buff, int64(keyDict))
+			//buff1 := make([]byte, 1)
+			//buff1[0] = byte(nCompres2)
+			//result.Write(buff1)
 		} else {
 			err := binary.Write(&result, binary.BigEndian, int8(4)) // jer je maks 4 bajta
 			if err != nil {
@@ -238,4 +238,28 @@ func getFileInfo(fileName string, n int) []byte {
 	result.Write(byteArr)
 
 	return result.Bytes()
+}
+
+func SerializeHashmap(filename string, bytes []byte) error {
+	_, err := os.Stat(filename)
+	if err == nil {
+		err1 := os.Remove(filename)
+		if err1 != nil {
+			return err1
+		}
+	}
+
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	_, err = file.Write(bytes)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }

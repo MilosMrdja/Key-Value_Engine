@@ -1,7 +1,9 @@
 package SSTable
 
 import (
+	"bytes"
 	"encoding/binary"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -110,7 +112,18 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 		return false
 	}
 	//fmt.Printf("%d\n", acc)
-
+	//serijalizacija hash mape
+	hashFileName := fileName + "/HashMap.bin"
+	b := new(bytes.Buffer)
+	e := gob.NewEncoder(b)
+	err = e.Encode(dictionary)
+	if err != nil {
+		panic(err)
+	}
+	err = SerializeHashmap(hashFileName, b.Bytes())
+	if err != nil {
+		panic(err)
+	}
 	// u slucaju da korisnik odabere sve u jedan fajl
 
 	if oneFile {
@@ -175,30 +188,15 @@ func ReadIndex(fileName string, key string, compress1, compress2 bool, elem int,
 	}
 	file.Seek(size, 0)
 	fmt.Printf("Velicina: %d\n", (end))
-	var keySize int
+	//var keySize int
 	for currentRead != end {
 
 		if compress2 {
 			if compress1 {
-				// read key size
-				byt := make([]byte, 1)
-				file.Seek(currentRead, 0)
-				_, err = file.Read(byt)
-				if err != nil {
-					panic(err)
-				}
-				keySize = int(byt[0])
-				fmt.Println(keySize)
-				currentRead += 1
-				//read key
-				bytes := make([]byte, keySize)
-				file.Seek(currentRead+size, 0)
-				_, err = file.Read(bytes)
-				if err != nil {
-					panic(err)
-				}
-				fmt.Printf("Key: %s ", bytes)
-				currentRead += int64(keySize)
+				// ne treba key size jer radimo sa PutVarint
+				key, k := binary.Varint(bytesFile[currentRead:])
+				currentRead += int64(k)
+				fmt.Printf("Key: %d ", key)
 				// read offset
 				offset, m := binary.Varint(bytesFile[currentRead:])
 				currentRead += int64(m)
@@ -351,6 +349,40 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 	}
 	file.Seek(size, 0)
 	fmt.Printf("Velicina: %d\n", (end))
+
+	// deserialization hashmap
+	var decodeMap map[string]int32
+	if compress2 {
+
+		fileNameHash := filePath + "/HashMap.bin"
+		fileHash, err := os.OpenFile(fileNameHash, os.O_RDONLY, 0666)
+		if err != nil {
+			return false
+		}
+		defer file.Close()
+
+		fileInfoHash, err := os.Stat(fileNameHash)
+		if err != nil {
+			panic(err)
+		}
+
+		end := fileInfoHash.Size()
+
+		bbb := make([]byte, end)
+		bb := bytes.NewBuffer(bbb)
+		_, err = fileHash.Read(bbb)
+		if err != nil {
+			panic(err)
+		}
+		d := gob.NewDecoder(bb)
+		err = d.Decode(&decodeMap)
+		if err != nil {
+			panic(err)
+		}
+		bs, _ := json.Marshal(decodeMap)
+		fmt.Println(string(bs))
+	}
+
 	for currentRead != end {
 		//read CRC
 		bytes := make([]byte, 4)
@@ -406,7 +438,8 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 
 				// read key
 				key, _ := binary.Varint(bytesFile[currentRead:])
-				fmt.Printf("Key: %d ", key)
+				ss := getKeyByValue(&decodeMap, int32(key))
+				fmt.Printf("Key: %s ", ss)
 				currentRead += int64(keySize)
 				// read value
 				if tomb == 0 {
@@ -500,4 +533,13 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 
 	}
 	return true
+}
+
+func getKeyByValue(mapa *map[string]int32, val int32) string {
+	for k, v := range *mapa {
+		if v == val {
+			return k
+		}
+	}
+	return ""
 }
