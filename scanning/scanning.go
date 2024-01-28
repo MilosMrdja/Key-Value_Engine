@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
 
 // Function to perform PREFIX_SCAN
-func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []DataType {
-	var result []DataType
+func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []*DataType {
+	var result []*DataType
 
 	i := 0
 
@@ -18,30 +19,51 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []Data
 
 	n := pageNumber * pageSize
 
-	memPodaci := memtable.CitajPodateke(prefix, n)
+	j := cursor.memIndex
+	for true {
+		lista := cursor.memPointers(j).GetDataByPrefix(prefix)
+		for dt := range lista {
+			if dt.delete == true || slices.Contains(result, dt) {
+				result = append(result, dt)
+				n -= 1
+				if n == 0 {
+					break
+				}
+			}
+		}
+		j = (j - 1 + len(cursor.memPointers)) % len(cursor.memPointers)
+		if j == cursor.memIndex {
+			break
+		}
+		if n == 0 {
+			break
+		}
+	}
 
-	lruData := lru.GetAll()
-
-	kesPodaci := lru.CitajPodateke(prefix, n-len(memPodaci))
+	lruData := cursor.lruPointer.getAll()
+	for dt := range lruData {
+		if slices.Contains(result, dt) {
+			result = append(result, dt)
+			n -= 1
+			if n == 0 {
+				break
+			}
+		}
+	}
 
 	offset := 0
 	path := ""
 
 	for (len(memPodaci) + len(kesPodaci) + len(ssPodaci)) < n {
 		ssPodaci, offset, path = sstable.CitajPodateke(prefix, n-len(memPodaci)-len(kesPodaci), offset, path)
-	}
-
-	// proveriti jel vec postoji u listi i delete flag
-	// mem, lru, sstable, tim redom
-	for key := range table {
-		if i >= startIndex {
-			if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
-				result = append(result, DataType{Key: key, Value: table[key]})
+		for dt := range ssPodaci {
+			if slices.Contains(result, dt) {
+				result = append(result, dt)
+				n -= 1
+				if n == 0 {
+					break
+				}
 			}
-		}
-		i += 1
-		if i == endIndex {
-			break
 		}
 	}
 
@@ -54,8 +76,8 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []Data
 	return result[startIndex:endIndex]
 }
 
-func RANGE_SCAN(keyRange [2]string, pageNumber, pageSize int, cursor *Cursor) []DataType {
-	var result []DataType
+func RANGE_SCAN(keyRange [2]string, pageNumber, pageSize int, cursor *Cursor) []*DataType {
+	var result []*DataType
 
 	startIndex := (pageNumber - 1) * pageSize
 	endIndex := startIndex + pageSize
