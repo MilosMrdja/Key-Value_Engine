@@ -1,14 +1,18 @@
 package main
 
 import (
+	"KeyValueEngine/cursor"
+	"KeyValueEngine/lru"
+	datatype "KeyValueEngine/mem/memtable/datatype"
 	"fmt"
+
 	"sort"
 	"strings"
 )
 
 // Function to perform PREFIX_SCAN
-func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []DataType {
-	var result []DataType
+func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *cursor.Cursor) []datatype.DataType {
+	var result []datatype.DataType
 
 	i := 0
 
@@ -20,7 +24,7 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []Data
 
 	memPodaci := memtable.CitajPodateke(prefix, n)
 
-	lruData := lru.GetAll()
+	lruData := lru.LRUCache.GetAll()
 
 	kesPodaci := lru.CitajPodateke(prefix, n-len(memPodaci))
 
@@ -36,7 +40,7 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []Data
 	for key := range table {
 		if i >= startIndex {
 			if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
-				result = append(result, DataType{Key: key, Value: table[key]})
+				result = append(result, datatype.DataType{Key: key, Value: table[key]})
 			}
 		}
 		i += 1
@@ -54,15 +58,15 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []Data
 	return result[startIndex:endIndex]
 }
 
-func RANGE_SCAN(keyRange [2]string, pageNumber, pageSize int, cursor *Cursor) []DataType {
-	var result []DataType
+func RANGE_SCAN(keyRange [2]string, pageNumber, pageSize int, cursor *Cursor) []datatype.DataType {
+	var result []datatype.DataType
 
 	startIndex := (pageNumber - 1) * pageSize
 	endIndex := startIndex + pageSize
 
 	for key := range table {
 		if strings.Compare(key, keyRange) >= 0 {
-			result = append(result, DataType{Key: key, Value: value})
+			result = append(result, datatype.DataType{Key: key, Value: value})
 		}
 	}
 
