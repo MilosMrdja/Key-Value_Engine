@@ -8,14 +8,28 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/BloomFilter.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/Data.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/HashMap.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/Index.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/Merkle.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable1/Summary.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable2/BloomFilter.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable2/Data.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable2/HashMap.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable2/Index.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable2/Merkle.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable2/Summary.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable3/BloomFilter.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable3/Data.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable3/HashMap.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable3/Index.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable3/Merkle.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable3/Summary.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable4/BloomFilter.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable4/Data.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable4/HashMap.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable4/Index.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable4/Merkle.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/lsm-1/DataSStable/L0/sstable4/Summary.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/SSTableStruct/SSTable/SSTable.go" beforeDir="false" afterPath="$PROJECT_DIR$/lsm-1/SSTableStruct/SSTable/SSTable.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lsm-1/SSTableStruct/SSTable/serialization.go" beforeDir="false" afterPath="$PROJECT_DIR$/lsm-1/SSTableStruct/SSTable/serialization.go" afterDir="false" />
     </list>
@@ -23,6 +37,13 @@
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
   </component>
   <component name="GOROOT" url="file://C:/Program Files/Go" />
   <component name="Git.Settings">
@@ -38,6 +59,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.go.formatter.settings.were.checked": "true",

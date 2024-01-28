@@ -6,7 +6,6 @@ import (
 	"hash/crc32"
 	"os"
 	"sstable/mem/memtable/datatype"
-	"unsafe"
 )
 
 // funkcija za upis podatka u Index
@@ -17,20 +16,7 @@ func SerializeIndexData(key string, length int, compress1, compress2 bool, keyDi
 
 	// write keysize
 	//var nCompres2 int
-	if compress2 {
-		if compress1 {
-			//buff := make([]byte, 4)
-			//nCompres2 = binary.PutVarint(buff, int64(keyDict))
-			//buff1 := make([]byte, 1)
-			//buff1[0] = byte(nCompres2)
-			//result.Write(buff1)
-		} else {
-			err := binary.Write(&result, binary.BigEndian, int8(4)) // jer je maks 4 bajta
-			if err != nil {
-				return nil, err
-			}
-		}
-	} else {
+	if !compress2 {
 		if compress1 {
 			buff := make([]byte, 8)
 			n := binary.PutVarint(buff, int64(len(key)))
@@ -48,6 +34,12 @@ func SerializeIndexData(key string, length int, compress1, compress2 bool, keyDi
 			buff := make([]byte, 4) // niz velicine keySize
 			n := binary.PutVarint(buff, int64(keyDict))
 			result.Write(buff[:n])
+		} else {
+			err := binary.Write(&result, binary.BigEndian, uint32(keyDict))
+			if err != nil {
+				panic(err)
+			}
+
 		}
 
 	} else {
@@ -60,7 +52,7 @@ func SerializeIndexData(key string, length int, compress1, compress2 bool, keyDi
 		//fmt.Printf(" 2.  %d", n)
 		result.Write(buf[:n])
 	} else {
-		err := binary.Write(&result, binary.BigEndian, int64(length))
+		err := binary.Write(&result, binary.BigEndian, uint64(length))
 		if err != nil {
 			return []byte(""), err
 		}
@@ -95,23 +87,10 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 
 	currentData := data.GetData()
 	currentKey := data.GetKey()
-	var nCompres2 int
+	//var nCompres2 int
 	// write key size
 
-	if compress2 {
-		if compress1 {
-			buff := make([]byte, 4)
-			nCompres2 = binary.PutVarint(buff, int64(keyDict))
-			buff1 := make([]byte, 1)
-			buff1[0] = byte(nCompres2)
-			result.Write(buff1)
-		} else {
-			err = binary.Write(&result, binary.BigEndian, uint64(4)) // jer je maks 4 bajta
-			if err != nil {
-				return nil, err
-			}
-		}
-	} else {
+	if !compress2 {
 		if compress1 {
 			buff := make([]byte, 8)
 			n := binary.PutVarint(buff, int64(len(currentKey)))
@@ -146,9 +125,9 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 			result.Write(buff[:n])
 
 		} else {
-			err = binary.Write(&result, binary.BigEndian, uint64(keyDict))
+			err = binary.Write(&result, binary.BigEndian, uint32(keyDict))
 			if err != nil {
-				return nil, err
+				panic(err)
 			}
 		}
 	} else {
@@ -164,39 +143,35 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 	return result.Bytes(), nil
 }
 
-func IntToByteArray(num int32) []byte {
-	size := int(unsafe.Sizeof(num))
-	arr := make([]byte, size)
-	for i := 0; i < size; i++ {
-		byt := *(*uint8)(unsafe.Pointer(uintptr(unsafe.Pointer(&num)) + uintptr(i)))
-		arr[i] = byt
-	}
-	return arr
-}
-
 // Dodati u conf file sledece konstante pri citanju i njihove sizeof
 // 0 - Bloomfilter
-// 1 - summary deo
-// 2 - index deo
-// 3 - data deo
-// 4 - Merkle tree
-func WriteToOneFile(bloom, summary, index, data, merkle string) ([]byte, error) {
+// 1 - hashmapa ako je potrebno
+// 2 - summary deo
+// 3 - index deo
+// 4 - data deo
+// 5 - Merkle tree
+func WriteToOneFile(bloom, hash, summary, index, data, merkle string) ([]byte, error) {
 	var result bytes.Buffer
 	var tempArr []byte
 
 	tempArr = getFileInfo(bloom, 0)
 	result.Write(tempArr)
 
-	tempArr = getFileInfo(summary, 1)
+	if hash != "" {
+		tempArr = getFileInfo(hash, 1)
+		result.Write(tempArr)
+	}
+
+	tempArr = getFileInfo(summary, 2)
 	result.Write(tempArr)
 
-	tempArr = getFileInfo(index, 2)
+	tempArr = getFileInfo(index, 3)
 	result.Write(tempArr)
 
-	tempArr = getFileInfo(data, 3)
+	tempArr = getFileInfo(data, 4)
 	result.Write(tempArr)
 
-	tempArr = getFileInfo(merkle, 4)
+	tempArr = getFileInfo(merkle, 5)
 	result.Write(tempArr)
 
 	return result.Bytes(), nil
