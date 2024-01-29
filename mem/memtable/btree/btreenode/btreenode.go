@@ -1,9 +1,9 @@
 package btreenode
 
 import (
-	"fmt"
-	"mem/memtable/btree/myutils"
-	"mem/memtable/datatype"
+	"sstable/mem/memtable/btree/myutils"
+	"sstable/mem/memtable/datatype"
+	"strings"
 )
 
 type BTreeNode struct {
@@ -97,19 +97,55 @@ func (b *BTreeNode) Search(k string) *datatype.DataType {
 	}
 	return b.children[i].Search(k)
 }
-func (b *BTreeNode) Traverse() {
+func (b *BTreeNode) Traverse() []datatype.DataType {
+	dataList := make([]datatype.DataType, 0)
 	var i = 0
 	for i = 0; i < b.n; i++ {
 		if b.isLeaf == false {
-			b.children[i].Traverse()
+			temp := b.children[i].Traverse()
+			for j := 0; j < len(temp); j++ {
+				dataList = append(dataList, temp[j])
+			}
+
 		}
-		fmt.Print(b.keys[i])
+		dataList = append(dataList, *b.keys[i])
 
 	}
 	if b.isLeaf == false {
-		b.children[i].Traverse()
+		temp := b.children[i].Traverse()
+		for j := 0; j < len(temp); j++ {
+			dataList = append(dataList, temp[j])
+		}
 	}
+	return dataList
 }
+
+func (b *BTreeNode) GetByPrefix(prefix string) []*datatype.DataType {
+	var dataList []*datatype.DataType
+	var i = 0
+	for i = 0; i < b.n; i++ {
+		if b.isLeaf == false {
+			temp := b.children[i].GetByPrefix(prefix)
+			for j := 0; j < len(temp); j++ {
+				if strings.HasPrefix(temp[i].GetKey(), prefix) {
+					dataList = append(dataList, temp[j])
+				}
+
+			}
+
+		}
+		dataList = append(dataList, b.keys[i])
+
+	}
+	if b.isLeaf == false {
+		temp := b.children[i].GetByPrefix(prefix)
+		for j := 0; j < len(temp); j++ {
+			dataList = append(dataList, temp[j])
+		}
+	}
+	return dataList
+}
+
 func (b *BTreeNode) T() int {
 	return b.t
 }

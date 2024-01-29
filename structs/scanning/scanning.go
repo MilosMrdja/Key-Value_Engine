@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"scanning/cursor"
+	"scanning/mem/memtable/datatype"
 	"slices"
 	"sort"
-	"sstable/cursor"
-	"sstable/mem/memtable/datatype"
 	"strings"
 )
 
@@ -18,7 +18,7 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *cursor.Cursor)
 
 	j := cursor.MemIndex()
 	for true {
-		lista := cursor.MemPointers()[j].GetElementByPrefix(prefix)
+		lista := cursor.MemPointers()[j].
 
 		for _, dt = range lista {
 			if dt.IsDeleted() == false && slices.Contains(result, dt) == false {

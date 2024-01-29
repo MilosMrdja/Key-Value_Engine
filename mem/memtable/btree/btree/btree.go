@@ -1,9 +1,9 @@
 package btree
 
 import (
-	"mem/memtable/btree/btreenode"
-	"mem/memtable/btree/myutils"
-	"mem/memtable/datatype"
+	"sstable/mem/memtable/btree/btreenode"
+	"sstable/mem/memtable/btree/myutils"
+	"sstable/mem/memtable/datatype"
 )
 
 type BTree struct {
@@ -73,10 +73,20 @@ func (t *BTree) Update(k string, data []byte) bool {
 	return false
 }
 
-func (t *BTree) Traverse() {
+func (t *BTree) Traverse() []datatype.DataType {
+	dataList := make([]datatype.DataType, 0)
 	if t.Root != nil {
-		t.Root.Traverse()
+		dataList = append(t.Root.Traverse())
 	}
+	return dataList
+}
+
+func (t *BTree) GetByPrefix(prefix string) []*datatype.DataType {
+	var dataList []*datatype.DataType
+	if t.Root != nil {
+		dataList = append(t.Root.GetByPrefix(prefix))
+	}
+	return dataList
 }
 
 func NewBTree(t int) *BTree {

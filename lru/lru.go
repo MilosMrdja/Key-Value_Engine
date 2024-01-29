@@ -6,12 +6,8 @@ import (
 	"gopkg.in/yaml.v2"
 	"log"
 	"os"
+	"sstable/mem/memtable/datatype"
 )
-
-type Node struct {
-	key  string
-	data []byte
-}
 
 type LRUCache struct {
 	cap       int
@@ -19,25 +15,25 @@ type LRUCache struct {
 	cacheList *list.List
 }
 
-func (l *LRUCache) Put(key string, data []byte) {
-	if ele, ok := l.cache[key]; ok {
+func (l *LRUCache) Put(data *datatype.DataType) {
+	if ele, ok := l.cache[data.GetKey()]; ok {
 		l.cacheList.Remove(ele)
 	}
-	ele2 := l.cacheList.PushBack(NewNode(key, data))
-	l.cache[key] = ele2
+	ele2 := l.cacheList.PushBack(data)
+	l.cache[data.GetKey()] = ele2
 	if l.cacheList.Len() > l.cap {
 		leastRU := l.cacheList.Front()
 		l.cacheList.Remove(leastRU)
-		delete(l.cache, leastRU.Value.(*Node).key)
+		delete(l.cache, leastRU.Value.(*datatype.DataType).GetKey()) // dataype.getkey
 	}
 }
 func (l *LRUCache) Get(key string) []byte {
 	if ele, ok := l.cache[key]; ok {
-		temp := l.cache[key].Value.(*Node)
+		temp := l.cache[key].Value.(*datatype.DataType)
 		l.cacheList.Remove(ele)
 		ele2 := l.cacheList.PushBack(temp)
 		l.cache[key] = ele2
-		return l.cache[key].Value.(*Node).data
+		return l.cache[key].Value.(*datatype.DataType).GetData()
 	}
 	return nil
 }
@@ -60,18 +56,11 @@ func NewLRUCache(capacity int) *LRUCache {
 	}
 }
 
-func NewNode(k string, d []byte) *Node {
-	return &Node{
-		key:  k,
-		data: d,
-	}
-}
-
 type Config struct {
 	LruCap int `yaml:"lru_cap"`
 }
 
-func main() {
+func mainn() {
 	var config Config
 	configData, err := os.ReadFile("config.yaml")
 	if err != nil {
@@ -82,14 +71,16 @@ func main() {
 		log.Fatal(err)
 	}
 	lru := NewLRUCache(config.LruCap)
-	lru.Put("kljuc1", []byte("vrednost1"))
-	lru.Put("kljuc2", []byte("vrednost2"))
-	lru.Put("kljuc3", []byte("vrednost3"))
-	lru.Put("kljuc4", []byte("vrednost4"))
+	x1 := datatype.CreateDataType("kljuc1", []byte("vrednost1"))
+
+	lru.Put(x1)
+	lru.Put(datatype.CreateDataType("kljuc2", []byte("vrednost2")))
+	lru.Put(datatype.CreateDataType("kljuc3", []byte("vrednost3")))
+	lru.Put(datatype.CreateDataType("kljuc4", []byte("vrednost4")))
 	lru.Delete("kljuc3")
 	proba := lru.GetAll()
 	for e := proba.Front(); e != nil; e = e.Next() {
-		fmt.Println(e.Value)
+		fmt.Println(e.Value.(*datatype.DataType).GetKey())
 	}
 	//fmt.Println(config.LruCap)
 }

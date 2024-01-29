@@ -1,8 +1,10 @@
 package btreemem
 
 import (
-	"mem/memtable/btree/btree"
-	"mem/memtable/datatype"
+	"sstable/LSM"
+	"sstable/SSTableStruct/SSTable"
+	"sstable/mem/memtable/btree/btree"
+	"sstable/mem/memtable/datatype"
 )
 
 type BTreeMemtable struct {
@@ -84,18 +86,27 @@ func (btmem *BTreeMemtable) GetElement(key string) (bool, []byte) {
 }
 
 func (btmem *BTreeMemtable) DeleteElement(key string) bool {
-	found := btmem.DeleteElement(key)
+	found := btmem.data.Delete(key)
 	return found
 }
 
-func (btmem *BTreeMemtable) SendToSSTable() bool {
-	//.......
-	//.......
-	btmem.data = btree.NewBTree(4)
+func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool) bool {
+	dataList := make([]datatype.DataType, btmem.length)
+	dataList = btmem.data.Traverse()
+
+	newSstableName, _ := LSM.FindNextDestination(0)
+	SSTable.NewSSTable(dataList, 1, 2, newSstableName, compress1, compress2, oneFile)
+	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
+	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
+
 	return true
 }
 
 func (btmem *BTreeMemtable) IsReadOnly() bool {
 	return btmem.ReadOnly()
+}
+
+func (btmem *BTreeMemtable) GetElementByPrefix(prefix string) []*datatype.DataType {
+	return btmem.data.GetByPrefix(prefix)
 }
