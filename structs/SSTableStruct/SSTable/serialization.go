@@ -63,6 +63,7 @@ func SerializeIndexData(key string, length int, compress1, compress2 bool, keyDi
 
 // key size, value size, timestamp - kompresija
 // f-ja koja serijalizuje jedan podatak iz memtabele
+
 func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDict int32) ([]byte, error) {
 	var result bytes.Buffer
 

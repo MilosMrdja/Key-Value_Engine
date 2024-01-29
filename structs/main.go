@@ -85,7 +85,7 @@ func main() {
 	compress1 := true
 	compress2 := true
 	oneFile := true
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10; i++ {
 		btmem := btreemem.NewBTreeMemtable(j)
 		for j = 0; j < 10; j++ {
 			btmem.AddElement(strconv.Itoa(j+i), []byte(strconv.Itoa(j+i)))
@@ -97,7 +97,7 @@ func main() {
 	//SSTable.ReadIndex("DataSSTableCompact/Summary.bin", "", compress1, compress2, 1, oneFile)
 	////SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compress1, compress2, 2, oneFile)
 	fmt.Printf("Konacna: \n")
-	SSTable.ReadSSTable("DataSSTable/L2/sstable1", compress1, compress2, oneFile)
+	SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
 	////data, err4 := SSTable.GetData("DataSSTableCompact", key, compres, oneFile)
 	//if err4 == true {
 	//	fmt.Printf("Key: %s\n", data.GetKey())
