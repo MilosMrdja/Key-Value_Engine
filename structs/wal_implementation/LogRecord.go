@@ -1,4 +1,4 @@
-package main
+package wal_implementation
 
 import (
 	"bytes"

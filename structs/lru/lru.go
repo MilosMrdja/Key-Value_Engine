@@ -1,4 +1,4 @@
-package main
+package lru
 
 import (
 	"container/list"
@@ -6,12 +6,8 @@ import (
 	"gopkg.in/yaml.v2"
 	"log"
 	"os"
+	"sstable/mem/memtable/datatype"
 )
-
-type Node struct {
-	key  string
-	data []byte
-}
 
 type LRUCache struct {
 	cap       int
@@ -19,16 +15,16 @@ type LRUCache struct {
 	cacheList *list.List
 }
 
-func (l *LRUCache) Put(key string, data []byte) {
-	if ele, ok := l.cache[key]; ok {
+func (l *LRUCache) Put(data *datatype.DataType) {
+	if ele, ok := l.cache[data.GetKey()]; ok {
 		l.cacheList.Remove(ele)
 	}
-	ele2 := l.cacheList.PushBack(NewNode(key, data))
-	l.cache[key] = ele2
+	ele2 := l.cacheList.PushBack(data)
+	l.cache[data.GetKey()] = ele2
 	if l.cacheList.Len() > l.cap {
 		leastRU := l.cacheList.Front()
 		l.cacheList.Remove(leastRU)
-		delete(l.cache, leastRU.Value.(*Node).key)
+		delete(l.cache, leastRU.Value.(*Node).key) // dataype.getkey
 	}
 }
 func (l *LRUCache) Get(key string) []byte {
@@ -60,18 +56,11 @@ func NewLRUCache(capacity int) *LRUCache {
 	}
 }
 
-func NewNode(k string, d []byte) *Node {
-	return &Node{
-		key:  k,
-		data: d,
-	}
-}
-
 type Config struct {
 	LruCap int `yaml:"lru_cap"`
 }
 
-func main() {
+func mainn() {
 	var config Config
 	configData, err := os.ReadFile("config.yaml")
 	if err != nil {
