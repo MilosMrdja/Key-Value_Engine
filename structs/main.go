@@ -21,6 +21,7 @@ func DELETE() {
 }
 
 func main() {
+
 	//compress1 := false
 	//compress2 := true
 	//oneFile := true
