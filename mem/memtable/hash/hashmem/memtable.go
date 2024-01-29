@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"log"
 	"os"
+	"scanning/mem/memtable/datatype"
 	"strconv"
 	"strings"
 )
@@ -12,8 +13,9 @@ type Memtable interface {
 	AddElement(key string, data []byte) bool
 	GetElement(key string) (bool, []byte)
 	DeleteElement(key string) bool
-	SendToSSTable() bool
+	SendToSSTable(compress1, compress2, oneFile bool) bool
 	IsReadOnly() bool
+	GetElementByPrefix(prefix string) []*datatype.DataType
 }
 
 // funkcija koja cita podatke iz config fajla i vraca tip memtable i nje podrazumevani kapacitet
