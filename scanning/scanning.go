@@ -38,7 +38,8 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *cursor.Cursor)
 	}
 
 	lruData := cursor.LruPointer().GetAll()
-	for _, dt = range lruData {
+	for e := lruData.Front(); e != nil; e = e.Next() {
+		dt = e.Value.(*datatype.DataType)
 		if slices.Contains(result, dt) == false && strings.HasPrefix(dt.GetKey(), prefix) && dt.IsDeleted() == false {
 			result = append(result, dt)
 			n -= 1
@@ -112,7 +113,8 @@ func RANGE_SCAN(keyRange [2]string, pageNumber, pageSize int, cursor *cursor.Cur
 	}
 
 	lruData := cursor.LruPointer().GetAll()
-	for _, dt = range lruData {
+	for e := lruData.Front(); e != nil; e = e.Next() {
+		dt = e.Value.(*datatype.DataType)
 		if slices.Contains(result, dt) == false && strings.HasPrefix(dt.GetKey(), prefix) && dt.IsDeleted() == false {
 			result = append(result, dt)
 			n -= 1
@@ -152,15 +154,5 @@ func RANGE_SCAN(keyRange [2]string, pageNumber, pageSize int, cursor *cursor.Cur
 
 func main() {
 
-	prefix := "abc"
-	pageNumber := 1
-	pageSize := 2
-
-	result := PREFIX_SCAN(prefix, pageNumber, pageSize)
-
-	// Display the result
-	fmt.Printf("Results for prefix '%s', page %d, page size %d:\n", prefix, pageNumber, pageSize)
-	for _, dt := range result {
-		fmt.Printf("%s: %s\n", dt.Key, dt.Value, dt.Time)
-	}
+	fmt.Println("Main")
 }
