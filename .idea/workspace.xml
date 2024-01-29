@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="266fda36-53eb-494e-ac38-ef5f8dbd004f" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/SimHashImplementation/SimHash/SimHash.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/SimHashImplementation/SimHash/SimHash.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SimHashImplementation/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/structs/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/structs/go.sum" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
+  </component>
+  <component name="GOROOT" url="file://C:/Program Files/Go" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 1
+}]]></component>
+  <component name="ProjectId" id="2bbbvQ88OftEPMvRBcKcFSmPeWR" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "lsm",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "D:/FAKS/3. semestar/Napredni algoritmi i strukture/Projekat/Key-Value_Engine",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\FAKS\3. semestar\Napredni algoritmi i strukture\Projekat\Key-Value_Engine\structs" />
+      <recent name="D:\FAKS\3. semestar\Napredni algoritmi i strukture\Projekat\Key-Value_Engine" />
+      <recent name="D:\FAKS\3. semestar\Napredni algoritmi i strukture\Projekat\Key-Value_Engine\lsm-1" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Go Build.go build sstable">
+    <configuration name="go build sstable" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="Key-Value_Engine" />
+      <working_directory value="$PROJECT_DIR$/structs" />
+      <kind value="PACKAGE" />
+      <package value="sstable" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/structs/main.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go build sstable/mem" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="Key-Value_Engine" />
+      <working_directory value="$PROJECT_DIR$/lsm-1" />
+      <kind value="PACKAGE" />
+      <package value="sstable/mem" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/lsm-1/mem/main.go" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Build.go build sstable" />
+        <item itemvalue="Go Build.go build sstable/mem" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
+  </component>
+</project>
