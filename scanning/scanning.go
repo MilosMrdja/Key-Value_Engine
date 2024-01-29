@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
+	"scanning/cursor"
+	"scanning/mem/memtable/datatype"
 	"slices"
 	"sort"
 	"strings"
 )
 
 // Function to perform PREFIX_SCAN
-func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []*DataType {
-	var result []*DataType
-
-	i := 0
+func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *cursor.Cursor) []*datatype.DataType {
+	var result []*datatype.DataType
+	var dt *datatype.DataType
 
 	// Implement pagination
 	startIndex := (pageNumber - 1) * pageSize
@@ -19,11 +20,11 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []*Dat
 
 	n := pageNumber * pageSize
 
-	j := cursor.memIndex
+	j := cursor.MemIndex()
 	for true {
-		lista := cursor.memPointers(j).GetDataByPrefix(prefix)
-		for dt := range lista {
-			if dt.delete == true || slices.Contains(result, dt) {
+		lista := cursor.MemPointers()[j].GetElementByPrefix(prefix)
+		for _, dt = range lista {
+			if dt.IsDeleted() == false && slices.Contains(result, dt) == false {
 				result = append(result, dt)
 				n -= 1
 				if n == 0 {
@@ -31,8 +32,8 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []*Dat
 				}
 			}
 		}
-		j = (j - 1 + len(cursor.memPointers)) % len(cursor.memPointers)
-		if j == cursor.memIndex {
+		j = (j - 1 + len(cursor.MemPointers())) % len(cursor.MemPointers())
+		if j == cursor.MemIndex() {
 			break
 		}
 		if n == 0 {
@@ -40,9 +41,9 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []*Dat
 		}
 	}
 
-	lruData := cursor.lruPointer.getAll()
-	for dt := range lruData {
-		if slices.Contains(result, dt) {
+	lruData := cursor.LruPointer().GetAll()
+	for _, dt = range lruData {
+		if slices.Contains(result, dt) == false && strings.HasPrefix(dt.GetKey(), prefix) && dt.IsDeleted() == false {
 			result = append(result, dt)
 			n -= 1
 			if n == 0 {
@@ -54,10 +55,10 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []*Dat
 	offset := 0
 	path := ""
 
-	for (len(memPodaci) + len(kesPodaci) + len(ssPodaci)) < n {
+	for (len(result)) < n {
 		ssPodaci, offset, path = sstable.CitajPodateke(prefix, n-len(memPodaci)-len(kesPodaci), offset, path)
-		for dt := range ssPodaci {
-			if slices.Contains(result, dt) {
+		for _, dt = range ssPodaci {
+			if slices.Contains(result, dt) == false && dt.IsDeleted() == false {
 				result = append(result, dt)
 				n -= 1
 				if n == 0 {
@@ -65,32 +66,29 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *Cursor) []*Dat
 				}
 			}
 		}
+		if n == 0 {
+			break
+		}
 	}
 
 	// Sort the result by key
 	sort.Slice(result, func(i, j int) bool {
-		return result[i].Key < result[j].Key
+		return result[i].GetKey() < result[j].GetKey()
 	})
 
 	// Return the paginated result
 	return result[startIndex:endIndex]
 }
 
-func RANGE_SCAN(keyRange [2]string, pageNumber, pageSize int, cursor *Cursor) []*DataType {
-	var result []*DataType
+func RANGE_SCAN(keyRange [2]string, pageNumber, pageSize int, cursor *cursor.Cursor) []*datatype.DataType {
+	var result []*datatype.DataType
 
 	startIndex := (pageNumber - 1) * pageSize
 	endIndex := startIndex + pageSize
 
-	for key := range table {
-		if strings.Compare(key, keyRange) >= 0 {
-			result = append(result, DataType{Key: key, Value: value})
-		}
-	}
-
 	// Sort the result by key
 	sort.Slice(result, func(i, j int) bool {
-		return result[i].Key < result[j].Key
+		return result[i].GetKey() < result[j].GetKey()
 	})
 
 	if endIndex > len(result) {
