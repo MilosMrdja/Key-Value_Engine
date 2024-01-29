@@ -278,7 +278,7 @@ func GetKeyByValue(mapa *map[string]int32, val int32) string {
 	return ""
 }
 
-func ReadIndex(fileName string, key string, compress1, compress2 bool, elem int, oneFile bool) bool {
+func ReadIndex(fileName string, compress1, compress2 bool, elem int, oneFile bool) bool {
 	if oneFile {
 		fileName = fileName + "/SSTable.bin"
 	}
@@ -407,7 +407,6 @@ func ReadIndex(fileName string, key string, compress1, compress2 bool, elem int,
 				fmt.Printf("Offset: %d \n", binary.BigEndian.Uint64(bytes))
 			}
 		}
-
 	}
 	return true
 }

@@ -91,10 +91,6 @@ func deleteLayer(layerName string) {
 	}
 }
 
-func Compact() {
-
-}
-
 func createLayer(layerName string) {
 	if _, err := os.Stat(layerName); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir(layerName, os.ModePerm)

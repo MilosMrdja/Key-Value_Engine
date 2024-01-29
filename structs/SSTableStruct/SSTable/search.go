@@ -39,7 +39,7 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 				return data, false
 			}
 			fmt.Printf("%d\n", offsetStart)
-			data, err3 = ReadData(fileName, compress1, compress2, offsetStart, offsetEnd, key, oneFile, 3, hashMap)
+			data, err3 = ReadData(fileName, compress1, compress2, offsetStart, offsetEnd, key, oneFile, hashMap)
 			if err3 == false {
 				return data, false
 			}
@@ -68,7 +68,7 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 				return data, false
 			}
 			fmt.Printf("%d\n", offsetStart)
-			data, err3 = ReadData(filePath+"/Data.bin", compress1, compress2, offsetStart, offsetEnd, key, oneFile, 3, hashMap)
+			data, err3 = ReadData(filePath+"/Data.bin", compress1, compress2, offsetStart, offsetEnd, key, oneFile, hashMap)
 			if err3 == false {
 				return data, false
 			}
@@ -81,7 +81,7 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 	return data, false
 }
 
-func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, key string, oneFile bool, elem int, hashMap map[string]int32) (datatype.DataType, bool) {
+func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, key string, oneFile bool, hashMap map[string]int32) (datatype.DataType, bool) {
 
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	Data := datatype.CreateDataType("", []byte(""))
@@ -106,8 +106,12 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 		} else {
 			size, sizeEnd = positionInSSTable(*file, 3)
 		}
+		if offsetEnd == 0 {
+			offsetEnd = sizeEnd
+		} else {
+			offsetEnd += size
+		}
 		offsetStart += size
-		offsetEnd = (size) + (offsetEnd - offsetStart)
 		end = sizeEnd - size
 		if err != nil {
 			return *Data, false
@@ -135,7 +139,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 	for offsetStart <= offsetEnd {
 		//read CRC
 		bytes := make([]byte, 4)
-		file.Seek(currentRead+offsetStart, 0)
+		file.Seek(currentRead+oldOffsetStart, 0)
 		_, err = file.Read(bytes)
 		if err != nil {
 			panic(err)
@@ -144,7 +148,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 
 		// read timestamp
 		bytes = make([]byte, 16)
-		file.Seek(currentRead+offsetStart, 0)
+		file.Seek(currentRead+oldOffsetStart, 0)
 		_, err = file.Read(bytes)
 		if err != nil {
 			panic(err)
@@ -156,7 +160,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 
 		// read tombstone
 		bytes = make([]byte, 1)
-		file.Seek(currentRead+offsetStart, 0)
+		file.Seek(currentRead+oldOffsetStart, 0)
 		_, err = file.Read(bytes)
 		if err != nil {
 			panic(err)
@@ -185,7 +189,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 				// read value
 				if tomb == 0 {
 					bytes = make([]byte, valueSize)
-					file.Seek(currentRead+offsetStart, 0)
+					file.Seek(currentRead+oldOffsetStart, 0)
 					_, err = file.Read(bytes)
 					if err != nil {
 						panic(err)
@@ -210,7 +214,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 				if tomb == 0 {
 
 					buff := make([]byte, 8)
-					file.Seek(currentRead+offsetStart, 0)
+					file.Seek(currentRead+oldOffsetStart, 0)
 					_, err = file.Read(buff)
 					if err != nil {
 						panic(err)
@@ -266,7 +270,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 				// read key
 				bytes = make([]byte, keySize)
 
-				file.Seek(currentRead+offsetStart, 0)
+				file.Seek(currentRead+oldOffsetStart, 0)
 				_, err = file.Read(bytes)
 				if err != nil {
 					panic(err)
@@ -277,7 +281,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 				// read value
 				if tomb == 0 {
 					bytes = make([]byte, valueSize)
-					file.Seek(currentRead+offsetStart, 0)
+					file.Seek(currentRead+oldOffsetStart, 0)
 					_, err = file.Read(bytes)
 					if err != nil {
 						panic(err)
