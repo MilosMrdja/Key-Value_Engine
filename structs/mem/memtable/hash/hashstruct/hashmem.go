@@ -22,6 +22,9 @@ func CreateHashMemtable(cap int) *HashMemtable {
 		readOnly: false,
 	}
 }
+func isInRange(value string, valRange []string) bool {
+	return value >= valRange[0] && value <= valRange[1]
+}
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju
@@ -94,6 +97,15 @@ func (mem *HashMemtable) GetElementByPrefix(prefix string) []*datatype.DataType 
 	var dataList []*datatype.DataType
 	for key, value := range mem.data {
 		if strings.HasPrefix(key, prefix) {
+			dataList = append(dataList, value)
+		}
+	}
+	return dataList
+}
+func (mem *HashMemtable) GetElementByRange(valRange []string) []*datatype.DataType {
+	var dataList []*datatype.DataType
+	for key, value := range mem.data {
+		if isInRange(key, valRange) {
 			dataList = append(dataList, value)
 		}
 	}

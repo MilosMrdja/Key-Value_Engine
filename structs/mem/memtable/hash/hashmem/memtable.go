@@ -11,4 +11,5 @@ type Memtable interface {
 	SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool
 	IsReadOnly() bool
 	GetElementByPrefix(prefix string) []*datatype.DataType
+	GetElementByRange(valRange []string) []*datatype.DataType
 }

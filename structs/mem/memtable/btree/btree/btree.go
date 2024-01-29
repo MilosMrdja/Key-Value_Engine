@@ -88,7 +88,13 @@ func (t *BTree) GetByPrefix(prefix string) []*datatype.DataType {
 	}
 	return dataList
 }
-
+func (t *BTree) GetByRange(valRange []string) []*datatype.DataType {
+	var dataList []*datatype.DataType
+	if t.Root != nil {
+		dataList = append(t.Root.GetByRange(valRange))
+	}
+	return dataList
+}
 func NewBTree(t int) *BTree {
 	return &BTree{Root: nil, Rang: t}
 }

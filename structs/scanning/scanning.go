@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"sstable/LSM"
 	"sstable/cursor"
 	"sstable/mem/memtable/datatype"
 	"strings"
@@ -54,7 +55,8 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *cursor.Cursor)
 	path := ""
 
 	for (len(result)) < n {
-		ssData, offset, path = sstable.GetDataByPrefix(prefix, n, offset, path)
+		ssData, path, offset, greska := LSM.GetDataByPrefix(n, prefix, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+
 		for _, dt = range ssData {
 			if slices.Contains(result, dt) == false && dt.IsDeleted() == false {
 				result = append(result, dt)

@@ -13,6 +13,10 @@ type SkiplistNode struct {
 	next []*SkiplistNode
 }
 
+func isInRange(value string, valRange []string) bool {
+	return value >= valRange[0] && value <= valRange[1]
+}
+
 func CreateSkiplistNode(key string, data []byte, level int) *SkiplistNode {
 	return &SkiplistNode{
 		key:  key,
@@ -155,7 +159,19 @@ func (sl *SkipList) GetByPrefix(prefix string) []*datatype.DataType {
 	}
 	return dataList
 }
-
+func (sl *SkipList) GetByRange(valRange []string) []*datatype.DataType {
+	var dataList []*datatype.DataType
+	i := 0
+	current := sl.head.next[0]
+	for current != nil {
+		if isInRange(current.key, valRange) {
+			dataList = append(dataList, current.data)
+		}
+		current = current.next[0]
+		i++
+	}
+	return dataList
+}
 func (sl *SkipList) AllData(len int) []datatype.DataType {
 	dataList := make([]datatype.DataType, len)
 	i := 0

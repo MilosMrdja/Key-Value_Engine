@@ -86,3 +86,7 @@ func (slmem *SkipListMemtable) GetElementByPrefix(prefix string) []*datatype.Dat
 	return slmem.data.GetByPrefix(prefix)
 
 }
+
+func (mem *SkipListMemtable) GetElementByRange(valRange [2]string) []*datatype.DataType {
+	return nil
+}

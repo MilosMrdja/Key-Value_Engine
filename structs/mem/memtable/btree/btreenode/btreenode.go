@@ -14,6 +14,9 @@ type BTreeNode struct {
 	t        int
 }
 
+func isInRange(value string, valRange []string) bool {
+	return value >= valRange[0] && value <= valRange[1]
+}
 func NewBTreeNode(t int, leaf bool) *BTreeNode {
 	return &BTreeNode{
 		isLeaf:   leaf,
@@ -145,7 +148,31 @@ func (b *BTreeNode) GetByPrefix(prefix string) []*datatype.DataType {
 	}
 	return dataList
 }
+func (b *BTreeNode) GetByRange(valRange []string) []*datatype.DataType {
+	var dataList []*datatype.DataType
+	var i = 0
+	for i = 0; i < b.n; i++ {
+		if b.isLeaf == false {
+			temp := b.children[i].GetByRange(valRange)
+			for j := 0; j < len(temp); j++ {
+				if isInRange(temp[i].GetKey(), valRange) {
+					dataList = append(dataList, temp[j])
+				}
 
+			}
+
+		}
+		dataList = append(dataList, b.keys[i])
+
+	}
+	if b.isLeaf == false {
+		temp := b.children[i].GetByRange(valRange)
+		for j := 0; j < len(temp); j++ {
+			dataList = append(dataList, temp[j])
+		}
+	}
+	return dataList
+}
 func (b *BTreeNode) T() int {
 	return b.t
 }
