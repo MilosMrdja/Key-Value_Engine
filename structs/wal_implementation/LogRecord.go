@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// sve osim key i value je zajedno 37 bajtova
 type LogRecord struct {
 	CRC       uint32
 	Timestamp []byte
