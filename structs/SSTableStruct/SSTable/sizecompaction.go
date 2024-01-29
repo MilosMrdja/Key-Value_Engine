@@ -328,7 +328,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 				currentRead += int64(valueSize)
 				currentValue = bytes
 			}
-			currentKey = getKeyByValue(&decodeMap, int32(key))
+			currentKey = GetKeyByValue(&decodeMap, int32(key))
 
 		} else {
 			// read key size - znamo da je 4 bajta maks
@@ -354,7 +354,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 			}
 			currentRead += 4
 			key := binary.BigEndian.Uint32(buff)
-			currentKey = getKeyByValue(&decodeMap, int32(key))
+			currentKey = GetKeyByValue(&decodeMap, int32(key))
 			// read value
 			if tomb == 0 {
 				buff = make([]byte, valueSize)

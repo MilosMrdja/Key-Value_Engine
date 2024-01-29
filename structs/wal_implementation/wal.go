@@ -18,6 +18,7 @@ type WriteAheadLog struct {
 	openedFileRead       *os.File
 	currentWritePosition int
 	currentReadPosition  int
+	folderPath           string
 }
 
 type CustomError struct {
@@ -29,16 +30,18 @@ func (e CustomError) Error() string {
 }
 
 const (
-	MAXSIZE        = 50
-	SEGMENTS_NAME  = "wal_"
-	LOW_WATER_MARK = 5 //index to which segments will be deleted
-	HEADER_SIZE    = 8 //first 4 bytes is how much of record remains from last segment and last 4 bytes are indicating if this is the last segment (all zeors means its not)
+	MAXSIZE       = 50
+	SEGMENTS_NAME = "wal_"
+	//LOW_WATER_MARK = 5 //index to which segments will be deleted
+	HEADER_SIZE = 8 //first 4 bytes is how much of record remains from last segment and last 4 bytes are indicating if this is the last segment (all zeors means its not)
+
 )
 
 func NewWriteAheadLog() *WriteAheadLog {
-	folderPath := "./wal" // Specify the folder path here
+	// Specify the folder path here
+	fp := fmt.Sprintf("wal_implementation%cwal", os.PathSeparator) // ako se promeni mora se i u funkciji goToNextReadFile split promeniti za promenljivu s
 	listOfSegments := make([]string, 0)
-	files, err := os.ReadDir(folderPath)
+	files, err := os.ReadDir(fp)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,7 +55,7 @@ func NewWriteAheadLog() *WriteAheadLog {
 	var file *os.File
 	writingPosition := 0
 	if len(listOfSegments) == 0 {
-		filePath = fmt.Sprintf("wal%c%s%s.log", os.PathSeparator, SEGMENTS_NAME, "00001")
+		filePath = fmt.Sprintf("%s%c%s%s.log", fp, os.PathSeparator, SEGMENTS_NAME, "00001")
 		listOfSegments = append(listOfSegments, fmt.Sprintf("%s%s.log", SEGMENTS_NAME, "00001"))
 		file, err = os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
 		err = file.Truncate(MAXSIZE)
@@ -63,7 +66,7 @@ func NewWriteAheadLog() *WriteAheadLog {
 		copy(mmapf[0:HEADER_SIZE], byteArray)
 		err = mmapf.Flush()
 	} else {
-		filePath = fmt.Sprintf("wal%c%s", os.PathSeparator, listOfSegments[len(listOfSegments)-1])
+		filePath = fmt.Sprintf("%s%c%s", fp, os.PathSeparator, listOfSegments[len(listOfSegments)-1])
 		file, err = os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
 		mmapf, _ := mmap.Map(file, mmap.RDWR, 0)
 		defer mmapf.Unmap()
@@ -71,7 +74,7 @@ func NewWriteAheadLog() *WriteAheadLog {
 		copy(buffer, mmapf[HEADER_SIZE/2:HEADER_SIZE])
 		writingPosition = int(binary.LittleEndian.Uint32(buffer))
 	}
-	filePath = fmt.Sprintf("wal%c%s%s.log", os.PathSeparator, SEGMENTS_NAME, "00001")
+	filePath = fmt.Sprintf("%s%c%s%s.log", fp, os.PathSeparator, SEGMENTS_NAME, "00001")
 	readingFile, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
 	if err != nil {
 		log.Fatalln(err)
@@ -83,6 +86,7 @@ func NewWriteAheadLog() *WriteAheadLog {
 		openedFileRead:       readingFile,
 		currentWritePosition: writingPosition,
 		currentReadPosition:  0,
+		folderPath:           fp,
 	}
 }
 
@@ -114,7 +118,7 @@ func (wal *WriteAheadLog) clearLog() error {
 		return err
 	}
 	logsNumber := fmt.Sprintf("%05d", num+1)
-	newSegment := fmt.Sprintf("wal%c%s%s.log", os.PathSeparator, SEGMENTS_NAME, logsNumber)
+	newSegment := fmt.Sprintf("%s%c%s%s.log", wal.folderPath, os.PathSeparator, SEGMENTS_NAME, logsNumber)
 	wal.Segments = append(wal.Segments, fmt.Sprintf("%s%s.log", SEGMENTS_NAME, logsNumber))
 	mmapf, err := mmap.Map(wal.openedFileWrite, mmap.RDWR, 0)
 	defer mmapf.Unmap()
@@ -138,8 +142,8 @@ func (wal *WriteAheadLog) clearLog() error {
 	return nil
 }
 
-func (wal *WriteAheadLog) DeleteSegmentsTilWatermark() error {
-	lwm := LOW_WATER_MARK
+func (wal *WriteAheadLog) DeleteSegmentsTilWatermark(lowWaterMark int) error {
+	lwm := lowWaterMark
 	if lwm > len(wal.Segments) {
 		lwm = len(wal.Segments)
 	}
@@ -155,14 +159,14 @@ func (wal *WriteAheadLog) DeleteSegmentsTilWatermark() error {
 	wal.Segments = wal.Segments[lwm-1:]
 	newSegments := make([]string, 0)
 	for i := 0; i < len(wal.Segments); i++ {
-		oldPath := fmt.Sprintf("wal%c%s", os.PathSeparator, wal.Segments[i])
+		oldPath := fmt.Sprintf("%s%c%s", wal.folderPath, os.PathSeparator, wal.Segments[i])
 		logsNumber := fmt.Sprintf("%05d", i+1)
-		newPath := fmt.Sprintf("wal%c%s%s.log", os.PathSeparator, SEGMENTS_NAME, logsNumber)
+		newPath := fmt.Sprintf("%s%c%s%s.log", wal.folderPath, os.PathSeparator, SEGMENTS_NAME, logsNumber)
 		err = os.Rename(oldPath, newPath)
 		newSegments = append(newSegments, fmt.Sprintf("%s%s.log", SEGMENTS_NAME, logsNumber))
 	}
 	wal.Segments = newSegments
-	lastPath := fmt.Sprintf("wal%c%s", os.PathSeparator, wal.Segments[len(wal.Segments)-1])
+	lastPath := fmt.Sprintf("%s%c%s", wal.folderPath, os.PathSeparator, wal.Segments[len(wal.Segments)-1])
 	if err != nil {
 		return err
 	}
@@ -171,7 +175,7 @@ func (wal *WriteAheadLog) DeleteSegmentsTilWatermark() error {
 	buffer := make([]byte, HEADER_SIZE/2)
 	copy(buffer, mmapf[HEADER_SIZE/2:HEADER_SIZE])
 	wal.currentWritePosition = int(binary.LittleEndian.Uint32(buffer))
-	firstPath := fmt.Sprintf("wal%c%s", os.PathSeparator, wal.Segments[0])
+	firstPath := fmt.Sprintf("%s%c%s", wal.folderPath, os.PathSeparator, wal.Segments[0])
 	wal.openedFileRead, err = os.OpenFile(firstPath, os.O_RDWR|os.O_CREATE, 0644)
 	wal.currentReadPosition = 0
 	return nil
@@ -179,7 +183,7 @@ func (wal *WriteAheadLog) DeleteSegmentsTilWatermark() error {
 
 func (wal *WriteAheadLog) goToNextReadFile() error {
 	wal.currentReadPosition = 0
-	s := wal.openedFileRead.Name()
+	s := strings.Split(wal.openedFileRead.Name(), string(os.PathSeparator))[2]
 	parts := strings.Split(s, "_")
 	numStr := strings.TrimLeft(parts[1], "0")
 	num, err := strconv.Atoi(strings.Split(numStr, ".")[0])
@@ -187,7 +191,7 @@ func (wal *WriteAheadLog) goToNextReadFile() error {
 		return err
 	}
 	logsNumber := fmt.Sprintf("%05d", num+1)
-	newSegment := fmt.Sprintf("wal%c%s%s.log", os.PathSeparator, SEGMENTS_NAME, logsNumber)
+	newSegment := fmt.Sprintf("%s%c%s%s.log", wal.folderPath, os.PathSeparator, SEGMENTS_NAME, logsNumber)
 	err = wal.openedFileRead.Close()
 	if err != nil {
 		return err
@@ -377,7 +381,7 @@ func main() {
 	//	value := []byte(value_string)
 	//	wal.Log(key, value, false)
 	//}
-	err := wal.DeleteSegmentsTilWatermark()
+	err := wal.DeleteSegmentsTilWatermark(5)
 	if err != nil {
 		fmt.Println(err)
 	}

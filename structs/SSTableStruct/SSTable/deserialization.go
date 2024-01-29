@@ -67,7 +67,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 		if err != nil {
 			return false
 		}
-		defer file.Close()
+		defer fileHash.Close()
 		fileInfoHash, err := os.Stat(fileNameHash)
 		if err != nil {
 			panic(err)
@@ -133,7 +133,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 
 				// read key
 				key, k := binary.Varint(bytesFile[currentRead:])
-				ss := getKeyByValue(&decodeMap, int32(key))
+				ss := GetKeyByValue(&decodeMap, int32(key))
 				fmt.Printf("Key: %s ", ss)
 				currentRead += int64(k)
 				// read value
@@ -172,7 +172,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 				}
 				currentRead += 4
 				key := binary.BigEndian.Uint32(buff)
-				ss := getKeyByValue(&decodeMap, int32(key))
+				ss := GetKeyByValue(&decodeMap, int32(key))
 				fmt.Printf("Key : %s ", ss)
 
 				// read value
@@ -269,7 +269,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 	return true
 }
 
-func getKeyByValue(mapa *map[string]int32, val int32) string {
+func GetKeyByValue(mapa *map[string]int32, val int32) string {
 	for k, v := range *mapa {
 		if v == val {
 			return k
