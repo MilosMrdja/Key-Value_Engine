@@ -64,14 +64,14 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 	for true {
 
 		data, greska := getNextRecord(oldFilePath, startOffsetList, endOffsetList, compres1, compres2, oneFile)
-		dictionary[data.GetKey()] = int32(i)
-
-		if greska == false {
-			return false
+		if greska == false && data.GetKey() != "" {
+			continue
 		}
 		if data.GetKey() == "" {
 			break
 		}
+
+		dictionary[data.GetKey()] = int32(i)
 
 		// dodali smo kljuc u bloomf
 		AddKeyToBloomFilter(bloomFilter, data.GetKey())
@@ -550,6 +550,9 @@ func getNextRecord(filePath string, startOffsetList, endOffsetList []int64, comp
 		if currentData.GetKey() == data.GetKey() {
 			startOffsetList[i-1] += read
 		}
+	}
+	if data.IsDeleted() == true {
+		return data, false
 	}
 	return data, true
 }

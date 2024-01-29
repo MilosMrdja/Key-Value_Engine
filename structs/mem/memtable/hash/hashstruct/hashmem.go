@@ -25,7 +25,7 @@ func CreateHashMemtable(cap int) *HashMemtable {
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju
-func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool) bool {
+func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool {
 
 	dataList := make([]datatype.DataType, mem.length)
 	i := 0
@@ -38,11 +38,12 @@ func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool) bool 
 	})
 
 	newSstableName, _ := LSM.FindNextDestination(0)
-	SSTable.NewSSTable(dataList, 1, 2, newSstableName, compress1, compress2, oneFile)
+	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
 
 	mem.data = make(map[string]*datatype.DataType)
 	mem.length = 0
+	mem.readOnly = false
 	return true
 }
 

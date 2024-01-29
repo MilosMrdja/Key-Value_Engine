@@ -90,15 +90,16 @@ func (btmem *BTreeMemtable) DeleteElement(key string) bool {
 	return found
 }
 
-func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool) bool {
+func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool {
 	dataList := make([]datatype.DataType, btmem.length)
 	dataList = btmem.data.Traverse()
 
 	newSstableName, _ := LSM.FindNextDestination(0)
-	SSTable.NewSSTable(dataList, 1, 2, newSstableName, compress1, compress2, oneFile)
+	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
 	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
+	btmem.readOnly = false
 
 	return true
 }

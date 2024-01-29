@@ -8,9 +8,102 @@ import (
 	"strconv"
 )
 
+func GET() {
+	//Funkcija za GET
+}
+
+func PUT() {
+	//Funkcija za put
+}
+
+func DELETE() {
+	//Funkcija za DELETE
+}
+
 func main() {
+	//compress1 := false
+	//compress2 := true
+	//oneFile := true
+	//numberOfSSTable := 10
+	//N := 1
+	//M := 2
+	//memType := "hash"
+	//
 	//wal := wal_implementation.NewWriteAheadLog()
+	//
 	//mem1 := btreemem.NewBTreeMemtable(10)
+	//lru1 := lru.NewLRUCache(3)
+	//var mem []hashmem.Memtable
+	//if memType == "hash" {
+	//	mem = append(mem, hashstruct.CreateHashMemtable(10))
+	//} else if memType == "skipl" {
+	//	mem = append(mem, skiplistmem.CreateSkipListMemtable(10))
+	//} else {
+	//	mem = append(mem, btreemem.NewBTreeMemtable(10))
+	//}
+	////cursor := cursor2.NewCursor(mem, 0, lru1)
+	////
+	////cursor.MemPointers()[cursor.MemIndex()]
+	//
+	////ucitamo sa konzole korisnikov unos
+	//
+	////Ukoliko je unos PUT
+	//key := "kljuc"
+	//value := []byte("Ja se zovem Stefan")
+	////Prvo u WAL
+	//err := wal.Log(key, value, false)
+	//if err != nil {
+	//	panic(err)
+	//}
+	////Drugo u mem
+	//if mem1.IsReadOnly() {
+	//	mem1.SendToSSTable(compress1, compress2, oneFile, N, M)
+	//}
+	//LSM.CompactSstable(numberOfSSTable, compress1, compress2, oneFile)
+	//
+	//ok := mem1.AddElement(key, value)
+	//if !ok {
+	//	panic("Greska")
+	//}
+	////Trece u LRU
+	//lru1.Put(datatype.CreateDataType(key, value))
+	//
+	////ukoliko je GET
+	//key = "kljuc"
+	//ok, value = mem1.GetElement(key)
+	//if ok {
+	//	fmt.Printf("Value: %s\n", value)
+	//}
+	//
+	//value = lru1.Get(key)
+	//if value != nil {
+	//	fmt.Printf("Value: %s\n", value)
+	//}
+	//
+	//data, ok := LSM.GetByKey(key, compress1, compress2, oneFile)
+	//if ok {
+	//	fmt.Printf("Value: %s\n", data.GetData())
+	//}
+	//
+	//fmt.Printf("Nema ga\n")
+	//
+	////Ukoliko je unos DELETE
+	//
+	//key = "kljuc"
+	//err = wal.Log(key, []byte(""), true)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//ok = mem1.DeleteElement(key)
+	//if ok {
+	//	fmt.Printf("Obrisan iz mem1")
+	//} else {
+	//	fmt.Printf("Nije u mem1")
+	//}
+	//
+	//lru1.Delete(key)
+
 	//for i := 0; i < 10; i++ {
 	//	err := wal.Log(strconv.Itoa(i), []byte(strconv.Itoa(i)), false)
 	//	if err != nil {
@@ -48,9 +141,12 @@ func main() {
 		for j := 0; j < 10; j++ {
 			btmem.AddElement(strconv.Itoa(j+i), []byte(strconv.Itoa(j+i)))
 		}
-		btmem.SendToSSTable(compress1, compress2, oneFile)
+		btmem.DeleteElement(strconv.Itoa(15))
+		btmem.SendToSSTable(compress1, compress2, oneFile, 1, 2)
 		LSM.CompactSstable(10, compress1, compress2, oneFile)
+
 	}
+
 	LSM.CompactSstable(10, compress1, compress2, oneFile)
 	//SSTable.ReadIndex("DataSSTableCompact/Summary.bin", "", compress1, compress2, 1, oneFile)
 	////SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compress1, compress2, 2, oneFile)
@@ -68,18 +164,12 @@ func main() {
 	} else {
 		fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
 	}
-
-	lista, _, _, _ := LSM.GetDataByPrefix(15, "2", compress1, compress2, oneFile)
-	for _, i2 := range lista {
-		fmt.Printf("Key: %s ", i2.GetKey())
-		fmt.Printf("Value: %s\n", i2.GetData())
-	}
-	rangeString := [2]string{"1", "2"}
-	lista, _, _, _ = LSM.GetDataByRange(15, rangeString, compress1, compress2, oneFile)
-	for _, i2 := range lista {
-		fmt.Printf("Key: %s ", i2.GetKey())
-		fmt.Printf("Value: %s\n", i2.GetData())
-	}
+	//
+	//lista, _, _, _ := LSM.GetDataByPrefix(15, "2", compress1, compress2, oneFile)
+	//for _, i2 := range lista {
+	//	fmt.Printf("Key: %s ", i2.GetKey())
+	//	fmt.Printf("Value: %s\n", i2.GetData())
+	//}
 
 	//lru1 := lru.NewLRUCache(3)
 	//x1 := datatype.CreateDataType("kljuc1", []byte("vrednost1"))
