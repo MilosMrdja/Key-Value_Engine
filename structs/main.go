@@ -5,25 +5,24 @@ import (
 	"sstable/LSM"
 	"sstable/SSTableStruct/SSTable"
 	"sstable/mem/memtable/btree/btreemem"
-	"sstable/wal_implementation"
 	"strconv"
 )
 
 func main() {
-	wal := wal_implementation.NewWriteAheadLog()
-	mem1 := btreemem.NewBTreeMemtable(10)
-	for i := 0; i < 10; i++ {
-		err := wal.Log(strconv.Itoa(i), []byte(strconv.Itoa(i)), false)
-		if err != nil {
-			panic(err)
-		}
-		mem1.AddElement(strconv.Itoa(i), []byte(strconv.Itoa(i)))
-	}
+	//wal := wal_implementation.NewWriteAheadLog()
+	//mem1 := btreemem.NewBTreeMemtable(10)
+	//for i := 0; i < 10; i++ {
+	//	err := wal.Log(strconv.Itoa(i), []byte(strconv.Itoa(i)), false)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	mem1.AddElement(strconv.Itoa(i), []byte(strconv.Itoa(i)))
+	//}
 
 	// conf
-	compress1 := true
+	compress1 := false
 	compress2 := true
-	oneFile := true
+	oneFile := false
 
 	m := 10
 	for i := 0; i < 10; i++ {
@@ -39,13 +38,17 @@ func main() {
 	////SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compress1, compress2, 2, oneFile)
 	fmt.Printf("Konacna: \n")
 	SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
-	////data, err4 := SSTable.GetData("DataSSTableCompact", key, compres, oneFile)
-	//if err4 == true {
-	//	fmt.Printf("Key: %s\n", data.GetKey())
-	//	fmt.Printf("Value: %s\n", data.GetData())
-	//	fmt.Printf("Time: %s\n", data.GetChangeTime())
-	//} else {
-	//	fmt.Printf("Ne postoji podatak sa kljucem %s", key)
-	//}
+	key := "17"
+
+	SSTable.ReadIndex("DataSSTable/L1/sstable1/Summary.bin", key, compress1, compress2, 1, oneFile)
+	SSTable.ReadIndex("DataSSTable/L1/sstable1/Index.bin", key, compress1, compress2, 1, oneFile)
+	data, err4 := SSTable.GetData("DataSStable/L1/sstable1", key, compress1, compress2, oneFile)
+	if err4 == true {
+		fmt.Printf("Key: %s\n", data.GetKey())
+		fmt.Printf("Value: %s\n", data.GetData())
+		fmt.Printf("Time: %s\n", data.GetChangeTime())
+	} else {
+		fmt.Printf("Ne postoji podatak sa kljucem %s", key)
+	}
 
 }
