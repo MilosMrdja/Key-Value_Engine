@@ -72,3 +72,34 @@ func GetDataByPrefix(number int, prefix string, compress1, compress2, oneFile bo
 	}
 	return data, "", 0, false
 }
+func GetDataByRange(number int, valrange [2]string, compress1, compress2, oneFile bool) ([]datatype.DataType, string, int64, bool) {
+	dataDir, err := os.Open("./DataSStable")
+	if err != nil {
+		panic(err)
+	}
+	err = dataDir.Close()
+	if err != nil {
+		panic(err)
+	}
+	layerNames, err := dataDir.Readdirnames(-1)
+	var data []datatype.DataType
+	for i := 0; i < len(layerNames); i++ {
+		filelayer, err := os.Open(dataDir.Name() + "/" + layerNames[i])
+		if err != nil {
+			panic(err)
+		}
+		err = filelayer.Close()
+		if err != nil {
+			panic(err)
+		}
+		sstableName, errNames := filelayer.Readdirnames(-1)
+		if errNames != nil {
+			panic(errNames)
+		}
+		for j := len(sstableName) - 1; j >= 0; j-- {
+			data, path, offset, greska := SSTable.GetByRange("./DataSStable"+"/L"+strconv.Itoa(i)+"/"+sstableName[j], valrange, compress1, compress2, oneFile, number)
+			return data, path, offset, greska
+		}
+	}
+	return data, "", 0, false
+}

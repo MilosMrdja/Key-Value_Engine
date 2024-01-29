@@ -74,6 +74,12 @@ func main() {
 		fmt.Printf("Key: %s ", i2.GetKey())
 		fmt.Printf("Value: %s\n", i2.GetData())
 	}
+	rangeString := [2]string{"1", "2"}
+	lista, _, _, _ = LSM.GetDataByRange(15, rangeString, compress1, compress2, oneFile)
+	for _, i2 := range lista {
+		fmt.Printf("Key: %s ", i2.GetKey())
+		fmt.Printf("Value: %s\n", i2.GetData())
+	}
 
 	//lru1 := lru.NewLRUCache(3)
 	//x1 := datatype.CreateDataType("kljuc1", []byte("vrednost1"))
