@@ -5,10 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f8be1381-df3e-4902-a666-44eaae7feb55" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/structs/iterator/iterator.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/advancedalg.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/advancedalg.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/cursor/cursorstruct.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/cursor/cursor.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/iterator/iterator.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/iterator/iterator.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/mem/memtable/btree/btreemem/btreememstruct.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/mem/memtable/btree/btreemem/btreememstruct.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/mem/memtable/hash/hashmem/memtable.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/mem/memtable/hash/hashmem/memtable.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/mem/memtable/hash/hashstruct/hashmem.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/mem/memtable/hash/hashstruct/hashmem.go" afterDir="false" />

@@ -91,7 +91,10 @@ func (btmem *BTreeMemtable) DeleteElement(key string) bool {
 	found := btmem.data.Delete(key)
 	return found
 }
-
+func (btmem *BTreeMemtable) GetSortedDataTypes() []datatype.DataType {
+	dataList := btmem.SortDataTypes()
+	return dataList
+}
 func (btmem *BTreeMemtable) SortDataTypes() []datatype.DataType {
 	dataList := make([]datatype.DataType, btmem.length)
 	dataList = btmem.data.Traverse()

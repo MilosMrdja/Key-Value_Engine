@@ -9,6 +9,7 @@ type Memtable interface {
 	GetElement(key string) (bool, []byte)
 	DeleteElement(key string) bool
 	SortDataTypes() []datatype.DataType
+	GetSortedDataTypes() []datatype.DataType
 	GetMaxSize() int
 	SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool
 	IsReadOnly() bool

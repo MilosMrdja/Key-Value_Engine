@@ -24,6 +24,10 @@ func CreateSkipListMemtable(cap int) *SkipListMemtable {
 func (slmem *SkipListMemtable) GetMaxSize() int {
 	return slmem.length
 }
+func (slmem *SkipListMemtable) GetSortedDataTypes() []datatype.DataType {
+	dataList := slmem.SortDataTypes()
+	return dataList
+}
 func (slmem *SkipListMemtable) SortDataTypes() []datatype.DataType {
 	dataList := make([]datatype.DataType, slmem.length)
 	dataList = slmem.data.AllData(slmem.length)

@@ -8,19 +8,37 @@ import (
 	"sstable/cursor"
 	"sstable/iterator"
 	"sstable/mem/memtable/datatype"
+	"sstable/mem/memtable/hash/hashmem"
 	"strings"
 )
 
 func isInRange(value string, valRange []string) bool {
 	return value >= valRange[0] && value <= valRange[1]
 }
-
+func sortMap(mapa map[*hashmem.Memtable]datatype.DataType) {
+	return
+}
 func PREFIX_ITERATE(prefix string, iterator *iterator.Iterator) {
 	if prefix != iterator.CurrPrefix() {
 		iterator.SetCurrPrefix(prefix)
 		iterator.ResetMemTableIndexes()
 	}
-
+	minMap := make(map[*hashmem.Memtable]datatype.DataType)
+	for i := range iterator.MemTablePositions() {
+		for true {
+			if i.GetMaxSize() == iterator.MemTablePositions()[i] {
+				break
+			} else if !strings.HasPrefix(i.GetSortedDataTypes()[iterator.MemTablePositions()[i]].GetKey(), iterator.CurrPrefix()) && i.GetSortedDataTypes()[iterator.MemTablePositions()[i]].GetKey() > iterator.CurrPrefix() {
+				iterator.MemTablePositions()[i] = i.GetMaxSize()
+				break
+			} else if strings.HasPrefix(i.GetSortedDataTypes()[iterator.MemTablePositions()[i]].GetKey(), iterator.CurrPrefix()) {
+				minMap[&i] = i.GetSortedDataTypes()[iterator.MemTablePositions()[i]]
+				break
+			} else {
+				iterator.MemTablePositions()[i]++
+			}
+		}
+	}
 }
 
 // Function to perform PREFIX_SCAN

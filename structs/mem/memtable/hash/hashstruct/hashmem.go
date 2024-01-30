@@ -28,6 +28,10 @@ func isInRange(value string, valRange []string) bool {
 func (mem *HashMemtable) GetMaxSize() int {
 	return mem.length
 }
+func (mem *HashMemtable) GetSortedDataTypes() []datatype.DataType {
+	dataList := mem.SortDataTypes()
+	return dataList
+}
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju
