@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"encoding/gob"
+	"encoding/binary"
 	"fmt"
 	"math"
 	"os"
@@ -53,47 +53,53 @@ func (tb *TokenBucket) IsRequestAllowed(tokens int64) string {
 
 // SerializeTokenBucket serializes the TokenBucket
 func (tb *TokenBucket) SerializeTokenBucket() ([]byte, error) {
-	var buffer bytes.Buffer
-	encoder := gob.NewEncoder(&buffer)
+	buffer := new(bytes.Buffer)
 
-	err := encoder.Encode(struct {
-		Rate                int64
-		MaxTokens           int64
-		CurrentTokens       int64
-		LastRefillTimestamp time.Time
-	}{tb.rate, tb.maxTokens, tb.currentTokens, tb.lastRefillTimestamp})
-
-	if err != nil {
-		return nil, err
-	}
+	// Write rate, maxTokens, currentTokens, and lastRefillTimestamp to the buffer
+	binary.Write(buffer, binary.LittleEndian, tb.rate)
+	binary.Write(buffer, binary.LittleEndian, tb.maxTokens)
+	binary.Write(buffer, binary.LittleEndian, tb.currentTokens)
+	binary.Write(buffer, binary.LittleEndian, tb.lastRefillTimestamp.UnixNano())
 
 	return buffer.Bytes(), nil
 }
 
 // DeserializeTokenBucket deserializes the TokenBucket
 func DeserializeTokenBucket(data []byte) (*TokenBucket, error) {
-	var tb TokenBucket
-	buffer := bytes.NewBuffer(data)
-	decoder := gob.NewDecoder(buffer)
+	buffer := bytes.NewReader(data)
 
-	temp := struct {
-		Rate                int64
-		MaxTokens           int64
-		CurrentTokens       int64
-		LastRefillTimestamp time.Time
-	}{}
+	var rate, maxTokens, currentTokens int64
+	var lastRefillTimestampNano int64
 
-	err := decoder.Decode(&temp)
+	// Read rate, maxTokens, currentTokens, and lastRefillTimestamp from the buffer
+	err := binary.Read(buffer, binary.LittleEndian, &rate)
 	if err != nil {
 		return nil, err
 	}
 
-	tb.rate = temp.Rate
-	tb.maxTokens = temp.MaxTokens
-	tb.currentTokens = temp.CurrentTokens
-	tb.lastRefillTimestamp = temp.LastRefillTimestamp
+	err = binary.Read(buffer, binary.LittleEndian, &maxTokens)
+	if err != nil {
+		return nil, err
+	}
 
-	return &tb, nil
+	err = binary.Read(buffer, binary.LittleEndian, &currentTokens)
+	if err != nil {
+		return nil, err
+	}
+
+	err = binary.Read(buffer, binary.LittleEndian, &lastRefillTimestampNano)
+	if err != nil {
+		return nil, err
+	}
+
+	lastRefillTimestamp := time.Unix(0, lastRefillTimestampNano)
+
+	return &TokenBucket{
+		rate:                rate,
+		maxTokens:           maxTokens,
+		currentTokens:       currentTokens,
+		lastRefillTimestamp: lastRefillTimestamp,
+	}, nil
 }
 
 // AppendRequest appends binary data to a requests.bin file

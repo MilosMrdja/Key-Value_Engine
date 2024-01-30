@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"encoding/gob"
+	"encoding/binary"
 	"fmt"
 	"hash/fnv"
 )
@@ -62,46 +62,56 @@ func hash(s string, index int) uint32 {
 	return (h.Sum32() + uint32(index)) % maxUint32
 }
 
-// SerializeCountMinSketch serijalizuje CMS
+// SerializeCountMinSketch serializes the CMS to a byte slice
 func (cms *CountMinSketch) SerializeCountMinSketch() ([]byte, error) {
-	var buffer bytes.Buffer
-	encoder := gob.NewEncoder(&buffer)
+	buffer := new(bytes.Buffer)
 
-	err := encoder.Encode(struct {
-		Width  int
-		Hashes int
-		Table  [][]int
-	}{cms.width, cms.hashes, cms.table})
+	// Write width and hashes to the buffer
+	binary.Write(buffer, binary.LittleEndian, int32(cms.width))
+	binary.Write(buffer, binary.LittleEndian, int32(cms.hashes))
 
-	if err != nil {
-		return nil, err
+	// Write the table data to the buffer
+	for _, row := range cms.table {
+		for _, value := range row {
+			binary.Write(buffer, binary.LittleEndian, int32(value))
+		}
 	}
 
 	return buffer.Bytes(), nil
 }
 
-// DeserializeCountMinSketch deserijalizuje CMS
+// DeserializeCountMinSketch deserializes the CMS from a byte slice
 func DeserializeCountMinSketch(data []byte) (*CountMinSketch, error) {
-	var cms CountMinSketch
-	buffer := bytes.NewBuffer(data)
-	decoder := gob.NewDecoder(buffer)
+	buffer := bytes.NewReader(data)
 
-	temp := struct {
-		Width  int
-		Hashes int
-		Table  [][]int
-	}{}
+	var width, hashes int32
 
-	err := decoder.Decode(&temp)
+	// Read width and hashes from the buffer
+	err := binary.Read(buffer, binary.LittleEndian, &width)
 	if err != nil {
 		return nil, err
 	}
 
-	cms.width = temp.Width
-	cms.hashes = temp.Hashes
-	cms.table = temp.Table
+	err = binary.Read(buffer, binary.LittleEndian, &hashes)
+	if err != nil {
+		return nil, err
+	}
 
-	return &cms, nil
+	// Read the table data from the buffer
+	table := make([][]int, int(hashes))
+	for i := range table {
+		table[i] = make([]int, int(width))
+		for j := range table[i] {
+			var value int32
+			err := binary.Read(buffer, binary.LittleEndian, &value)
+			if err != nil {
+				return nil, err
+			}
+			table[i][j] = int(value)
+		}
+	}
+
+	return &CountMinSketch{width: int(width), hashes: int(hashes), table: table}, nil
 }
 
 const maxUint32 = ^uint32(0)
