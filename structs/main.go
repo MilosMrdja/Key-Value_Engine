@@ -2,11 +2,60 @@ package main
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v2"
+	"log"
+	"os"
 	"sstable/LSM"
-	"sstable/SSTableStruct/SSTable"
+	"sstable/lru"
 	"sstable/mem/memtable/btree/btreemem"
-	"strconv"
+	"sstable/mem/memtable/datatype"
+	"sstable/mem/memtable/hash/hashmem"
+	"sstable/mem/memtable/hash/hashstruct"
+	"sstable/mem/memtable/skiplist/skiplistmem"
+	"sstable/wal_implementation"
 )
+
+var compress1 bool
+var compress2 bool
+var oneFile bool
+var numberOfSSTable int
+var N int
+var M int
+var memTableCap int
+var memType string
+var config Config
+
+type Config struct {
+	LruCap          int    `yaml:"lru_cap"`
+	compress1       bool   `yaml:"compress1"`
+	compress2       bool   `yaml:"compress2"`
+	oneFile         bool   `yaml:"oneFile"`
+	numberOfSSTable int    `yaml:"numberOfSSTable"`
+	N               int    `yaml:"N"` // razudjenost u indexu
+	M               int    `yaml:"M"` // razudjenost u summary
+	memTableCap     int    `yaml:"memTableCap"`
+	memType         string `yaml:"memType"`
+}
+
+func setConst() {
+
+	configData, err := os.ReadFile("config.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = yaml.Unmarshal(configData, &config)
+	if err != nil {
+		log.Fatal(err)
+	}
+	compress1 = config.compress1
+	compress2 = config.compress2
+	oneFile = config.oneFile
+	numberOfSSTable = config.numberOfSSTable
+	N = config.N
+	M = config.M
+	memTableCap = config.memTableCap
+	memType = config.memType
+}
 
 func GET() {
 	//Funkcija za GET
@@ -21,89 +70,81 @@ func DELETE() {
 }
 
 func main() {
+	setConst()
+	wal := wal_implementation.NewWriteAheadLog()
 
-	//compress1 := false
-	//compress2 := true
-	//oneFile := true
-	//numberOfSSTable := 10
-	//N := 1
-	//M := 2
-	//memType := "hash"
+	mem1 := btreemem.NewBTreeMemtable(10)
+	lru1 := lru.NewLRUCache(3)
+	var mem []hashmem.Memtable
+	if memType == "hash" {
+		mem = append(mem, hashstruct.CreateHashMemtable(memTableCap))
+	} else if memType == "skipl" {
+		mem = append(mem, skiplistmem.CreateSkipListMemtable(memTableCap))
+	} else {
+		mem = append(mem, btreemem.NewBTreeMemtable(memTableCap))
+	}
+	//cursor := cursor2.NewCursor(mem, 0, lru1)
 	//
-	//wal := wal_implementation.NewWriteAheadLog()
-	//
-	//mem1 := btreemem.NewBTreeMemtable(10)
-	//lru1 := lru.NewLRUCache(3)
-	//var mem []hashmem.Memtable
-	//if memType == "hash" {
-	//	mem = append(mem, hashstruct.CreateHashMemtable(10))
-	//} else if memType == "skipl" {
-	//	mem = append(mem, skiplistmem.CreateSkipListMemtable(10))
-	//} else {
-	//	mem = append(mem, btreemem.NewBTreeMemtable(10))
-	//}
-	////cursor := cursor2.NewCursor(mem, 0, lru1)
-	////
-	////cursor.MemPointers()[cursor.MemIndex()]
-	//
-	////ucitamo sa konzole korisnikov unos
-	//
-	////Ukoliko je unos PUT
-	//key := "kljuc"
-	//value := []byte("Ja se zovem Stefan")
-	////Prvo u WAL
-	//err := wal.Log(key, value, false)
-	//if err != nil {
-	//	panic(err)
-	//}
-	////Drugo u mem
-	//if mem1.IsReadOnly() {
-	//	mem1.SendToSSTable(compress1, compress2, oneFile, N, M)
-	//}
-	//LSM.CompactSstable(numberOfSSTable, compress1, compress2, oneFile)
-	//
-	//ok := mem1.AddElement(key, value)
-	//if !ok {
-	//	panic("Greska")
-	//}
-	////Trece u LRU
-	//lru1.Put(datatype.CreateDataType(key, value))
-	//
-	////ukoliko je GET
-	//key = "kljuc"
-	//ok, value = mem1.GetElement(key)
-	//if ok {
-	//	fmt.Printf("Value: %s\n", value)
-	//}
-	//
-	//value = lru1.Get(key)
-	//if value != nil {
-	//	fmt.Printf("Value: %s\n", value)
-	//}
-	//
-	//data, ok := LSM.GetByKey(key, compress1, compress2, oneFile)
-	//if ok {
-	//	fmt.Printf("Value: %s\n", data.GetData())
-	//}
-	//
-	//fmt.Printf("Nema ga\n")
-	//
-	////Ukoliko je unos DELETE
-	//
-	//key = "kljuc"
-	//err = wal.Log(key, []byte(""), true)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//ok = mem1.DeleteElement(key)
-	//if ok {
-	//	fmt.Printf("Obrisan iz mem1")
-	//} else {
-	//	fmt.Printf("Nije u mem1")
-	//}
-	//
-	//lru1.Delete(key)
+	//cursor.MemPointers()[cursor.MemIndex()]
+
+	//ucitamo sa konzole korisnikov unos
+
+	//Ukoliko je unos PUT
+	key := "kljuc"
+	value := []byte("Ja se zovem Stefan")
+	//Prvo u WAL
+	err := wal.Log(key, value, false)
+	if err != nil {
+		panic(err)
+	}
+	//Drugo u mem
+	if mem1.IsReadOnly() {
+		mem1.SendToSSTable(compress1, compress2, oneFile, N, M)
+	}
+	LSM.CompactSstable(numberOfSSTable, compress1, compress2, oneFile)
+
+	ok := mem1.AddElement(key, value)
+	if !ok {
+		panic("Greska")
+	}
+	//Trece u LRU
+	lru1.Put(datatype.CreateDataType(key, value))
+
+	//ukoliko je GET
+	key = "kljuc"
+	ok, value = mem1.GetElement(key)
+	if ok {
+		fmt.Printf("Value: %s\n", value)
+	}
+
+	value = lru1.Get(key)
+	if value != nil {
+		fmt.Printf("Value: %s\n", value)
+	}
+
+	data, ok := LSM.GetByKey(key, compress1, compress2, oneFile)
+	if ok {
+		fmt.Printf("Value: %s\n", data.GetData())
+	}
+
+	fmt.Printf("Nema ga\n")
+
+	//Ukoliko je unos DELETE
+
+	key = "kljuc"
+	err = wal.Log(key, []byte(""), true)
+	if err != nil {
+		panic(err)
+	}
+
+	ok = mem1.DeleteElement(key)
+	if ok {
+		fmt.Printf("Obrisan iz mem1")
+	} else {
+		fmt.Printf("Nije u mem1")
+	}
+
+	lru1.Delete(key)
 
 	//for i := 0; i < 10; i++ {
 	//	err := wal.Log(strconv.Itoa(i), []byte(strconv.Itoa(i)), false)
@@ -131,42 +172,42 @@ func main() {
 	//	fmt.Println(rec)
 	//}
 
-	//conf
-	compress1 := true
-	compress2 := true
-	oneFile := true
-
-	m := 10
-	for i := 0; i < 10; i++ {
-		btmem := btreemem.NewBTreeMemtable(m)
-		for j := 0; j < 10; j++ {
-			btmem.AddElement(strconv.Itoa(j+i), []byte(strconv.Itoa(j+i)))
-		}
-		btmem.DeleteElement(strconv.Itoa(15))
-		btmem.SendToSSTable(compress1, compress2, oneFile, 1, 2)
-		SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 1, oneFile)
-
-		LSM.CompactSstable(10, compress1, compress2, oneFile)
-
-	}
-
-	LSM.CompactSstable(10, compress1, compress2, oneFile)
-	//SSTable.ReadIndex("DataSSTableCompact/Summary.bin", "", compress1, compress2, 1, oneFile)
-	////SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compress1, compress2, 2, oneFile)
-	fmt.Printf("Konacna: \n")
-	SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
-	key := "1"
-
-	fmt.Printf("SUMM")
-	SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 1, oneFile)
-	data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
-	if err4 == true {
-		fmt.Printf("Key: %s\n", data.GetKey())
-		fmt.Printf("Value: %s\n", data.GetData())
-		fmt.Printf("Time: %s\n", data.GetChangeTime())
-	} else {
-		fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
-	}
+	////conf
+	//compress1 := true
+	//compress2 := true
+	//oneFile := true
+	//
+	//m := 10
+	//for i := 0; i < 10; i++ {
+	//	btmem := btreemem.NewBTreeMemtable(m)
+	//	for j := 0; j < 10; j++ {
+	//		btmem.AddElement(strconv.Itoa(j+i), []byte(strconv.Itoa(j+i)))
+	//	}
+	//	btmem.DeleteElement(strconv.Itoa(15))
+	//	btmem.SendToSSTable(compress1, compress2, oneFile, 1, 2)
+	//	SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 1, oneFile)
+	//
+	//	LSM.CompactSstable(10, compress1, compress2, oneFile)
+	//
+	//}
+	//
+	//LSM.CompactSstable(10, compress1, compress2, oneFile)
+	////SSTable.ReadIndex("DataSSTableCompact/Summary.bin", "", compress1, compress2, 1, oneFile)
+	//////SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compress1, compress2, 2, oneFile)
+	//fmt.Printf("Konacna: \n")
+	//SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
+	//key := "1"
+	//
+	//fmt.Printf("SUMM")
+	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 1, oneFile)
+	//data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
+	//if err4 == true {
+	//	fmt.Printf("Key: %s\n", data.GetKey())
+	//	fmt.Printf("Value: %s\n", data.GetData())
+	//	fmt.Printf("Time: %s\n", data.GetChangeTime())
+	//} else {
+	//	fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
+	//}
 	//
 	//lista, _, _, _ := LSM.GetDataByPrefix(15, "2", compress1, compress2, oneFile)
 	//for _, i2 := range lista {
