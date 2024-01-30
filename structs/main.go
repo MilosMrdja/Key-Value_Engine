@@ -1,8 +1,8 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"log"
 	"os"
 	"sstable/LSM"
@@ -18,101 +18,54 @@ import (
 var compress1 bool
 var compress2 bool
 var oneFile bool
-var numberOfSSTable int
+var number int
 var N int
 var M int
 var memTableCap int
 var memType string
-var config Config
+var walSegmentSize int
+var key, value string
 
 type Config struct {
-	LruCap          int    `yaml:"lru_cap"`
-	compress1       bool   `yaml:"compress1"`
-	compress2       bool   `yaml:"compress2"`
-	oneFile         bool   `yaml:"oneFile"`
-	numberOfSSTable int    `yaml:"numberOfSSTable"`
-	N               int    `yaml:"N"` // razudjenost u indexu
-	M               int    `yaml:"M"` // razudjenost u summary
-	memTableCap     int    `yaml:"memTableCap"`
-	memType         string `yaml:"memType"`
+	LruCap         int    `json:"lru_cap"`
+	Compress1      bool   `json:"compress1"`
+	Compress2      bool   `json:"compress2"`
+	OneFile        bool   `json:"oneFile"`
+	Number         int    `json:"numberOfSSTable"`
+	N              int    `json:"N"` // razudjenost u indexu
+	M              int    `json:"M"` // razudjenost u summary
+	MemTableCap    int    `json:"memTableCap"`
+	MemType        string `json:"memType"`
+	WalSegmentSize int    `json:"walSegmentSize"`
 }
 
 func setConst() {
+	var config Config
 
-	configData, err := os.ReadFile("config.yaml")
+	configData, err := os.ReadFile("config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = yaml.Unmarshal(configData, &config)
+	err = json.Unmarshal(configData, &config)
 	if err != nil {
 		log.Fatal(err)
 	}
-	compress1 = config.compress1
-	compress2 = config.compress2
-	oneFile = config.oneFile
-	numberOfSSTable = config.numberOfSSTable
+	fmt.Println(config)
+	compress1 = config.Compress1
+	compress2 = config.Compress2
+	oneFile = config.OneFile
+	number = config.Number
 	N = config.N
 	M = config.M
-	memTableCap = config.memTableCap
-	memType = config.memType
+	memTableCap = config.MemTableCap
+	memType = config.MemType
+	walSegmentSize = config.WalSegmentSize
+
 }
 
-func GET() {
-	//Funkcija za GET
-}
-
-func PUT() {
-	//Funkcija za put
-}
-
-func DELETE() {
-	//Funkcija za DELETE
-}
-
-func main() {
-	setConst()
-	wal := wal_implementation.NewWriteAheadLog()
-
-	mem1 := btreemem.NewBTreeMemtable(10)
-	lru1 := lru.NewLRUCache(3)
-	var mem []hashmem.Memtable
-	if memType == "hash" {
-		mem = append(mem, hashstruct.CreateHashMemtable(memTableCap))
-	} else if memType == "skipl" {
-		mem = append(mem, skiplistmem.CreateSkipListMemtable(memTableCap))
-	} else {
-		mem = append(mem, btreemem.NewBTreeMemtable(memTableCap))
-	}
-	//cursor := cursor2.NewCursor(mem, 0, lru1)
-	//
-	//cursor.MemPointers()[cursor.MemIndex()]
-
-	//ucitamo sa konzole korisnikov unos
-
-	//Ukoliko je unos PUT
-	key := "kljuc"
-	value := []byte("Ja se zovem Stefan")
-	//Prvo u WAL
-	err := wal.Log(key, value, false)
-	if err != nil {
-		panic(err)
-	}
-	//Drugo u mem
-	if mem1.IsReadOnly() {
-		mem1.SendToSSTable(compress1, compress2, oneFile, N, M)
-	}
-	LSM.CompactSstable(numberOfSSTable, compress1, compress2, oneFile)
-
-	ok := mem1.AddElement(key, value)
-	if !ok {
-		panic("Greska")
-	}
-	//Trece u LRU
-	lru1.Put(datatype.CreateDataType(key, value))
-
-	//ukoliko je GET
-	key = "kljuc"
-	ok, value = mem1.GetElement(key)
+func GET(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashmem.Memtable, key string) {
+	////ukoliko je GET
+	ok, value := (*mem1).GetElement(key)
 	if ok {
 		fmt.Printf("Value: %s\n", value)
 	}
@@ -125,19 +78,45 @@ func main() {
 	data, ok := LSM.GetByKey(key, compress1, compress2, oneFile)
 	if ok {
 		fmt.Printf("Value: %s\n", data.GetData())
+	} else {
+		fmt.Printf("Nema ga\n")
 	}
 
-	fmt.Printf("Nema ga\n")
+}
 
+// Ukoliko je unos PUT
+func PUT(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashmem.Memtable, key string, value []byte) {
+
+	//Prvo u WAL
+	err := wal.Log(key, value, false)
+	if err != nil {
+		panic(err)
+	}
+	//Drugo u mem
+
+	if (*mem1).IsReadOnly() {
+		(*mem1).SendToSSTable(compress1, compress2, oneFile, N, M)
+	}
+	LSM.CompactSstable(number, compress1, compress2, oneFile)
+
+	ok := (*mem1).AddElement(key, value)
+	if !ok {
+		panic("Greska")
+	}
+	//Trece u LRU
+	lru1.Put(datatype.CreateDataType(key, value))
+
+}
+
+func DELETE(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashmem.Memtable, key string) {
 	//Ukoliko je unos DELETE
 
-	key = "kljuc"
-	err = wal.Log(key, []byte(""), true)
+	err := wal.Log(key, []byte(""), true)
 	if err != nil {
 		panic(err)
 	}
 
-	ok = mem1.DeleteElement(key)
+	ok := (*mem1).DeleteElement(key)
 	if ok {
 		fmt.Printf("Obrisan iz mem1")
 	} else {
@@ -145,6 +124,81 @@ func main() {
 	}
 
 	lru1.Delete(key)
+}
+
+func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashmem.Memtable) {
+	for true {
+		var opcija string
+		fmt.Println("Key-Value Engine")
+
+		fmt.Println("\n1. Put\n2. Delete\n3. Get\n4. Izlaz\n")
+		fmt.Printf("Unesite opciju : ")
+		_, err := fmt.Scan(&opcija)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+		if opcija == "1" {
+			fmt.Printf("Unesite key : ")
+			_, err := fmt.Scan(&key)
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			fmt.Printf("Unesite value : ")
+			_, err = fmt.Scan(&value)
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			PUT(wal, lru1, mem, key, []byte(value))
+		} else if opcija == "2" {
+			fmt.Printf("Unesite key : ")
+			_, err := fmt.Scan(&key)
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			DELETE(wal, lru1, mem, key)
+		} else if opcija == "3" {
+			fmt.Printf("Unesite key : ")
+			_, err := fmt.Scan(&key)
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			GET(wal, lru1, mem, key)
+		} else {
+			break
+		}
+	}
+
+}
+
+func main() {
+	setConst()
+	wal := wal_implementation.NewWriteAheadLog()
+
+	//mem1 := btreemem.NewBTreeMemtable(10)
+	lru1 := lru.NewLRUCache(3)
+	var mem hashmem.Memtable
+	if memType == "hash" {
+		mem = hashstruct.CreateHashMemtable(10)
+	} else if memType == "skipl" {
+		mem = skiplistmem.CreateSkipListMemtable(10)
+	} else {
+		mem = btreemem.NewBTreeMemtable(10)
+	}
+
+	meni(wal, lru1, &mem)
+	//cursor := cursor2.NewCursor(mem, 0, lru1)
+	//
+	//cursor.MemPointers()[cursor.MemIndex()]
+
+	// Read a single line of input
+	//
+	//fmt.Println("You entered:", key, value, []byte(value))
 
 	//for i := 0; i < 10; i++ {
 	//	err := wal.Log(strconv.Itoa(i), []byte(strconv.Itoa(i)), false)

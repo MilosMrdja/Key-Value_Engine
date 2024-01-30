@@ -1,0 +1,8 @@
+1. namestiti timestamp, treba da bude isti u wal-u i u sstable
+2. leveled kompakcija
+3. scan ne meroamo da gledamo lru
+4. kompakcija na poslednjem nivou beskonacno tabela
+5. kompresija globalna hash mapa
+6. kad ide put ne ide u lru
+7. za wal imamo txt da znamo gde se zavrsavaju mem
+8. prepisaivanje sve u data file pri pisanjuu OneFile

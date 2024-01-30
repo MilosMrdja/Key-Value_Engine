@@ -1,0 +1,15 @@
+{"lru_cap": 3,
+"compress1": true,
+"compress2": true,
+"oneFile": true,
+"numberOfSSTable": 5,
+"N": 3,
+"M": 4,
+"memTableCap": 10,
+"memType": "btree",
+"walSegmentSize": 100
+}
+
+
+
+
