@@ -13,7 +13,7 @@ import (
 //	return false
 //}
 
-func GetByPrefix(filePath string, prefix string, compress1, compress2, oneFile bool, number int) ([]datatype.DataType, string, int64, bool) {
+func GetByPrefix(filePath string, prefix string, compress1, compress2, oneFile bool, number *int) ([]datatype.DataType, string, int64, bool) {
 	var data []datatype.DataType
 	var hashMap map[string]int32
 	var err error
@@ -40,7 +40,7 @@ func GetByPrefix(filePath string, prefix string, compress1, compress2, oneFile b
 	return data, fileName, offset, true
 	return data, "", 0, false
 }
-func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, prefix string, oneFile bool, hashMap map[string]int32, number int) ([]datatype.DataType, int64, bool) {
+func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, prefix string, oneFile bool, hashMap map[string]int32, number *int) ([]datatype.DataType, int64, bool) {
 
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	var result []datatype.DataType
@@ -97,7 +97,7 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 	currentData = []byte("")
 	data := datatype.CreateDataType(currentKey, currentData)
 	for offsetStart <= offsetEnd {
-		if number == 0 {
+		if *number == 0 {
 			return result, offsetStart, true
 		}
 		//read CRC
@@ -165,7 +165,7 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 					data = datatype.CreateDataType(currentKey, currentData)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
-					number--
+					*number--
 				}
 				if !strings.HasPrefix(currentKey, prefix) && currentKey > prefix {
 					return result, 0, true
@@ -213,7 +213,7 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 					data = datatype.CreateDataType(currentKey, currentData)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
-					number--
+					*number--
 				}
 				if !strings.HasPrefix(currentKey, prefix) && currentKey > prefix {
 					return result, 0, true
@@ -260,7 +260,7 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 					data = datatype.CreateDataType(currentKey, currentData)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
-					number--
+					*number--
 				}
 				if !strings.HasPrefix(currentKey, prefix) && currentKey > prefix {
 					return result, 0, true
@@ -311,7 +311,7 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 					data = datatype.CreateDataType(currentKey, currentData)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
-					number--
+					*number--
 				}
 				if !strings.HasPrefix(currentKey, prefix) && currentKey > prefix {
 					return result, 0, true

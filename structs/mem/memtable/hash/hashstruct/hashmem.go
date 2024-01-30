@@ -95,8 +95,17 @@ func (mem *HashMemtable) IsReadOnly() bool {
 
 func (mem *HashMemtable) GetElementByPrefix(dataList []*datatype.DataType, n *int, prefix string) {
 
+	//for key, value := range mem.data {
+	//	if strings.HasPrefix(key, prefix) && !value.IsDeleted() {
+	//		if *n == 0 {
+	//			return
+	//		}
+	//		dataList = append(dataList, value)
+	//		*n--
+	//	}
+	//}
 	for key, value := range mem.data {
-		if strings.HasPrefix(key, prefix) {
+		if strings.HasPrefix(key, prefix) && !value.IsDeleted() {
 			if *n == 0 {
 				return
 			}
@@ -110,7 +119,7 @@ func (mem *HashMemtable) GetElementByRange(dataList []*datatype.DataType, n *int
 
 	for key, value := range mem.data {
 
-		if isInRange(key, valRange) {
+		if isInRange(key, valRange) && !value.IsDeleted() {
 			if *n == 0 {
 				return
 			}

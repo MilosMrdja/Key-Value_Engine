@@ -130,7 +130,7 @@ func (b *BTreeNode) GetByPrefix(n *int, prefix string) []*datatype.DataType {
 		if b.isLeaf == false {
 			temp := b.children[i].GetByPrefix(n, prefix)
 			for j := 0; j < len(temp); j++ {
-				if strings.HasPrefix(temp[i].GetKey(), prefix) {
+				if strings.HasPrefix(temp[i].GetKey(), prefix) && !temp[i].IsDeleted() {
 					if *n == 0 {
 						return dataList
 					}
@@ -159,7 +159,7 @@ func (b *BTreeNode) GetByRange(n *int, valRange []string) []*datatype.DataType {
 		if b.isLeaf == false {
 			temp := b.children[i].GetByRange(n, valRange)
 			for j := 0; j < len(temp); j++ {
-				if isInRange(temp[i].GetKey(), valRange) {
+				if isInRange(temp[i].GetKey(), valRange) && !temp[i].IsDeleted() {
 					if *n == 0 {
 						return dataList
 					}

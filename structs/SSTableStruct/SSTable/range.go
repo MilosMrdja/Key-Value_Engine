@@ -7,11 +7,11 @@ import (
 	"time"
 )
 
-func isInRange(value string, valRange [2]string) bool {
+func isInRange(value string, valRange []string) bool {
 	return value >= valRange[0] && value <= valRange[1]
 }
 
-func GetByRange(filePath string, valRange [2]string, compress1, compress2, oneFile bool, number int) ([]datatype.DataType, string, int64, bool) {
+func GetByRange(filePath string, valRange []string, compress1, compress2, oneFile bool, number *int) ([]datatype.DataType, string, int64, bool) {
 	var data []datatype.DataType
 	var hashMap map[string]int32
 	var err error
@@ -38,7 +38,7 @@ func GetByRange(filePath string, valRange [2]string, compress1, compress2, oneFi
 	return data, fileName, offset, true
 	return data, "", 0, false
 }
-func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, valRange [2]string, oneFile bool, hashMap map[string]int32, number int) ([]datatype.DataType, int64, bool) {
+func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, valRange []string, oneFile bool, hashMap map[string]int32, number *int) ([]datatype.DataType, int64, bool) {
 
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	var result []datatype.DataType
@@ -95,7 +95,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 	currentData = []byte("")
 	data := datatype.CreateDataType(currentKey, currentData)
 	for offsetStart <= offsetEnd {
-		if number == 0 {
+		if *number == 0 {
 			return result, offsetStart, true
 		}
 		//read CRC
@@ -163,7 +163,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 					data = datatype.CreateDataType(currentKey, currentData)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
-					number--
+					*number--
 				}
 				if currentKey > valRange[1] {
 					return result, 0, true
@@ -212,7 +212,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 					data = datatype.CreateDataType(currentKey, currentData)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
-					number--
+					*number--
 				}
 				if currentKey > valRange[1] {
 					return result, 0, true
@@ -259,7 +259,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 					data = datatype.CreateDataType(currentKey, currentData)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
-					number--
+					*number--
 				}
 				if currentKey > valRange[1] {
 					return result, 0, true
@@ -310,7 +310,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 					data = datatype.CreateDataType(currentKey, currentData)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
-					number--
+					*number--
 				}
 				if currentKey > valRange[1] {
 					return result, 0, true

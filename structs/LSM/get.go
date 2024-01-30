@@ -41,7 +41,7 @@ func GetByKey(key string, compress1, compress2, oneFile bool) (datatype.DataType
 	return data, false
 }
 
-func GetDataByPrefix(number int, prefix string, compress1, compress2, oneFile bool) ([]datatype.DataType, string, int64, bool) {
+func GetDataByPrefix(number *int, prefix string, compress1, compress2, oneFile bool) ([]datatype.DataType, string, int64, bool) {
 	dataDir, err := os.Open("./DataSStable")
 	if err != nil {
 		panic(err)
@@ -72,7 +72,7 @@ func GetDataByPrefix(number int, prefix string, compress1, compress2, oneFile bo
 	}
 	return data, "", 0, false
 }
-func GetDataByRange(number int, valrange [2]string, compress1, compress2, oneFile bool) ([]datatype.DataType, string, int64, bool) {
+func GetDataByRange(number *int, valrange []string, compress1, compress2, oneFile bool) ([]datatype.DataType, string, int64, bool) {
 	dataDir, err := os.Open("./DataSStable")
 	if err != nil {
 		panic(err)
