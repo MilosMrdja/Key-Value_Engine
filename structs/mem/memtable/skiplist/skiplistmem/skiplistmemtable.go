@@ -82,11 +82,11 @@ func (slmem *SkipListMemtable) IsReadOnly() bool {
 	return slmem.readOnly
 }
 
-func (slmem *SkipListMemtable) GetElementByPrefix(prefix string) []*datatype.DataType {
-	return slmem.data.GetByPrefix(prefix)
+func (slmem *SkipListMemtable) GetElementByPrefix(resultList []*datatype.DataType, n *int, prefix string) {
+	slmem.data.GetByPrefix(resultList[:], n, prefix)
 
 }
 
-func (mem *SkipListMemtable) GetElementByRange(valRange [2]string) []*datatype.DataType {
-	return nil
+func (slmem *SkipListMemtable) GetElementByRange(resultList []*datatype.DataType, n *int, valRange []string) {
+	slmem.data.GetByRange(resultList[:], n, valRange)
 }

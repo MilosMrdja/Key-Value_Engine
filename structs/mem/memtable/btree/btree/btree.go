@@ -81,19 +81,19 @@ func (t *BTree) Traverse() []datatype.DataType {
 	return dataList
 }
 
-func (t *BTree) GetByPrefix(prefix string) []*datatype.DataType {
-	var dataList []*datatype.DataType
+func (t *BTree) GetByPrefix(dataList []*datatype.DataType, n *int, prefix string) {
+
 	if t.Root != nil {
-		dataList = append(t.Root.GetByPrefix(prefix))
+		dataList = append(t.Root.GetByPrefix(n, prefix))
 	}
-	return dataList
+
 }
-func (t *BTree) GetByRange(valRange []string) []*datatype.DataType {
-	var dataList []*datatype.DataType
+func (t *BTree) GetByRange(dataList []*datatype.DataType, n *int, valRange []string) {
+
 	if t.Root != nil {
-		dataList = append(t.Root.GetByRange(valRange))
+		dataList = append(t.Root.GetByRange(n, valRange))
 	}
-	return dataList
+
 }
 func NewBTree(t int) *BTree {
 	return &BTree{Root: nil, Rang: t}

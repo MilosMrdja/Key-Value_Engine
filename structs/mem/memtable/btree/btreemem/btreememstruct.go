@@ -108,9 +108,9 @@ func (btmem *BTreeMemtable) IsReadOnly() bool {
 	return btmem.ReadOnly()
 }
 
-func (btmem *BTreeMemtable) GetElementByPrefix(prefix string) []*datatype.DataType {
-	return btmem.data.GetByPrefix(prefix)
+func (btmem *BTreeMemtable) GetElementByPrefix(dataList []*datatype.DataType, n *int, prefix string) {
+	btmem.data.GetByPrefix(dataList[:], n, prefix)
 }
-func (btmem *BTreeMemtable) GetElementByRange(valRange []string) []*datatype.DataType {
-	return btmem.data.GetByRange(valRange)
+func (btmem *BTreeMemtable) GetElementByRange(dataList []*datatype.DataType, n *int, valRange []string) {
+	btmem.data.GetByRange(dataList[:], n, valRange)
 }

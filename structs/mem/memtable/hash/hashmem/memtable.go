@@ -10,6 +10,6 @@ type Memtable interface {
 	DeleteElement(key string) bool
 	SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool
 	IsReadOnly() bool
-	GetElementByPrefix(prefix string) []*datatype.DataType
-	GetElementByRange(valRange []string) []*datatype.DataType
+	GetElementByPrefix(resultList []*datatype.DataType, n *int, prefix string)
+	GetElementByRange(resultList []*datatype.DataType, n *int, valRange []string)
 }

@@ -146,31 +146,39 @@ func (sl *SkipList) ShowSkipList() {
 	fmt.Println("")
 }
 
-func (sl *SkipList) GetByPrefix(prefix string) []*datatype.DataType {
-	var dataList []*datatype.DataType
+func (sl *SkipList) GetByPrefix(dataList []*datatype.DataType, n *int, prefix string) {
+
 	i := 0
 	current := sl.head.next[0]
 	for current != nil {
 		if strings.HasPrefix(current.key, prefix) {
+			if *n == 0 {
+				return
+			}
 			dataList = append(dataList, current.data)
+			*n--
 		}
 		current = current.next[0]
 		i++
 	}
-	return dataList
+
 }
-func (sl *SkipList) GetByRange(valRange []string) []*datatype.DataType {
-	var dataList []*datatype.DataType
+func (sl *SkipList) GetByRange(dataList []*datatype.DataType, n *int, valRange []string) {
+
 	i := 0
 	current := sl.head.next[0]
 	for current != nil {
 		if isInRange(current.key, valRange) {
+			if *n == 0 {
+				return
+			}
 			dataList = append(dataList, current.data)
+			*n--
 		}
 		current = current.next[0]
 		i++
 	}
-	return dataList
+
 }
 func (sl *SkipList) AllData(len int) []datatype.DataType {
 	dataList := make([]datatype.DataType, len)

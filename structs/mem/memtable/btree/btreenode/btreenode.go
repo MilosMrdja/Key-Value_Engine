@@ -123,15 +123,19 @@ func (b *BTreeNode) Traverse() []datatype.DataType {
 	return dataList
 }
 
-func (b *BTreeNode) GetByPrefix(prefix string) []*datatype.DataType {
+func (b *BTreeNode) GetByPrefix(n *int, prefix string) []*datatype.DataType {
 	var dataList []*datatype.DataType
 	var i = 0
 	for i = 0; i < b.n; i++ {
 		if b.isLeaf == false {
-			temp := b.children[i].GetByPrefix(prefix)
+			temp := b.children[i].GetByPrefix(n, prefix)
 			for j := 0; j < len(temp); j++ {
 				if strings.HasPrefix(temp[i].GetKey(), prefix) {
+					if *n == 0 {
+						return dataList
+					}
 					dataList = append(dataList, temp[j])
+					*n--
 				}
 
 			}
@@ -141,22 +145,27 @@ func (b *BTreeNode) GetByPrefix(prefix string) []*datatype.DataType {
 
 	}
 	if b.isLeaf == false {
-		temp := b.children[i].GetByPrefix(prefix)
+		temp := b.children[i].GetByPrefix(n, prefix)
 		for j := 0; j < len(temp); j++ {
 			dataList = append(dataList, temp[j])
 		}
 	}
 	return dataList
 }
-func (b *BTreeNode) GetByRange(valRange []string) []*datatype.DataType {
+func (b *BTreeNode) GetByRange(n *int, valRange []string) []*datatype.DataType {
 	var dataList []*datatype.DataType
 	var i = 0
 	for i = 0; i < b.n; i++ {
 		if b.isLeaf == false {
-			temp := b.children[i].GetByRange(valRange)
+			temp := b.children[i].GetByRange(n, valRange)
 			for j := 0; j < len(temp); j++ {
 				if isInRange(temp[i].GetKey(), valRange) {
+					if *n == 0 {
+						return dataList
+					}
 					dataList = append(dataList, temp[j])
+					*n--
+
 				}
 
 			}
@@ -166,7 +175,7 @@ func (b *BTreeNode) GetByRange(valRange []string) []*datatype.DataType {
 
 	}
 	if b.isLeaf == false {
-		temp := b.children[i].GetByRange(valRange)
+		temp := b.children[i].GetByRange(n, valRange)
 		for j := 0; j < len(temp); j++ {
 			dataList = append(dataList, temp[j])
 		}

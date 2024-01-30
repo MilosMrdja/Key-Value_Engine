@@ -19,7 +19,7 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *cursor.Cursor)
 
 	j := cursor.MemIndex()
 	for true {
-		lista := cursor.MemPointers()[j].GetElementByPrefix(prefix)
+		lista := cursor.MemPointers()[j].GetElementByPrefix(result, n, prefix)
 
 		for _, dt = range lista {
 			if dt.IsDeleted() == false && slices.Contains(result, dt) == false {
@@ -50,9 +50,6 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *cursor.Cursor)
 			}
 		}
 	}
-
-	offset := 0
-	path := ""
 
 	for (len(result)) < n {
 		ssData, path, offset, greska := LSM.GetDataByPrefix(n, prefix, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())

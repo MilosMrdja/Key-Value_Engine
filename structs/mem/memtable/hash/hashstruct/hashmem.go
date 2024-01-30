@@ -93,21 +93,30 @@ func (mem *HashMemtable) IsReadOnly() bool {
 	return mem.readOnly
 }
 
-func (mem *HashMemtable) GetElementByPrefix(prefix string) []*datatype.DataType {
-	var dataList []*datatype.DataType
+func (mem *HashMemtable) GetElementByPrefix(dataList []*datatype.DataType, n *int, prefix string) {
+
 	for key, value := range mem.data {
 		if strings.HasPrefix(key, prefix) {
+			if *n == 0 {
+				return
+			}
 			dataList = append(dataList, value)
+			*n--
 		}
 	}
-	return dataList
+
 }
-func (mem *HashMemtable) GetElementByRange(valRange []string) []*datatype.DataType {
-	var dataList []*datatype.DataType
+func (mem *HashMemtable) GetElementByRange(dataList []*datatype.DataType, n *int, valRange []string) {
+
 	for key, value := range mem.data {
+
 		if isInRange(key, valRange) {
+			if *n == 0 {
+				return
+			}
 			dataList = append(dataList, value)
+			*n--
 		}
 	}
-	return dataList
+
 }
