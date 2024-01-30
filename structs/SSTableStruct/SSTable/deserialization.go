@@ -299,6 +299,9 @@ func ReadIndex(fileName string, compress1, compress2 bool, elem int, oneFile boo
 
 	// var
 
+	if compress2 {
+		elem += 1
+	}
 	var size, sizeEnd int64
 	if oneFile {
 		size, sizeEnd = positionInSSTable(*file, elem)

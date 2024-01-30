@@ -132,7 +132,7 @@ func main() {
 	//}
 
 	//conf
-	compress1 := false
+	compress1 := true
 	compress2 := true
 	oneFile := true
 
@@ -144,6 +144,8 @@ func main() {
 		}
 		btmem.DeleteElement(strconv.Itoa(15))
 		btmem.SendToSSTable(compress1, compress2, oneFile, 1, 2)
+		SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 1, oneFile)
+
 		LSM.CompactSstable(10, compress1, compress2, oneFile)
 
 	}
@@ -155,8 +157,8 @@ func main() {
 	SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
 	key := "1"
 
-	SSTable.ReadIndex("DataSSTable/L1/sstable1/Summary.bin", compress1, compress2, 1, oneFile)
-	SSTable.ReadIndex("DataSSTable/L1/sstable1/Index.bin", compress1, compress2, 1, oneFile)
+	fmt.Printf("SUMM")
+	SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 1, oneFile)
 	data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
 	if err4 == true {
 		fmt.Printf("Key: %s\n", data.GetKey())

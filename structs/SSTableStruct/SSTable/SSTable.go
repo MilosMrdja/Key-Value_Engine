@@ -58,7 +58,19 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	}
 	defer fileSummary.Close()
 
-	//Bloom Filter fajl
+	// upis prvog i poslednjeg
+
+	indexData, err = SerializeIndexData(dataList[0].GetKey(), accIndex, compress1, compress2, int32(0))
+	if err != nil {
+		return false
+	}
+	fileSummary.Write(indexData)
+
+	indexData, err = SerializeIndexData(dataList[duzinaDataList-1].GetKey(), accIndex, compress1, compress2, int32(duzinaDataList-1))
+	if err != nil {
+		return false
+	}
+	fileSummary.Write(indexData)
 	// glavna petlja
 
 	for i := 0; i < duzinaDataList; i++ {
