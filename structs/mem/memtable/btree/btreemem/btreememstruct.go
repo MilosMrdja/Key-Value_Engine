@@ -84,16 +84,23 @@ func (btmem *BTreeMemtable) GetElement(key string) (bool, []byte) {
 	}
 	return true, elem.GetData()
 }
-
+func (btmem *BTreeMemtable) GetMaxSize() int {
+	return btmem.length
+}
 func (btmem *BTreeMemtable) DeleteElement(key string) bool {
 	found := btmem.data.Delete(key)
 	return found
 }
 
-func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool {
+func (btmem *BTreeMemtable) SortDataTypes() []datatype.DataType {
 	dataList := make([]datatype.DataType, btmem.length)
 	dataList = btmem.data.Traverse()
+	return dataList
+}
 
+func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool {
+
+	dataList := btmem.SortDataTypes()
 	newSstableName, _ := LSM.FindNextDestination(0)
 	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)

@@ -6,12 +6,21 @@ import (
 	"sort"
 	"sstable/LSM"
 	"sstable/cursor"
+	"sstable/iterator"
 	"sstable/mem/memtable/datatype"
 	"strings"
 )
 
 func isInRange(value string, valRange []string) bool {
 	return value >= valRange[0] && value <= valRange[1]
+}
+
+func PREFIX_ITERATE(prefix string, iterator *iterator.Iterator) {
+	if prefix != iterator.CurrPrefix() {
+		iterator.SetCurrPrefix(prefix)
+		iterator.ResetMemTableIndexes()
+	}
+
 }
 
 // Function to perform PREFIX_SCAN
@@ -68,7 +77,7 @@ func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *cursor.Cursor)
 	return result[startIndex:endIndex]
 }
 
-func RANGE_SCAN(keyRange []string, pageNumber, pageSize int, cursor *cursor.Cursor) []*datatype.DataType {
+func RANGE_SCAN(keyRange []string, pageNumber, pageSize int, core *cursor.Cursor) []*datatype.DataType {
 	var result []*datatype.DataType
 	var dt *datatype.DataType
 
@@ -78,19 +87,19 @@ func RANGE_SCAN(keyRange []string, pageNumber, pageSize int, cursor *cursor.Curs
 
 	n := pageNumber * pageSize
 
-	j := cursor.MemIndex()
+	j := core.MemIndex()
 	for true {
-		cursor.MemPointers()[j].GetElementByRange(result, &n, keyRange)
+		core.MemPointers()[j].GetElementByRange(result, &n, keyRange)
 
-		j = (j - 1 + len(cursor.MemPointers())) % len(cursor.MemPointers())
-		if j == cursor.MemIndex() {
+		j = (j - 1 + len(core.MemPointers())) % len(core.MemPointers())
+		if j == core.MemIndex() {
 			break
 		}
 		if n == 0 {
 			break
 		}
 	}
-	lruData := cursor.LruPointer().GetAll()
+	lruData := core.LruPointer().GetAll()
 	for e := lruData.Front(); e != nil; e = e.Next() {
 		dt = e.Value.(*datatype.DataType)
 		if isInRange(dt.GetKey(), keyRange) && dt.IsDeleted() == false {
@@ -106,7 +115,7 @@ func RANGE_SCAN(keyRange []string, pageNumber, pageSize int, cursor *cursor.Curs
 	//path := ""
 
 	for (len(result)) < n {
-		ssData, _, _, _ := LSM.GetDataByRange(&n, keyRange, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+		ssData, _, _, _ := LSM.GetDataByRange(&n, keyRange, core.Compress1(), core.Compress2(), core.OneFile())
 		fmt.Println(ssData)
 		if n == 0 {
 			break

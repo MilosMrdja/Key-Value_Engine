@@ -21,6 +21,14 @@ func CreateSkipListMemtable(cap int) *SkipListMemtable {
 		readOnly: false,
 	}
 }
+func (slmem *SkipListMemtable) GetMaxSize() int {
+	return slmem.length
+}
+func (slmem *SkipListMemtable) SortDataTypes() []datatype.DataType {
+	dataList := make([]datatype.DataType, slmem.length)
+	dataList = slmem.data.AllData(slmem.length)
+	return dataList
+}
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju

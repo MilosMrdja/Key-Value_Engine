@@ -25,11 +25,13 @@ func CreateHashMemtable(cap int) *HashMemtable {
 func isInRange(value string, valRange []string) bool {
 	return value >= valRange[0] && value <= valRange[1]
 }
+func (mem *HashMemtable) GetMaxSize() int {
+	return mem.length
+}
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju
-func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool {
-
+func (mem *HashMemtable) SortDataTypes() []datatype.DataType {
 	dataList := make([]datatype.DataType, mem.length)
 	i := 0
 	for _, data := range mem.data {
@@ -39,7 +41,12 @@ func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M 
 	sort.Slice(dataList, func(i, j int) bool {
 		return dataList[i].GetKey() < dataList[j].GetKey()
 	})
+	return dataList
 
+}
+func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool {
+
+	dataList := mem.SortDataTypes()
 	newSstableName, _ := LSM.FindNextDestination(0)
 	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
