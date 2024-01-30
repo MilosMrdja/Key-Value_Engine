@@ -14,10 +14,15 @@ import (
 func GetData(filePath string, key string, compress1, compress2 bool, oneFile bool) (datatype.DataType, bool) {
 	var data datatype.DataType
 	var hashMap map[string]int32
-	var err error
 	if oneFile {
 		fileName := filePath + "/SSTable.bin"
-		bloomFilter, err2 := bloomfilter.DeserializeBloomFilter(fileName, true)
+		file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
+		if err != nil {
+			return data, false
+		}
+		size, _ := positionInSSTable(*file, 1)
+		file.Seek(size, 0)
+		bloomFilter, err2 := bloomfilter.DeserializeBloomFilter(file)
 		if err2 != nil {
 			return data, false
 		}
@@ -28,13 +33,14 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 				panic(err)
 			}
 		}
+		file.Close()
 
 		if isInFile == true {
-			offsetStart, offsetEnd, err3 := GetOffset(fileName, key, compress1, compress2, 0, 0, oneFile, 1, hashMap)
+			offsetStart, offsetEnd, err3 := GetOffset(fileName, key, compress1, compress2, 0, 0, oneFile, 2, hashMap)
 			if err3 == false {
 				return data, false
 			}
-			offsetStart, offsetEnd, err3 = GetOffset(fileName, key, compress1, compress2, offsetStart, offsetEnd, oneFile, 2, hashMap)
+			offsetStart, offsetEnd, err3 = GetOffset(fileName, key, compress1, compress2, offsetStart, offsetEnd, oneFile, 3, hashMap)
 			if err3 == false {
 				return data, false
 			}
@@ -47,7 +53,11 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 			return data, true
 		}
 	} else {
-		bloomFilter, err2 := bloomfilter.DeserializeBloomFilter(filePath+"/BloomFilter.bin", false)
+		file, err := os.OpenFile(filePath+"/BloomFilter.bin", os.O_RDONLY, 0666)
+		if err != nil {
+			return data, false
+		}
+		bloomFilter, err2 := bloomfilter.DeserializeBloomFilter(file)
 		if err2 != nil {
 			return data, false
 		}
@@ -59,11 +69,11 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 					panic(err)
 				}
 			}
-			offsetStart, offsetEnd, err3 := GetOffset(filePath+"/Summary.bin", key, compress1, compress2, 0, 0, oneFile, 1, hashMap)
+			offsetStart, offsetEnd, err3 := GetOffset(filePath+"/Summary.bin", key, compress1, compress2, 0, 0, oneFile, 2, hashMap)
 			if err3 == false {
 				return data, false
 			}
-			offsetStart, offsetEnd, err3 = GetOffset(filePath+"/Index.bin", key, compress1, compress2, offsetStart, offsetEnd, oneFile, 2, hashMap)
+			offsetStart, offsetEnd, err3 = GetOffset(filePath+"/Index.bin", key, compress1, compress2, offsetStart, offsetEnd, oneFile, 3, hashMap)
 			if err3 == false {
 				return data, false
 			}
@@ -82,9 +92,8 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 }
 
 func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, key string, oneFile bool, hashMap map[string]int32) (datatype.DataType, bool) {
-
-	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	Data := datatype.CreateDataType("", []byte(""))
+	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
 		return *Data, false
 	}
@@ -101,11 +110,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 	end := fileInfo.Size()
 	var size, sizeEnd int64
 	if oneFile {
-		if compress2 == true {
-			size, sizeEnd = positionInSSTable(*file, 4)
-		} else {
-			size, sizeEnd = positionInSSTable(*file, 3)
-		}
+		size, sizeEnd = positionInSSTable(*file, 5)
 		if offsetEnd == 0 {
 			offsetEnd = sizeEnd
 		} else {

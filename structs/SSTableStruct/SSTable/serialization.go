@@ -151,34 +151,47 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 // 3 - index deo
 // 4 - data deo
 // 5 - Merkle tree
-func WriteToOneFile(bloom, hash, summary, index, data, merkle string) ([]byte, error) {
+func WriteToOneFile(bloom, summary, index, data, merkle string) ([]byte, error) {
 	var result bytes.Buffer
 	var tempArr []byte
 
-	tempArr = getFileInfo(bloom, 0)
-	result.Write(tempArr)
+	var segmentLength []int32
+	var tempLength int32
 
-	if hash != "" {
-		tempArr = getFileInfo(hash, 1)
-		result.Write(tempArr)
+	fileInfo, err := os.Stat(data)
+	if err != nil {
+		panic(err)
 	}
+	end := fileInfo.Size()
+	segmentLength = append(segmentLength, int32(end))
 
-	tempArr = getFileInfo(summary, 2)
+	tempArr, tempLength = getFileInfo(merkle)
 	result.Write(tempArr)
+	segmentLength = append(segmentLength, tempLength+segmentLength[0])
 
-	tempArr = getFileInfo(index, 3)
+	tempArr, tempLength = getFileInfo(index)
 	result.Write(tempArr)
+	segmentLength = append(segmentLength, tempLength+segmentLength[1])
 
-	tempArr = getFileInfo(data, 4)
+	tempArr, tempLength = getFileInfo(summary)
 	result.Write(tempArr)
+	segmentLength = append(segmentLength, tempLength+segmentLength[2])
 
-	tempArr = getFileInfo(merkle, 5)
+	tempArr, tempLength = getFileInfo(bloom)
 	result.Write(tempArr)
+	segmentLength = append(segmentLength, tempLength+segmentLength[3])
 
+	for i := 0; i < len(segmentLength); i++ {
+		err = binary.Write(&result, binary.BigEndian, segmentLength[i])
+		if err != nil {
+			result.Reset()
+			return result.Bytes(), nil
+		}
+	}
 	return result.Bytes(), nil
 }
 
-func getFileInfo(fileName string, n int) []byte {
+func getFileInfo(fileName string) ([]byte, int32) {
 
 	var result bytes.Buffer
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0777)
@@ -192,18 +205,7 @@ func getFileInfo(fileName string, n int) []byte {
 		panic(err)
 	}
 
-	//id := make([]byte, 1)
-	//id[0] = byte(n)
-	//result.Write(id)
-
 	end := fileInfo.Size()
-
-	//upisuje duzinu dela
-	err = binary.Write(&result, binary.BigEndian, uint64(end))
-	if err != nil {
-		result.Reset()
-		return result.Bytes()
-	}
 
 	byteArr := make([]byte, end)
 	_, err = file.Read(byteArr)
@@ -213,7 +215,7 @@ func getFileInfo(fileName string, n int) []byte {
 
 	result.Write(byteArr)
 
-	return result.Bytes()
+	return result.Bytes(), int32(end)
 }
 
 func SerializeHashmap(filename string, bytes []byte) error {

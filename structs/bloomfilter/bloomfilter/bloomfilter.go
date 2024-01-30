@@ -46,29 +46,10 @@ type BloomFilter struct {
 	probability   float64
 }
 
-func DeserializeBloomFilter(fileName string, oneFile bool) (*BloomFilter, error) {
-	_, err := os.Stat(fileName)
-	if err != nil {
-		return nil, err
-	}
-	file, err := os.OpenFile(fileName, os.O_RDONLY, 0777)
-	if err != nil {
-		return nil, err
-	}
-	if oneFile {
-		_, err = file.Seek(8, 0)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		_, err = file.Seek(0, 0)
-		if err != nil {
-			return nil, err
-		}
-	}
+func DeserializeBloomFilter(file *os.File) (*BloomFilter, error) {
 
 	b := make([]byte, 8)
-	err = binary.Read(file, binary.BigEndian, b)
+	err := binary.Read(file, binary.BigEndian, b)
 	if err != nil {
 		return nil, err
 	}

@@ -1,9 +1,7 @@
 package SSTable
 
 import (
-	"bytes"
 	"encoding/binary"
-	"encoding/gob"
 	"fmt"
 	"os"
 )
@@ -33,11 +31,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 
 	var size, sizeEnd int64
 	if oneFile {
-		if compress2 == true {
-			size, sizeEnd = positionInSSTable(*file, 4)
-		} else {
-			size, sizeEnd = positionInSSTable(*file, 3)
-		}
+		size, sizeEnd = positionInSSTable(*file, 5)
 
 		end = sizeEnd - size
 		_, err1 := file.Seek(size, 0)
@@ -60,33 +54,33 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 
 	// deserialization hashmap
 	var decodeMap map[string]int32
-	if compress2 {
-
-		fileNameHash := filePath + "/HashMap.bin"
-		fileHash, err := os.OpenFile(fileNameHash, os.O_RDONLY, 0666)
-		if err != nil {
-			return false
-		}
-		defer fileHash.Close()
-		fileInfoHash, err := os.Stat(fileNameHash)
-		if err != nil {
-			panic(err)
-		}
-
-		end := fileInfoHash.Size()
-
-		bbb := make([]byte, end)
-		bb := bytes.NewBuffer(bbb)
-		_, err = fileHash.Read(bbb)
-		if err != nil {
-			panic(err)
-		}
-		d := gob.NewDecoder(bb)
-		err = d.Decode(&decodeMap)
-		if err != nil {
-			panic(err)
-		}
-	}
+	//if compress2 {
+	//
+	//	fileNameHash := filePath + "/HashMap.bin"
+	//	fileHash, err := os.OpenFile(fileNameHash, os.O_RDONLY, 0666)
+	//	if err != nil {
+	//		return false
+	//	}
+	//	defer fileHash.Close()
+	//	fileInfoHash, err := os.Stat(fileNameHash)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	end := fileInfoHash.Size()
+	//
+	//	bbb := make([]byte, end)
+	//	bb := bytes.NewBuffer(bbb)
+	//	_, err = fileHash.Read(bbb)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	d := gob.NewDecoder(bb)
+	//	err = d.Decode(&decodeMap)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//}
 	file.Seek(size, 0)
 	for currentRead != end {
 		//read CRC

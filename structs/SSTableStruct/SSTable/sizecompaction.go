@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"fmt"
+	"log"
 	"os"
 	"sstable/bloomfilter/bloomfilter"
 	"sstable/mem/memtable/datatype"
@@ -137,26 +138,33 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 	// u slucaju da korisnik odabere sve u jedan fajl
 	var serializedInOneFile []byte
 	if oneFile {
-		if compres2 {
-			serializedInOneFile, err = WriteToOneFile(newFilePath+"/BloomFilter.bin", newFilePath+"/HashMap.bin", newFilePath+"/Summary.bin", newFilePath+"/Index.bin", newFilePath+"/Data.bin", newFilePath+"/Merkle.bin")
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			serializedInOneFile, err = WriteToOneFile(newFilePath+"/BloomFilter.bin", "", newFilePath+"/Summary.bin", newFilePath+"/Index.bin", newFilePath+"/Data.bin", newFilePath+"/Merkle.bin")
-			if err != nil {
-				panic(err)
-			}
+		serializedInOneFile, err = WriteToOneFile(newFilePath+"/BloomFilter.bin", newFilePath+"/Summary.bin", newFilePath+"/Index.bin", newFilePath+"/Data.bin", newFilePath+"/Merkle.bin")
+		if err != nil {
+			panic(err)
 		}
 
-		// One file
+		file.Close()
 		fileNameOneFile := newFilePath + "/SSTable.bin"
+		e := os.Rename(newFilePath+"/Data.bin", fileNameOneFile)
+		if e != nil {
+			log.Fatal(e)
+		}
 		fileOne, err2 := os.OpenFile(fileNameOneFile, os.O_WRONLY|os.O_CREATE, 0666)
 		if err2 != nil {
-			fmt.Println("Adsas")
+			panic(err2)
 		}
-		defer fileOne.Close()
+		fileOne.Seek(0, 2)
+		fileOne.Truncate(int64(len(serializedInOneFile)))
 		fileOne.Write(serializedInOneFile)
+		fileOne.Close()
+
+		fileInfo, err := os.Stat(fileNameOneFile)
+		if err != nil {
+			panic(err)
+		}
+		end := fileInfo.Size()
+
+		fmt.Printf("Velicina SST: %d\n", end)
 	}
 
 	return true
@@ -173,7 +181,6 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 	}
 
 	if compres2 {
-		elem = 4
 		file, err := os.OpenFile(fileNameHash, os.O_RDONLY, 0666)
 		if err != nil {
 			return *Data, 0, false
@@ -458,11 +465,7 @@ func setStartEndOffset(filePath string, numberSSTable int, compres2, oneFile boo
 	startOffsetList := make([]int64, numberSSTable)
 	fileName := "/Data.bin"
 	var elem int
-	if compres2 {
-		elem = 4
-	} else {
-		elem = 3
-	}
+	elem = 5
 	if oneFile {
 		fileName = "/SSTable.bin"
 		for i := 1; i <= numberSSTable; i++ {
@@ -494,11 +497,7 @@ func setStartEndOffset(filePath string, numberSSTable int, compres2, oneFile boo
 
 func getNextRecord(filePath string, startOffsetList, endOffsetList []int64, compres1, compres2, oneFile bool) (datatype.DataType, bool) {
 	var elem int
-	if compres2 {
-		elem = 4
-	} else {
-		elem = 3
-	}
+	elem = 5
 	var data datatype.DataType
 	data.SetKey("")
 	same := 0
@@ -543,7 +542,7 @@ func getNextRecord(filePath string, startOffsetList, endOffsetList []int64, comp
 		}
 		defer file.Close()
 
-		currentData, read, err1 := ReadDataCompact(filePath+"/sstable"+strconv.Itoa(i), compres1, compres2, startOffsetList[i-1], oneFile, 3)
+		currentData, read, err1 := ReadDataCompact(filePath+"/sstable"+strconv.Itoa(i), compres1, compres2, startOffsetList[i-1], oneFile, elem)
 		if err1 != true {
 			return data, false
 		}

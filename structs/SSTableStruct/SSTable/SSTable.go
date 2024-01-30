@@ -1,11 +1,9 @@
 package SSTable
 
 import (
-	"bytes"
 	"encoding/binary"
-	"encoding/gob"
-	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"sstable/MerkleTreeImplementation/MerkleTree"
 	"sstable/bloomfilter/bloomfilter"
@@ -126,47 +124,52 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	}
 	//fmt.Printf("%d\n", acc)
 
-	//serijalizacija hash mape
-	hashFileName := fileName + "/HashMap.bin"
-	b := new(bytes.Buffer)
-	e := gob.NewEncoder(b)
-	err = e.Encode(dictionary)
-	if err != nil {
-		panic(err)
-	}
-	err = SerializeHashmap(hashFileName, b.Bytes())
-	if err != nil {
-		panic(err)
-	}
+	////serijalizacija hash mape
+	//hashFileName := fileName + "/HashMap.bin"
+	//b := new(bytes.Buffer)
+	//e := gob.NewEncoder(b)
+	//err = e.Encode(dictionary)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//err = SerializeHashmap(hashFileName, b.Bytes())
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	// u slucaju da korisnik odabere sve u jedan fajl
+	var serializedInOneFile []byte
 	if oneFile {
-		var serializedInOneFile []byte
-		if compress2 {
-			serializedInOneFile, err = WriteToOneFile(fileName+"/BloomFilter.bin", fileName+"/HashMap.bin", fileName+"/Summary.bin", fileName+"/Index.bin", fileName+"/Data.bin", fileName+"/Merkle.bin")
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			serializedInOneFile, err = WriteToOneFile(fileName+"/BloomFilter.bin", "", fileName+"/Summary.bin", fileName+"/Index.bin", fileName+"/Data.bin", fileName+"/Merkle.bin")
-			if err != nil {
-				panic(err)
-			}
+		serializedInOneFile, err = WriteToOneFile(fileName+"/BloomFilter.bin", fileName+"/Summary.bin", fileName+"/Index.bin", fileName+"/Data.bin", fileName+"/Merkle.bin")
+		if err != nil {
+			panic(err)
 		}
 
 		// One file
+		file.Close()
 		fileNameOneFile := fileName + "/SSTable.bin"
+		e := os.Rename(fileName+"/Data.bin", fileNameOneFile)
+		if e != nil {
+			log.Fatal(e)
+		}
 		fileOne, err2 := os.OpenFile(fileNameOneFile, os.O_WRONLY|os.O_CREATE, 0666)
 		if err2 != nil {
-			fmt.Println("Adsas")
+			panic(err2)
 		}
-		defer fileOne.Close()
+		fileOne.Seek(0, 2)
+		fileOne.Truncate(int64(len(serializedInOneFile)))
 		fileOne.Write(serializedInOneFile)
-	}
+		fileOne.Close()
 
-	// printanje recnika
-	bs, _ := json.Marshal(dictionary)
-	fmt.Println(string(bs))
+		fileInfo, err := os.Stat(fileNameOneFile)
+		if err != nil {
+			panic(err)
+		}
+		end := fileInfo.Size()
+
+		fmt.Printf("Velicina SST: %d\n", end)
+
+	}
 
 	return true
 }
@@ -191,29 +194,38 @@ func AddKeyToBloomFilter(bloomFilter *bloomfilter.BloomFilter, key string) bool 
 	return true
 }
 
+/*
+position 1 === data
+position 2 === summary
+position 3 === index
+position 4 === merkle
+position 5 === data
+*/
 func positionInSSTable(file os.File, position int) (int64, int64) {
 	var bytes []byte
 	var size, sizeEnd int64
-	file.Seek(0, 0)
-	size = 0
-	for i := 0; i < position; i++ {
-		bytes = make([]byte, 8)
+
+	//procita pocetak segmenta
+	if position == 5 {
+		size = 0
+	} else {
+		file.Seek(int64(-4*(position+1)), 2)
+		bytes = make([]byte, 4)
 		_, err := file.Read(bytes)
 		if err != nil {
 			panic(err)
 		}
-		size += 8
-		size += int64(binary.BigEndian.Uint64(bytes))
-
-		file.Seek(size, 0)
+		size = int64(binary.BigEndian.Uint32(bytes))
 	}
-	bytes = make([]byte, 8)
+
+	//cita kraj segmenta
+	file.Seek(int64(-4*position), 2)
+	bytes = make([]byte, 4)
 	_, err := file.Read(bytes)
 	if err != nil {
 		panic(err)
 	}
-	size += 8
-	sizeEnd = size + int64(binary.BigEndian.Uint64(bytes))
+	sizeEnd = int64(binary.BigEndian.Uint32(bytes))
 
 	return size, sizeEnd
 }
