@@ -4,47 +4,66 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="dbdbb27d-1d49-43ea-9ed0-5418a780b765" name="Changes" comment="">
+    <list default="true" id="04dae56e-b024-459f-b606-0967eeaee51e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/advancedalg.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/BloomFilter.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/Data.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/Index.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/Merkle.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/Summary.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/EncodedKeys.bin" beforeDir="false" afterPath="$PROJECT_DIR$/structs/EncodedKeys.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/SSTable.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/SSTable.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/search.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/search.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/scanning/scanning.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/scanning/scanning.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/todo.txt" beforeDir="false" afterPath="$PROJECT_DIR$/structs/todo.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/wal_implementation/wal.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00001.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00002.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00003.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00004.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00005.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00006.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00007.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00008.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00009.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00010.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00011.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00012.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00013.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00014.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00015.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00016.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00017.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00018.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00019.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00020.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00021.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00022.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00023.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00024.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00025.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00026.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00027.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00028.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00029.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00030.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00031.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00032.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00033.log" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="FileTemplateManagerImpl">
-    <option name="RECENT_TEMPLATES">
-      <list>
-        <option value="Go File" />
-      </list>
-    </option>
-  </component>
-  <component name="GOROOT" url="file://C:/Program Files/Go" />
+  <component name="GOROOT" url="file://$PROJECT_DIR$/../../../../../../Program Files/Go" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 2
-}</component>
-  <component name="ProjectId" id="2bgzIwEpaNzQijoVnBREOS2DI4P" />
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 2
+}]]></component>
+  <component name="ProjectId" id="2biVfY6hRRO2M1ek0x96izlFMlb" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "DefaultGoTemplateProperty": "Go File",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.go.formatter.settings.were.checked": "true",
@@ -55,36 +74,19 @@
     "git-widget-placeholder": "lsm",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "C:/Users/Admin",
+    "last_opened_file_path": "C:/homework/fakultet/semestar3/nasp/projekat4/Key-Value_Engine",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)"
   }
 }]]></component>
   <component name="RunManager">
-    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
-      <module name="advancedalg" />
-      <working_directory value="$PROJECT_DIR$" />
-      <kind value="FILE" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <method v="2" />
-    </configuration>
     <configuration name="go build sstable" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
-      <module name="advancedalg" />
+      <module name="Key-Value_Engine" />
       <working_directory value="$PROJECT_DIR$/structs" />
       <kind value="PACKAGE" />
       <package value="sstable" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$/structs/main.go" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
-      <module name="advancedalg" />
-      <working_directory value="$PROJECT_DIR$" />
-      <kind value="DIRECTORY" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
       <method v="2" />
     </configuration>
     <recent_temporary>
@@ -99,31 +101,5 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/structs/mem/memtable/btree/btreemem/btreememstruct.go</url>
-          <line>107</line>
-          <option name="timeStamp" value="6" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/structs/main.go</url>
-          <line>178</line>
-          <option name="timeStamp" value="11" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/structs/main.go</url>
-          <line>53</line>
-          <option name="timeStamp" value="12" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/structs/main.go</url>
-          <line>89</line>
-          <option name="timeStamp" value="13" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

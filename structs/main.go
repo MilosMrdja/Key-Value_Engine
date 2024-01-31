@@ -6,11 +6,8 @@ import (
 	"log"
 	"os"
 	"sstable/LSM"
-	"sstable/SSTableStruct/SSTable"
 	"sstable/lru"
-	"sstable/mem/memtable/btree/btreemem"
 	"sstable/mem/memtable/hash/hashmem"
-	"sstable/scanning"
 	"sstable/wal_implementation"
 	"strconv"
 )
@@ -224,31 +221,31 @@ func main() {
 	//	fmt.Println(rec)
 	//}
 
-	compress1 := true
-	compress2 := true
-	oneFile := false
-
-	m := 10
-	for i := 0; i < 1; i++ {
-		btmem := btreemem.NewBTreeMemtable(m)
-		for j := 0; j < 4; j++ {
-			btmem.AddElement(strconv.Itoa(j+i+10), []byte(strconv.Itoa(j+i)))
-		}
-		btmem.DeleteElement(strconv.Itoa(15))
-		btmem.SendToSSTable(compress1, compress2, oneFile, 1, 2)
-		//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 2, oneFile)
-		//
-		LSM.CompactSstable(10, compress1, compress2, oneFile)
-
-	}
-
-	LSM.CompactSstable(10, compress1, compress2, oneFile)
-	//SSTable.ReadIndex("DataSSTableCompact/Summary.bin", "", compress1, compress2, 1, oneFile)
-	////SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compress1, compress2, 2, oneFile)
-	fmt.Printf("Konacna: \n")
-	SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
-	//key := "1"
-	scanning.PrefixIterateSSTable("ad", false)
+	//compress1 := true
+	//compress2 := true
+	//oneFile := false
+	//
+	//m := 10
+	//for i := 0; i < 1; i++ {
+	//	btmem := btreemem.NewBTreeMemtable(m)
+	//	for j := 0; j < 4; j++ {
+	//		btmem.AddElement(strconv.Itoa(j+i+10), []byte(strconv.Itoa(j+i)))
+	//	}
+	//	btmem.DeleteElement(strconv.Itoa(15))
+	//	btmem.SendToSSTable(compress1, compress2, oneFile, 1, 2)
+	//	//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 2, oneFile)
+	//	//
+	//	LSM.CompactSstable(10, compress1, compress2, oneFile)
+	//
+	//}
+	//
+	//LSM.CompactSstable(10, compress1, compress2, oneFile)
+	////SSTable.ReadIndex("DataSSTableCompact/Summary.bin", "", compress1, compress2, 1, oneFile)
+	//////SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compress1, compress2, 2, oneFile)
+	//fmt.Printf("Konacna: \n")
+	//SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
+	////key := "1"
+	//scanning.PrefixIterateSSTable("ad", false)
 	//fmt.Printf("Sumary: ")
 	////SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
 	//data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
@@ -278,5 +275,20 @@ func main() {
 	//	fmt.Println(e.Value.(*datatype.DataType).GetKey())
 	//}
 	//fmt.Println(config.LruCap)
+
+	wal := wal_implementation.NewWriteAheadLog()
+	for i := 0; i < 10; i++ {
+		key := "kljuc" + strconv.Itoa(i)
+		value_string := "vrednost" + strconv.Itoa(i)
+		value := []byte(value_string)
+		wal.Log(key, value, false)
+	}
+	records, err := wal.ReadAllRecords()
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, rec := range records {
+		fmt.Println(rec)
+	}
 
 }

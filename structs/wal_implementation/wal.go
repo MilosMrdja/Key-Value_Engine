@@ -203,6 +203,36 @@ func (wal *WriteAheadLog) goToNextReadFile() error {
 	return nil
 }
 
+func (wal *WriteAheadLog) readOverflow() []byte {
+	mmapf, err := mmap.Map(wal.openedFileRead, mmap.RDONLY, 0)
+	if err != nil {
+		return nil
+	}
+	defer mmapf.Unmap()
+	data := make([]byte, MAXSIZE-wal.currentReadPosition)
+	copy(data, mmapf[wal.currentReadPosition:MAXSIZE])
+	for true {
+		wal.goToNextReadFile()
+		mmapf, err := mmap.Map(wal.openedFileRead, mmap.RDONLY, 0)
+		if err != nil {
+			return nil
+		}
+		defer mmapf.Unmap()
+		buffer := make([]byte, HEADER_SIZE/2)
+		copy(buffer, mmapf[:HEADER_SIZE/2])
+		wal.currentReadPosition = int(binary.LittleEndian.Uint32(buffer))
+		wal.currentReadPosition += HEADER_SIZE
+		newBuffer := make([]byte, wal.currentReadPosition-HEADER_SIZE)
+		copy(newBuffer, mmapf[HEADER_SIZE:wal.currentReadPosition])
+		data = append(data, newBuffer...)
+		if wal.currentReadPosition < MAXSIZE {
+			break
+		}
+
+	}
+	return data
+}
+
 func (wal *WriteAheadLog) ReadRecord() (*LogRecord, error) {
 	mmapf, err := mmap.Map(wal.openedFileRead, mmap.RDONLY, 0)
 	if err != nil {
@@ -215,32 +245,32 @@ func (wal *WriteAheadLog) ReadRecord() (*LogRecord, error) {
 	if isLastFile != 0 && isLastFile == wal.currentReadPosition {
 		return nil, CustomError{"NO MORE RECORDS"}
 	}
+
 	if wal.currentReadPosition == 0 {
 		buffer := make([]byte, HEADER_SIZE/2)
 		copy(buffer, mmapf[0:HEADER_SIZE/2])
 		wal.currentReadPosition = int(binary.LittleEndian.Uint32(buffer))
 		wal.currentReadPosition += HEADER_SIZE
 	}
-
 	endIndex := 37
+	buffer = make([]byte, 0)
 	if endIndex+wal.currentReadPosition > MAXSIZE {
-		endIndex = MAXSIZE - wal.currentReadPosition
-	}
-	buffer = make([]byte, endIndex)
-	copy(buffer, mmapf[wal.currentReadPosition:wal.currentReadPosition+endIndex])
-	wal.currentReadPosition += 37
-	for len(buffer) < 37 {
-		wal.goToNextReadFile()
-		wal.currentReadPosition = HEADER_SIZE
-		endIndex = 37 - len(buffer)
-		if endIndex+wal.currentReadPosition > MAXSIZE {
-			endIndex = MAXSIZE - wal.currentReadPosition
-		}
-		mmapf, err = mmap.Map(wal.openedFileRead, mmap.RDONLY, 0)
-		newBuffer := make([]byte, endIndex)
-		copy(newBuffer, mmapf[wal.currentReadPosition:wal.currentReadPosition+endIndex])
-		wal.currentReadPosition += endIndex
+		buffer = append(buffer, wal.readOverflow()...)
+	} else {
+		newBuffer := make([]byte, 37)
+		copy(newBuffer, mmapf[wal.currentReadPosition:wal.currentReadPosition+37])
 		buffer = append(buffer, newBuffer...)
+		wal.currentReadPosition += endIndex
+		kSize := binary.BigEndian.Uint64(buffer[21:29])
+		vSize := binary.BigEndian.Uint64(buffer[29:37])
+		if uint64(wal.currentReadPosition)+kSize+vSize > MAXSIZE {
+			buffer = append(buffer, wal.readOverflow()...)
+		} else {
+			newBuffer := make([]byte, 37)
+			copy(newBuffer, mmapf[wal.currentReadPosition:uint64(wal.currentReadPosition)+kSize+vSize])
+			buffer = append(buffer, newBuffer...)
+			wal.currentReadPosition += int(kSize) + int(vSize)
+		}
 	}
 	var r LogRecord
 	r.CRC = binary.BigEndian.Uint32(buffer[0:4])
@@ -248,50 +278,8 @@ func (wal *WriteAheadLog) ReadRecord() (*LogRecord, error) {
 	r.Tombstone = buffer[20]
 	r.KeySize = binary.BigEndian.Uint64(buffer[21:29])
 	r.ValueSize = binary.BigEndian.Uint64(buffer[29:37])
-	safeToRead := r.KeySize
-	if uint64(wal.currentReadPosition)+safeToRead > MAXSIZE {
-		safeToRead = uint64(MAXSIZE - wal.currentReadPosition)
-	}
-	nBuffer := make([]byte, safeToRead)
-	copy(nBuffer, mmapf[wal.currentReadPosition:uint64(wal.currentReadPosition)+safeToRead])
-	buffer = append(buffer, nBuffer...)
-	wal.currentReadPosition += int(safeToRead)
-	for uint64(len(buffer)) < 37+r.KeySize {
-		wal.goToNextReadFile()
-		wal.currentReadPosition = HEADER_SIZE
-		endIndex = 37 + int(r.KeySize) - len(buffer)
-		if endIndex+wal.currentReadPosition > MAXSIZE {
-			endIndex = MAXSIZE - wal.currentReadPosition
-		}
-		mmapf, err = mmap.Map(wal.openedFileRead, mmap.RDONLY, 0)
-		newBuffer := make([]byte, endIndex)
-		copy(newBuffer, mmapf[wal.currentReadPosition:wal.currentReadPosition+endIndex])
-		wal.currentReadPosition += endIndex
-		buffer = append(buffer, newBuffer...)
-	}
-	r.Key = string(buffer[37:])
-	safeToRead = r.ValueSize
-	if uint64(wal.currentReadPosition)+safeToRead > MAXSIZE {
-		safeToRead = uint64(MAXSIZE - wal.currentReadPosition)
-	}
-	nBuffer = make([]byte, safeToRead)
-	copy(nBuffer, mmapf[wal.currentReadPosition:uint64(wal.currentReadPosition)+safeToRead])
-	buffer = append(buffer, nBuffer...)
-	wal.currentReadPosition += int(safeToRead)
-	for uint64(len(buffer)) < 37+r.KeySize+r.ValueSize {
-		wal.goToNextReadFile()
-		wal.currentReadPosition = HEADER_SIZE
-		endIndex = 37 + int(r.ValueSize) + int(r.KeySize) - len(buffer)
-		if endIndex+wal.currentReadPosition > MAXSIZE {
-			endIndex = MAXSIZE - wal.currentReadPosition
-		}
-		mmapf, err = mmap.Map(wal.openedFileRead, mmap.RDONLY, 0)
-		newBuffer := make([]byte, endIndex)
-		copy(newBuffer, mmapf[wal.currentReadPosition:wal.currentReadPosition+endIndex])
-		wal.currentReadPosition += endIndex
-		buffer = append(buffer, newBuffer...)
-	}
-	r.Value = buffer[37+r.KeySize:]
+	r.Key = string(buffer[37 : 37+r.KeySize])
+	r.Value = buffer[37+r.KeySize : 37+r.KeySize+r.ValueSize]
 	expectedCRC := CRC32(buffer[4:])
 	if expectedCRC == r.CRC {
 		return &r, nil
@@ -362,11 +350,11 @@ func (wal *WriteAheadLog) ReadAllRecords() ([]*LogRecord, error) {
 		if err != nil {
 			if errors.Is(err, CustomError{"NO MORE RECORDS"}) {
 				break
-			} else {
-				return nil, err
 			}
 		}
-		records = append(records, rec)
+		if !errors.Is(err, CustomError{"CRC FAILED!"}) {
+			records = append(records, rec)
+		}
 	}
 	return records, nil
 }
@@ -375,12 +363,12 @@ func main() {
 	// Example usage
 
 	wal := NewWriteAheadLog()
-	//for i := 0; i < 10; i++ {
-	//	key := "kljuc" + strconv.Itoa(i)
-	//	value_string := "vrednost" + strconv.Itoa(i)
-	//	value := []byte(value_string)
-	//	wal.Log(key, value, false)
-	//}
+	for i := 0; i < 10; i++ {
+		key := "kljucnestone" + strconv.Itoa(i)
+		value_string := "vrednostneka" + strconv.Itoa(i)
+		value := []byte(value_string)
+		wal.Log(key, value, false)
+	}
 	err := wal.DeleteSegmentsTilWatermark(5)
 	if err != nil {
 		fmt.Println(err)
