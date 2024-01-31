@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"hash/crc32"
+	"log"
 	"os"
 	"sstable/mem/memtable/datatype"
 )
@@ -121,7 +122,7 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 	// write key
 	if compress2 {
 		if compress1 {
-			buff := make([]byte, 4) // niz velicine keySize
+			buff := make([]byte, 4)
 			n := binary.PutVarint(buff, int64(keyDict))
 			result.Write(buff[:n])
 
@@ -218,26 +219,44 @@ func getFileInfo(fileName string) ([]byte, int32) {
 	return result.Bytes(), int32(end)
 }
 
-func SerializeHashmap(filename string, bytes []byte) error {
-	_, err := os.Stat(filename)
-	if err == nil {
-		err1 := os.Remove(filename)
-		if err1 != nil {
-			return err1
-		}
-	}
+func SerializeHashmap(filename string, mapa *map[string]int32) ([]byte, error) {
 
 	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer file.Close()
 
-	_, err = file.Write(bytes)
-	if err != nil {
-		return err
+	if err := os.Truncate(filename, 0); err != nil {
+		log.Printf("Failed to truncate: %v", err)
 	}
-	return nil
+
+	_, err = os.Stat(filename)
+	if err != nil {
+		return nil, err
+	}
+	var result bytes.Buffer
+	var buff1 []byte
+	for k, v := range *mapa {
+		// write key size
+		buff1 = make([]byte, 4)
+		binary.BigEndian.PutUint32(buff1, uint32(len(k)))
+		result.Write(buff1)
+
+		//write key
+		result.Write([]byte(k))
+
+		// write hashed key
+		buff1 = make([]byte, 4)
+		binary.BigEndian.PutUint32(buff1, uint32(v))
+		result.Write(buff1)
+	}
+
+	_, err = file.Write(result.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	return result.Bytes(), nil
 
 }

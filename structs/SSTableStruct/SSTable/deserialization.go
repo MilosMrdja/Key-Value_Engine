@@ -53,34 +53,11 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 	fmt.Printf("Velicina: %d\n", (end))
 
 	// deserialization hashmap
-	var decodeMap map[string]int32
-	//if compress2 {
-	//
-	//	fileNameHash := filePath + "/HashMap.bin"
-	//	fileHash, err := os.OpenFile(fileNameHash, os.O_RDONLY, 0666)
-	//	if err != nil {
-	//		return false
-	//	}
-	//	defer fileHash.Close()
-	//	fileInfoHash, err := os.Stat(fileNameHash)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//
-	//	end := fileInfoHash.Size()
-	//
-	//	bbb := make([]byte, end)
-	//	bb := bytes.NewBuffer(bbb)
-	//	_, err = fileHash.Read(bbb)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	d := gob.NewDecoder(bb)
-	//	err = d.Decode(&decodeMap)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//}
+	decodeMap, err := DeserializationHashMap("EncodedKeys.bin")
+	if err != nil {
+		panic(err)
+	}
+
 	file.Seek(size, 0)
 	for currentRead != end {
 		//read CRC
@@ -127,7 +104,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 
 				// read key
 				key, k := binary.Varint(bytesFile[currentRead:])
-				ss := GetKeyByValue(&decodeMap, int32(key))
+				ss := GetKeyByValue(decodeMap, int32(key))
 				fmt.Printf("Key: %s ", ss)
 				currentRead += int64(k)
 				// read value
@@ -166,7 +143,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 				}
 				currentRead += 4
 				key := binary.BigEndian.Uint32(buff)
-				ss := GetKeyByValue(&decodeMap, int32(key))
+				ss := GetKeyByValue(decodeMap, int32(key))
 				fmt.Printf("Key : %s ", ss)
 
 				// read value
@@ -406,4 +383,63 @@ func ReadIndex(fileName string, compress1, compress2 bool, elem int, oneFile boo
 		}
 	}
 	return true
+}
+
+func DeserializationHashMap(fileName string) (*map[string]int32, error) {
+
+	file, err := os.OpenFile(fileName, os.O_RDONLY, 0777)
+	if err != nil {
+		return nil, err
+	}
+
+	fInfo, err := os.Stat(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return nil, err
+	}
+	end := fInfo.Size()
+	current := int64(0)
+	mapa := make(map[string]int32)
+	var buff []byte
+	var keySize uint32
+	var key string
+	var value uint32
+	for current != end {
+		// read key size
+		buff = make([]byte, 4)
+		err := binary.Read(file, binary.BigEndian, buff)
+		if err != nil {
+			return nil, err
+		}
+		keySize = binary.BigEndian.Uint32(buff)
+		current += 4
+
+		// read key
+		buff = make([]byte, keySize)
+		_, err = file.Read(buff)
+		if err != nil {
+			return nil, err
+		}
+		key = string(buff)
+		current += int64(keySize)
+
+		// read value
+		buff = make([]byte, 4)
+		err = binary.Read(file, binary.BigEndian, buff)
+		if err != nil {
+			return nil, err
+		}
+		value = binary.BigEndian.Uint32(buff)
+		current += 4
+
+		// create map el
+		mapa[key] = int32(value)
+
+	}
+
+	return &mapa, nil
 }

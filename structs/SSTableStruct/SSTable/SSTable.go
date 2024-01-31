@@ -16,7 +16,6 @@ type SSTable struct {
 	summary     map[string]int
 	index       map[string]int
 	data        []byte
-	dictionary  map[string]int32 // jel ok 32 btina vrednost
 }
 
 // N i M su nam redom razudjenost u index-u, i u summary-ju
@@ -31,9 +30,16 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	duzinaDataList = len(dataList)
 	var err error
 	bloomFilter := bloomfilter.CreateBloomFilter(duzinaDataList)
-	// mapa za enkodirane vrednosti
 
-	dictionary := make(map[string]int32)
+	// mapa za enkodirane vrednosti
+	dictionary, err := DeserializationHashMap("EncodedKeys.bin")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Mapa sa starim kljucevima\n")
+	for k, v := range *dictionary {
+		fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
+	}
 
 	//Data fajl
 	file, err := os.OpenFile(fileName+"/Data.bin", os.O_WRONLY|os.O_CREATE, 0666)
@@ -73,12 +79,16 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 
 	for i := 0; i < duzinaDataList; i++ {
 		// u mapu dodamo encodiranu vrednost kljuca
-		dictionary[dataList[i].GetKey()] = int32(i)
+
+		_, exist := (*dictionary)[dataList[i].GetKey()]
+		if !exist {
+			(*dictionary)[dataList[i].GetKey()] = int32(len(*(dictionary)) + 1)
+		}
 		// dodali smo kljuc u bloomf
 		AddKeyToBloomFilter(bloomFilter, dataList[i].GetKey())
 
 		// serijaliacija podatka
-		serializedData, err = SerializeDataType(dataList[i], compress1, compress2, int32(i))
+		serializedData, err = SerializeDataType(dataList[i], compress1, compress2, (*dictionary)[dataList[i].GetKey()])
 		if err != nil {
 			return false
 		}
@@ -91,7 +101,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 
 		//Upis odgovarajucih vrednosti u Summary
 		if (i+1)%M == 0 {
-			indexData, err = SerializeIndexData(dataList[i].GetKey(), accIndex, compress1, compress2, int32(i))
+			indexData, err = SerializeIndexData(dataList[i].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[i].GetKey()])
 			if err != nil {
 				return false
 			}
@@ -99,7 +109,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 		}
 		//Upis odgovarajucih vrednosti u Index
 		if (i+1)%N == 0 {
-			indexData, err = SerializeIndexData(dataList[i].GetKey(), acc, compress1, compress2, int32(i))
+			indexData, err = SerializeIndexData(dataList[i].GetKey(), acc, compress1, compress2, (*dictionary)[dataList[i].GetKey()])
 			if err != nil {
 				return false
 			}
@@ -123,19 +133,6 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 		return false
 	}
 	//fmt.Printf("%d\n", acc)
-
-	////serijalizacija hash mape
-	//hashFileName := fileName + "/HashMap.bin"
-	//b := new(bytes.Buffer)
-	//e := gob.NewEncoder(b)
-	//err = e.Encode(dictionary)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//err = SerializeHashmap(hashFileName, b.Bytes())
-	//if err != nil {
-	//	panic(err)
-	//}
 
 	// u slucaju da korisnik odabere sve u jedan fajl
 	var serializedInOneFile []byte
@@ -169,6 +166,14 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 
 		fmt.Printf("Velicina SST: %d\n", end)
 
+	}
+	_, err = SerializeHashmap("EncodedKeys.bin", dictionary)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Mapa sa novim kljucevima")
+	for k, v := range *dictionary {
+		fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
 	}
 
 	return true

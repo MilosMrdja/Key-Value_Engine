@@ -3,7 +3,6 @@ package SSTable
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/gob"
 	"fmt"
 	"log"
 	"os"
@@ -25,6 +24,16 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 	duzinaDataList = numberSSTable * memtableLen
 	var err error
 	bloomFilter := bloomfilter.CreateBloomFilter(duzinaDataList)
+
+	// mapa za enkodirane vrednosti
+	dictionary, err := DeserializationHashMap("EncodedKeys.bin")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Mapa sa starim kljucevima\n")
+	for k, v := range *dictionary {
+		fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
+	}
 
 	//Data fajl
 	fileName := newFilePath + "/Data.bin"
@@ -61,7 +70,6 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 	}
 
 	i := 0
-	dictionary := make(map[string]int32)
 	for true {
 
 		data, greska := getNextRecord(oldFilePath, startOffsetList, endOffsetList, compres1, compres2, oneFile)
@@ -72,7 +80,10 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 			break
 		}
 
-		dictionary[data.GetKey()] = int32(i)
+		_, exist := (*dictionary)[data.GetKey()]
+		if !exist {
+			(*dictionary)[data.GetKey()] = int32(len(*(dictionary)) + 1)
+		}
 
 		// dodali smo kljuc u bloomf
 		AddKeyToBloomFilter(bloomFilter, data.GetKey())
@@ -116,14 +127,7 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 		i++
 
 	}
-	hashFileName := newFilePath + "/HashMap.bin"
-	b := new(bytes.Buffer)
-	e := gob.NewEncoder(b)
-	err = e.Encode(dictionary)
-	if err != nil {
-		panic(err)
-	}
-	err = SerializeHashmap(hashFileName, b.Bytes())
+	_, err = SerializeHashmap("EncodedKeys.bin", dictionary)
 	if err != nil {
 		panic(err)
 	}
@@ -170,61 +174,17 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 	return true
 }
 func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64, oneFile bool, elem int) (datatype.DataType, int64, bool) {
-	var decodeMap map[string]int32
+	var decodeMap *map[string]int32
 	Data := datatype.CreateDataType("", []byte(""))
 	var size, sizeEnd int64
-	var fileNameHash string
-	if oneFile {
-		fileNameHash = filePath + "/SSTable.bin"
-	} else {
-		fileNameHash = filePath + "/HashMap.bin"
-	}
+	//var fileNameHash string
 
 	if compres2 {
-		file, err := os.OpenFile(fileNameHash, os.O_RDONLY, 0666)
+		var err error
+		// deserialization hashmap
+		decodeMap, err = DeserializationHashMap("EncodedKeys.bin")
 		if err != nil {
-			return *Data, 0, false
-		}
-		defer file.Close()
-		if oneFile {
-			//ako je hash mapa u jednom fajlu
-			size, sizeEnd = positionInSSTable(*file, 1)
-			file.Seek(size, 0)
-			bbb := make([]byte, sizeEnd-size)
-			bb := bytes.NewBuffer(bbb)
-			_, err = file.Read(bbb)
-			if err != nil {
-				panic(err)
-			}
-			d := gob.NewDecoder(bb)
-			err = d.Decode(&decodeMap)
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			fileHash, err := os.OpenFile(fileNameHash, os.O_RDONLY, 0666)
-			if err != nil {
-				panic(err)
-			}
-			defer file.Close()
-			fileInfoHash, err := os.Stat(fileNameHash)
-			if err != nil {
-				panic(err)
-			}
-
-			end := fileInfoHash.Size()
-
-			bbb := make([]byte, end)
-			bb := bytes.NewBuffer(bbb)
-			_, err = fileHash.Read(bbb)
-			if err != nil {
-				panic(err)
-			}
-			d := gob.NewDecoder(bb)
-			err = d.Decode(&decodeMap)
-			if err != nil {
-				panic(err)
-			}
+			panic(err)
 		}
 
 	}
@@ -335,7 +295,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 				currentRead += int64(valueSize)
 				currentValue = bytes
 			}
-			currentKey = GetKeyByValue(&decodeMap, int32(key))
+			currentKey = GetKeyByValue(decodeMap, int32(key))
 
 		} else {
 			// read key size - znamo da je 4 bajta maks
@@ -361,7 +321,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 			}
 			currentRead += 4
 			key := binary.BigEndian.Uint32(buff)
-			currentKey = GetKeyByValue(&decodeMap, int32(key))
+			currentKey = GetKeyByValue(decodeMap, int32(key))
 			// read value
 			if tomb == 0 {
 				buff = make([]byte, valueSize)

@@ -97,7 +97,7 @@ func PUT(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashme
 	if (*mem1).IsReadOnly() {
 		(*mem1).SendToSSTable(compress1, compress2, oneFile, N, M)
 	}
-	LSM.CompactSstable(number, compress1, compress2, oneFile)
+	//LSM.CompactSstable(number, compress1, compress2, oneFile)
 
 	ok := (*mem1).AddElement(key, value)
 	if !ok {
@@ -227,19 +227,19 @@ func main() {
 	//}
 
 	compress1 := true
-	compress2 := false
-	oneFile := true
+	compress2 := true
+	oneFile := false
 
 	m := 10
 	for i := 0; i < 10; i++ {
 		btmem := btreemem.NewBTreeMemtable(m)
 		for j := 0; j < 10; j++ {
-			btmem.AddElement(strconv.Itoa(j+i), []byte(strconv.Itoa(j+i)))
+			btmem.AddElement(strconv.Itoa(j+i+10), []byte(strconv.Itoa(j+i)))
 		}
 		btmem.DeleteElement(strconv.Itoa(15))
 		btmem.SendToSSTable(compress1, compress2, oneFile, 1, 2)
 		//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 2, oneFile)
-
+		//
 		LSM.CompactSstable(10, compress1, compress2, oneFile)
 
 	}
@@ -249,18 +249,18 @@ func main() {
 	////SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compress1, compress2, 2, oneFile)
 	fmt.Printf("Konacna: \n")
 	SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
-	key := "1"
+	//key := "1"
 
-	fmt.Printf("Sumary: ")
-	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
-	data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
-	if err4 == true {
-		fmt.Printf("Key: %s\n", data.GetKey())
-		fmt.Printf("Value: %s\n", data.GetData())
-		fmt.Printf("Time: %s\n", data.GetChangeTime())
-	} else {
-		fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
-	}
+	//fmt.Printf("Sumary: ")
+	////SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
+	//data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
+	//if err4 == true {
+	//	fmt.Printf("Key: %s\n", data.GetKey())
+	//	fmt.Printf("Value: %s\n", data.GetData())
+	//	fmt.Printf("Time: %s\n", data.GetChangeTime())
+	//} else {
+	//	fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
+	//}
 	//lista, _, _, _ := LSM.GetDataByPrefix(15, "2", compress1, compress2, oneFile)
 	//for _, i2 := range lista {
 	//	fmt.Printf("Key: %s ", i2.GetKey())
