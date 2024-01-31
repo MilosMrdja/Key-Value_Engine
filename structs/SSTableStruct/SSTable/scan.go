@@ -38,12 +38,12 @@ func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFil
 		size, sizeEnd = PositionInSSTable(*file, 5)
 
 		end = sizeEnd - size
-		_, err1 := file.Seek(size, 0)
+		_, err1 := file.Seek(size+int64(beginOffset)+size, 0)
 		if err1 != nil {
 			panic(err)
 		}
 	} else {
-		_, err = file.Seek(0, 0)
+		_, err = file.Seek(size+int64(beginOffset)+0, 0)
 		if err != nil {
 			panic(err)
 		}
@@ -53,7 +53,7 @@ func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFil
 	if err != nil {
 		panic(err)
 	}
-	file.Seek(size, 0)
+	file.Seek(size+int64(beginOffset), 0)
 	fmt.Printf("Velicina: %d\n", (end))
 
 	// deserialization hashmap
@@ -62,11 +62,11 @@ func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFil
 		panic(err)
 	}
 
-	file.Seek(size, 0)
+	file.Seek(size+int64(beginOffset), 0)
 
 	//read CRC
 	bytes := make([]byte, 4)
-	file.Seek(currentRead+size, 0)
+	file.Seek(size+int64(beginOffset)+currentRead+size, 0)
 	_, err = file.Read(bytes)
 	if err != nil {
 		panic(err)
@@ -75,7 +75,7 @@ func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFil
 
 	// read timestamp
 	bytes = make([]byte, 16)
-	file.Seek(currentRead+size, 0)
+	file.Seek(size+int64(beginOffset)+currentRead+size, 0)
 	_, err = file.Read(bytes)
 	if err != nil {
 		panic(err)
@@ -86,7 +86,7 @@ func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFil
 
 	// read tombstone
 	bytes = make([]byte, 1)
-	file.Seek(currentRead+size, 0)
+	file.Seek(size+int64(beginOffset)+currentRead+size, 0)
 	_, err = file.Read(bytes)
 	if err != nil {
 		panic(err)
@@ -119,7 +119,7 @@ func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFil
 			// read value
 			if tomb == 0 {
 				bytes = make([]byte, valueSize)
-				file.Seek(currentRead+size, 0)
+				file.Seek(size+int64(beginOffset)+currentRead+size, 0)
 				_, err = file.Read(bytes)
 				if err != nil {
 					panic(err)
@@ -136,7 +136,7 @@ func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFil
 			if tomb == 0 {
 
 				buff := make([]byte, 8)
-				file.Seek(currentRead+size, 0)
+				file.Seek(size+int64(beginOffset)+currentRead+size, 0)
 				_, err = file.Read(buff)
 				if err != nil {
 					panic(err)
@@ -183,7 +183,7 @@ func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFil
 			}
 			// read key
 			bytes = make([]byte, keySize)
-			file.Seek(currentRead+size, 0)
+			file.Seek(size+int64(beginOffset)+currentRead+size, 0)
 			_, err = file.Read(bytes)
 			if err != nil {
 				panic(err)
@@ -194,7 +194,7 @@ func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFil
 			// read value
 			if tomb == 0 {
 				bytes = make([]byte, valueSize)
-				file.Seek(currentRead+size, 0)
+				file.Seek(size+int64(beginOffset)+currentRead+size, 0)
 				_, err = file.Read(bytes)
 				if err != nil {
 					panic(err)

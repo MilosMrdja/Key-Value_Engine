@@ -108,8 +108,10 @@ func adjustPositionPrefixSS(mapa map[string]datatype.DataType, ssIterator *itera
 func adjustPosition(mapaMem map[*hashmem.Memtable]datatype.DataType, mapaSS map[string]datatype.DataType, ssIterator *iterator.IteratorPrefixSSTable, memIterator *iterator.PrefixIterator) datatype.DataType {
 	keyMem := adjustPositionsPrefixMem(mapaMem, memIterator)
 	keySS := adjustPositionPrefixSS(mapaSS, ssIterator)
+
 	dataType1 := mapaMem[keyMem[0]]
 	dataType2 := mapaSS[keySS[0]]
+
 	if dataType1.GetKey() > dataType2.GetKey() {
 		for i := 0; i < len(keySS); i++ {
 			ssIterator.IncrementElementOffset(keySS[i], ssIterator.GetSSTableMap()[keySS[i]][2])
@@ -134,6 +136,7 @@ func adjustPosition(mapaMem map[*hashmem.Memtable]datatype.DataType, mapaSS map[
 
 func adjustPositionsPrefixMem(mapa map[*hashmem.Memtable]datatype.DataType, memIterator *iterator.PrefixIterator) []*hashmem.Memtable {
 	minKeys := extractMinimalKeysMems(mapa)
+
 	sort.Slice(minKeys[:], func(i, j int) bool {
 		dataType1 := mapa[minKeys[i]]
 		dataType2 := mapa[minKeys[j]]
@@ -194,7 +197,7 @@ func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssItera
 				minMap[&j] = j.GetSortedDataTypes()[memIterator.MemTablePositions()[&j]]
 				break
 			} else {
-				memIterator.MemTablePositions()[&j]++
+				memIterator.IncrementMemTablePosition(&j)
 			}
 		}
 	}
@@ -317,5 +320,6 @@ func GetBeginsEnds(sstableFile string, oneFile bool) []uint64 {
 		beginsEnds[1] = uint64(fileInfo.Size())
 
 	}
+	beginsEnds = append(beginsEnds, 0)
 	return beginsEnds
 }
