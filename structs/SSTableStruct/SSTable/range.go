@@ -13,13 +13,13 @@ func isInRange(value string, valRange []string) bool {
 
 func GetByRange(filePath string, valRange []string, compress1, compress2, oneFile bool, number *int) ([]datatype.DataType, string, int64, bool) {
 	var data []datatype.DataType
-	var hashMap map[string]int32
+	var hashMap *map[string]int32
 	var err error
 	var fileName string
 	if oneFile {
 		fileName = filePath + "/SSTable.bin"
 		if compress2 {
-			hashMap, err = GetHashMap(filePath, oneFile)
+			hashMap, err = DeserializationHashMap("EncodedKeys.bin")
 			if err != nil {
 				panic(err)
 			}
@@ -38,7 +38,7 @@ func GetByRange(filePath string, valRange []string, compress1, compress2, oneFil
 	return data, fileName, offset, true
 	return data, "", 0, false
 }
-func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, valRange []string, oneFile bool, hashMap map[string]int32, number *int) ([]datatype.DataType, int64, bool) {
+func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, valRange []string, oneFile bool, hashMap *map[string]int32, number *int) ([]datatype.DataType, int64, bool) {
 
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	var result []datatype.DataType
@@ -144,7 +144,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 
 				// read key
 				tempKey, k := binary.Varint(bytesFile[currentRead:])
-				currentKey = GetKeyByValue(&hashMap, int32(tempKey))
+				currentKey = GetKeyByValue(hashMap, int32(tempKey))
 				//fmt.Printf("Key: %s ", ss)
 				currentRead += int64(k)
 				// read value
@@ -194,7 +194,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 				}
 				currentRead += 4
 				tempKey := binary.BigEndian.Uint32(buff)
-				currentKey = GetKeyByValue(&hashMap, int32(tempKey))
+				currentKey = GetKeyByValue(hashMap, int32(tempKey))
 				//fmt.Printf("Key : %s ", ss)
 
 				// read value

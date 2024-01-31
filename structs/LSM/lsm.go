@@ -30,7 +30,7 @@ func FindNextDestination(layer int) (string, bool) {
 	return newSstableName, false
 }
 
-func CompactSstable(numTables int, compres1, compres2, oneFile bool) {
+func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memtableCap int) {
 
 	//ovako za gore u entrijim
 	dataDir, err := os.Open("./DataSStable")
@@ -65,15 +65,15 @@ func CompactSstable(numTables int, compres1, compres2, oneFile bool) {
 			}
 			newSstableName, _ := FindNextDestination(i + 1)
 			fmt.Println(newSstableName)
-			createSstableNextLayer(newSstableName, dataDir.Name()+"/L"+strconv.Itoa(i), compres1, compres2, oneFile)
+			createSstableNextLayer(newSstableName, dataDir.Name()+"/L"+strconv.Itoa(i), compres1, compres2, oneFile, N, M, memtableCap)
 			deleteLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
 			createLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
 		}
 
 	}
 }
-func createSstableNextLayer(newSstableName, oldFilePath string, compres1, compres2, oneFile bool) {
-	SSTable.NewSSTableCompact(newSstableName, 10, oldFilePath, 1, 1, 10, compres1, compres2, oneFile)
+func createSstableNextLayer(newSstableName, oldFilePath string, compres1, compres2, oneFile bool, N, M, memtableCap int) {
+	SSTable.NewSSTableCompact(newSstableName, 10, oldFilePath, N, M, memtableCap, compres1, compres2, oneFile)
 
 }
 func deleteLayer(layerName string) {

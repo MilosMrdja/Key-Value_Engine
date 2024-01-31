@@ -81,8 +81,37 @@ func PREFIX_ITERATE(prefix string, iterator *iterator.Iterator) {
 	fmt.Println(minInMems)
 }
 
+/*
+	l0	[125,65,200,269]  [125,150,200,269]
+	l1  [0,0,0,0]  [1250,1500,2000,2690]
+	l2  [0,0,0,0]  [12500,15000,20000,26900]
+
+
+
+		aa
+
+
+for SVE{
+    l0  sst 1    aa
+	l0 	sst2      ab
+	L1 	SST1      aa
+
+	L0  [[P],[K]]
+	L1  [[P],[K]]
+	L2  [[P],[K]]
+}
+
+lPocM, lKrajaM, elementM    aaj
+lPoc, lKraja, element, bool		aab
+
+
+if elementM < element{
+		pokazi elemntM
+}
+*/
+
 // za sstabelu
-func PrefixIterateSSTable(prefix string, oneFile bool) {
+func PrefixIterateSSTable(prefix string, compress1, compress2, oneFile bool) {
 	Levels, _ := ioutil.ReadDir("./DataSStable")
 	SSTable.ReadIndex("./DataSStable/L0/sstable1/Summary.bin", true, true, 1, false)
 	for i := 0; i < len(Levels); i++ {
@@ -91,8 +120,8 @@ func PrefixIterateSSTable(prefix string, oneFile bool) {
 			if oneFile {
 				continue
 			} else {
-				prvi, poslednji := SSTable.GetFirstAndLast()
-				if prefix < prvi || prefix > poslednji {
+				prvi, poslednji, _ := SSTable.GetSummaryMinMax("./DataSStable/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(j+1)+"/Summary.bin", compress1, compress2, oneFile)
+				if prefix < prvi.GetKey() || prefix > poslednji.GetKey() {
 					continue
 				} else {
 					// kreiranje iteratorSSTable

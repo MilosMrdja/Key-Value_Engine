@@ -1,4 +1,4 @@
-package main
+package token_bucket
 
 import (
 	"bytes"
@@ -33,22 +33,21 @@ func (tb *TokenBucket) refill() {
 	now := time.Now()
 	end := time.Since(tb.lastRefillTimestamp)
 	tokensTobeAdded := int64(end.Seconds()) * tb.rate
-	fmt.Printf("Number of Added Tokens %d --> ", tokensTobeAdded)
 	tb.currentTokens = int64(math.Min(float64(tokensTobeAdded+tb.currentTokens), float64(tb.maxTokens)))
 	if tokensTobeAdded != 0 {
 		tb.lastRefillTimestamp = now
 	}
 }
 
-func (tb *TokenBucket) IsRequestAllowed(tokens int64) string {
+func (tb *TokenBucket) IsRequestAllowed(tokens int64) (string, bool) {
 	tb.refill()
 	if tb.currentTokens >= tokens {
 		tb.currentTokens -= tokens
 		tb.AppendRequest("token_bucket/requests.bin", []byte(time.Now().Format("15:04:05")+", "+strconv.Itoa(int(tokens))+", ALLOWED\n"))
-		return "Request Allowed"
+		return "Request Allowed", true
 	}
 	tb.AppendRequest("token_bucket/requests.bin", []byte(time.Now().Format("15:04:05")+", "+strconv.Itoa(int(tokens))+", BLOCKED\n"))
-	return "Request Blocked"
+	return "Request Blocked", false
 }
 
 // SerializeTokenBucket serializes the TokenBucket
@@ -131,24 +130,24 @@ func (tb *TokenBucket) ToString() string {
 		tb.rate, tb.maxTokens, tb.currentTokens, tb.lastRefillTimestamp.Format("15:04:05"))
 }
 
-func main() {
-
-	tb := NewTokenBucket(3, 10)
-	err := tb.InitRequestsFile("token_bucket/requests.bin")
-
-	if err != nil {
-		fmt.Println("Unsuccessful initialization of the requests.bin file!")
-		return
-	}
-
-	for i := 1; i <= 15; i++ {
-		fmt.Println(tb.IsRequestAllowed(2), " at ", time.Now().Format("15:04:05"))
-		time.Sleep(300 * time.Millisecond)
-	}
-
-	data, _ := tb.SerializeTokenBucket()
-
-	tb2, _ := DeserializeTokenBucket(data)
-
-	fmt.Println((*tb2).ToString())
-}
+//func main() {
+//
+//	tb := NewTokenBucket(3, 10)
+//	err := tb.InitRequestsFile("token_bucket/requests.bin")
+//
+//	if err != nil {
+//		fmt.Println("Unsuccessful initialization of the requests.bin file!")
+//		return
+//	}
+//
+//	for i := 1; i <= 15; i++ {
+//		fmt.Println(tb.IsRequestAllowed(2), " at ", time.Now().Format("15:04:05"))
+//		time.Sleep(300 * time.Millisecond)
+//	}
+//
+//	data, _ := tb.SerializeTokenBucket()
+//
+//	tb2, _ := DeserializeTokenBucket(data)
+//
+//	fmt.Println((*tb2).ToString())
+//}

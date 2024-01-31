@@ -267,11 +267,9 @@ func ReadIndex(fileName string, compress1, compress2 bool, elem int, oneFile boo
 	var currentRead int64
 	currentRead = 0
 	end := fileInfo.Size()
-
-	// var
-
-	if compress2 {
-		elem += 1
+	decodeMap, err := DeserializationHashMap("EncodedKeys.bin")
+	if err != nil {
+		panic(err)
 	}
 	var size, sizeEnd int64
 	if oneFile {
@@ -303,7 +301,8 @@ func ReadIndex(fileName string, compress1, compress2 bool, elem int, oneFile boo
 				// read key
 				key, k := binary.Varint(bytesFile[currentRead:])
 				currentRead += int64(k)
-				fmt.Printf("Key: %d ", key)
+				ss := GetKeyByValue(decodeMap, int32(key))
+				fmt.Printf("Key: %s ", ss)
 				// read offset
 				offset, m := binary.Varint(bytesFile[currentRead:])
 				currentRead += int64(m)
@@ -318,7 +317,8 @@ func ReadIndex(fileName string, compress1, compress2 bool, elem int, oneFile boo
 				}
 				currentRead += 4
 				key := binary.BigEndian.Uint32(buff)
-				fmt.Printf("Kljuc : %d ", key)
+				ss := GetKeyByValue(decodeMap, int32(key))
+				fmt.Printf("Kljuc : %s ", ss)
 
 				// read offset
 				bytes := make([]byte, 8)

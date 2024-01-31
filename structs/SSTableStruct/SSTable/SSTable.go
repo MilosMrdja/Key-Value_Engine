@@ -36,10 +36,10 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Mapa sa starim kljucevima\n")
-	for k, v := range *dictionary {
-		fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
-	}
+	//fmt.Printf("Mapa sa starim kljucevima\n")
+	//for k, v := range *dictionary {
+	//	fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
+	//}
 
 	//Data fajl
 	file, err := os.OpenFile(fileName+"/Data.bin", os.O_WRONLY|os.O_CREATE, 0666)
@@ -64,17 +64,17 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 
 	// upis prvog i poslednjeg
 
-	indexData, err = SerializeIndexData(dataList[0].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[0].GetKey()])
+	minData, err := SerializeIndexData(dataList[0].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[0].GetKey()])
 	if err != nil {
 		return false
 	}
-	fileSummary.Write(indexData)
+	fileSummary.Write(minData)
 
-	indexData, err = SerializeIndexData(dataList[duzinaDataList-1].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[duzinaDataList-1].GetKey()])
+	maxData, err := SerializeIndexData(dataList[duzinaDataList-1].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[duzinaDataList-1].GetKey()])
 	if err != nil {
 		return false
 	}
-	fileSummary.Write(indexData)
+	fileSummary.Write(maxData)
 	// glavna petlja
 
 	for i := 0; i < duzinaDataList; i++ {
@@ -171,10 +171,10 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Mapa sa novim kljucevima")
-	for k, v := range *dictionary {
-		fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
-	}
+	//fmt.Printf("Mapa sa novim kljucevima")
+	//for k, v := range *dictionary {
+	//	fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
+	//}
 
 	return true
 }
@@ -200,10 +200,10 @@ func AddKeyToBloomFilter(bloomFilter *bloomfilter.BloomFilter, key string) bool 
 }
 
 /*
-position 1 === data
+position 1 === bloom
 position 2 === summary
 position 3 === index
-position 4 === merkle
+position 4 === merkled
 position 5 === data
 */
 func positionInSSTable(file os.File, position int) (int64, int64) {

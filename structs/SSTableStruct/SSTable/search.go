@@ -1,9 +1,7 @@
 package SSTable
 
 import (
-	"bytes"
 	"encoding/binary"
-	"encoding/gob"
 	"fmt"
 	"os"
 	"sstable/bloomfilter/bloomfilter"
@@ -13,7 +11,7 @@ import (
 
 func GetData(filePath string, key string, compress1, compress2 bool, oneFile bool) (datatype.DataType, bool) {
 	var data datatype.DataType
-	var hashMap map[string]int32
+	var hashMap *map[string]int32
 	if oneFile {
 		fileName := filePath + "/SSTable.bin"
 		file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
@@ -28,7 +26,7 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 		}
 		isInFile := bloomFilter.Get([]byte(key))
 		if compress2 {
-			hashMap, err = GetHashMap(filePath, oneFile)
+			hashMap, err = DeserializationHashMap("EncodedKeys.bin")
 			if err != nil {
 				panic(err)
 			}
@@ -64,7 +62,10 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 		isInFile := bloomFilter.Get([]byte(key))
 		if isInFile == true {
 			if compress2 {
-				hashMap, err = GetHashMap(filePath, oneFile)
+				hashMap, err = DeserializationHashMap("EncodedKeys.bin")
+				if err != nil {
+					panic(err)
+				}
 				if err != nil {
 					panic(err)
 				}
@@ -91,7 +92,7 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 	return data, false
 }
 
-func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, key string, oneFile bool, hashMap map[string]int32) (datatype.DataType, bool) {
+func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, key string, oneFile bool, hashMap *map[string]int32) (datatype.DataType, bool) {
 	Data := datatype.CreateDataType("", []byte(""))
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
@@ -188,7 +189,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 
 				// read key
 				tempKey, k := binary.Varint(bytesFile[currentRead:])
-				currentKey = GetKeyByValue(&hashMap, int32(tempKey))
+				currentKey = GetKeyByValue(hashMap, int32(tempKey))
 				//fmt.Printf("Key: %s ", ss)
 				currentRead += int64(k)
 				// read value
@@ -236,7 +237,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 				}
 				currentRead += 4
 				tempKey := binary.BigEndian.Uint32(buff)
-				currentKey = GetKeyByValue(&hashMap, int32(tempKey))
+				currentKey = GetKeyByValue(hashMap, int32(tempKey))
 				//fmt.Printf("Key : %s ", ss)
 
 				// read value
@@ -361,9 +362,16 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 	return *Data, false
 }
 
-func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, offsetEnd int64, oneFile bool, elem int, hashMap map[string]int32) (int64, int64, bool) {
+func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, offsetEnd int64, oneFile bool, elem int, hashMap *map[string]int32) (int64, int64, bool) {
 	//ukoliko je u odvojenim fajlovima, prosljedjuje se cela putanja
 	//ukoliko je u jednom prosledjuje se putanja da odgovarajuceg fajla SSTable
+
+	var summaryRead int64
+	summaryRead = 0
+	if elem == 2 {
+		_, _, summaryRead = GetSummaryMinMax(filePath, compress1, compress2, oneFile)
+	}
+
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
 		return 0, 0, false
@@ -374,20 +382,20 @@ func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, off
 	if err != nil {
 		panic(err)
 	}
-	var size, sizeEnd int64
-	end := fileInfo.Size()
-
-	if compress2 {
-		elem += 1
-	}
+	var size, sizeEnd, end int64
+	sizeEnd = fileInfo.Size()
 
 	if oneFile {
 		size, sizeEnd = positionInSSTable(*file, elem)
 
-		offsetEnd = sizeEnd - offsetEnd
+		if offsetEnd == 0 {
+			offsetEnd = sizeEnd
+		} else {
+			offsetEnd += size
+		}
 		offsetStart += size
 
-		end = sizeEnd - size
+		end = sizeEnd - size - summaryRead
 		if err != nil {
 			return 0, 0, false
 		}
@@ -398,7 +406,9 @@ func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, off
 	var currentRead int64
 	currentRead = 0
 
+	offsetStart += summaryRead
 	file.Seek(offsetStart, 0)
+	end = sizeEnd - size - summaryRead
 	bytesFile := make([]byte, end)
 	_, err = file.Read(bytesFile)
 	if err != nil {
@@ -409,6 +419,9 @@ func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, off
 	currentOffset = 0
 	oldOffsetStart := offsetStart
 	for offsetStart <= offsetEnd {
+		if offsetStart == sizeEnd {
+			break
+		}
 
 		if compress2 {
 			if compress1 {
@@ -421,7 +434,7 @@ func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, off
 				offset, m := binary.Varint(bytesFile[currentRead:])
 				currentRead += int64(m)
 				//fmt.Printf("Offset: %d \n", offset)
-				currentKey := GetKeyByValue(&hashMap, int32(tempKey))
+				currentKey := GetKeyByValue(hashMap, int32(tempKey))
 				if currentKey > key {
 					return currentOffset, offset, true
 				}
@@ -451,7 +464,7 @@ func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, off
 				}
 				currentRead += 8
 				//fmt.Printf("Offset: %d \n", binary.BigEndian.Uint64(bytes))
-				currentKey := GetKeyByValue(&hashMap, int32(tempKey))
+				currentKey := GetKeyByValue(hashMap, int32(tempKey))
 				if currentKey > key {
 					offsetEnd = int64(binary.BigEndian.Uint64(bytes))
 					return currentOffset, offsetEnd, true
@@ -537,46 +550,4 @@ func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, off
 
 	}
 	return currentOffset, 0, true
-}
-
-func GetHashMap(filePath string, oneFile bool) (map[string]int32, error) {
-	var decodeMap map[string]int32
-	var start, end int64
-	start = 0
-	fileNameHash := filePath + "/HashMap.bin"
-	if oneFile {
-		fileNameHash = filePath + "/SSTable.bin"
-
-	}
-
-	fileHash, err := os.OpenFile(fileNameHash, os.O_RDONLY, 0666)
-	if err != nil {
-		return decodeMap, err
-	}
-	defer fileHash.Close()
-	if oneFile {
-		start, end = positionInSSTable(*fileHash, 1)
-	} else {
-		start = 0
-		fileInfoHash, err := os.Stat(fileNameHash)
-		if err != nil {
-			panic(err)
-		}
-
-		end = fileInfoHash.Size()
-	}
-
-	fileHash.Seek(start, 0)
-	bbb := make([]byte, end)
-	bb := bytes.NewBuffer(bbb)
-	_, err = fileHash.Read(bbb)
-	if err != nil {
-		panic(err)
-	}
-	d := gob.NewDecoder(bb)
-	err = d.Decode(&decodeMap)
-	if err != nil {
-		panic(err)
-	}
-	return decodeMap, nil
 }

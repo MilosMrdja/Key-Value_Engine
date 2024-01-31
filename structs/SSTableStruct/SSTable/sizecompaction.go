@@ -61,14 +61,27 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 
 	//Bloom Filter fajl
 	fileBloom := newFilePath + "/BloomFilter.bin"
-	// glavna petlja
 
-	//dobavljanje sledeceg najmanjeg elementa
-	startOffsetList, endOffsetList, greska := setStartEndOffset(oldFilePath, numberSSTable, compres2, oneFile)
+	startOffsetList, endOffsetList, greska := setStartEndOffset(oldFilePath, numberSSTable, oneFile)
 	if greska != true {
 		return false
 	}
 
+	//var minData, maxData datatype.DataType
+
+	// glavna petlja
+
+	minData, maxData := GetGlobalSummaryMinMax(oldFilePath, numberSSTable, compres1, compres2, oneFile)
+	indexData, err = SerializeIndexData(minData.GetKey(), accIndex, compres1, compres2, (*dictionary)[minData.GetKey()])
+	if err != nil {
+		return false
+	}
+	fileSummary.Write(indexData)
+	indexData, err = SerializeIndexData(maxData.GetKey(), accIndex, compres1, compres2, (*dictionary)[maxData.GetKey()])
+	if err != nil {
+		return false
+	}
+	fileSummary.Write(indexData)
 	i := 0
 	for true {
 
@@ -89,7 +102,7 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 		AddKeyToBloomFilter(bloomFilter, data.GetKey())
 
 		// serijaliacija podatka
-		serializedData, err = SerializeDataType(data, compres1, compres2, int32(i))
+		serializedData, err = SerializeDataType(data, compres1, compres2, (*dictionary)[data.GetKey()])
 		if err != nil {
 			return false
 		}
@@ -102,7 +115,7 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 
 		//Upis odgovarajucih vrednosti u Summary
 		if (i+1)%M == 0 {
-			indexData, err = SerializeIndexData(data.GetKey(), accIndex, compres1, compres2, int32(i))
+			indexData, err = SerializeIndexData(data.GetKey(), accIndex, compres1, compres2, (*dictionary)[data.GetKey()])
 			if err != nil {
 				return false
 			}
@@ -110,7 +123,7 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 		}
 		//Upis odgovarajucih vrednosti u Index
 		if (i+1)%N == 0 {
-			indexData, err = SerializeIndexData(data.GetKey(), acc, compres1, compres2, int32(i))
+			indexData, err = SerializeIndexData(data.GetKey(), acc, compres1, compres2, (*dictionary)[data.GetKey()])
 			if err != nil {
 				return false
 			}
@@ -419,7 +432,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 	return *Data, currentRead, true
 }
 
-func setStartEndOffset(filePath string, numberSSTable int, compres2, oneFile bool) ([]int64, []int64, bool) {
+func setStartEndOffset(filePath string, numberSSTable int, oneFile bool) ([]int64, []int64, bool) {
 
 	endOffsetList := make([]int64, numberSSTable)
 	startOffsetList := make([]int64, numberSSTable)
