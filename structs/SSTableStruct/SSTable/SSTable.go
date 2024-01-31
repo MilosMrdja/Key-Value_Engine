@@ -64,13 +64,13 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 
 	// upis prvog i poslednjeg
 
-	indexData, err = SerializeIndexData(dataList[0].GetKey(), accIndex, compress1, compress2, int32(0))
+	indexData, err = SerializeIndexData(dataList[0].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[0].GetKey()])
 	if err != nil {
 		return false
 	}
 	fileSummary.Write(indexData)
 
-	indexData, err = SerializeIndexData(dataList[duzinaDataList-1].GetKey(), accIndex, compress1, compress2, int32(duzinaDataList-1))
+	indexData, err = SerializeIndexData(dataList[duzinaDataList-1].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[duzinaDataList-1].GetKey()])
 	if err != nil {
 		return false
 	}

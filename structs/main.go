@@ -9,8 +9,8 @@ import (
 	"sstable/SSTableStruct/SSTable"
 	"sstable/lru"
 	"sstable/mem/memtable/btree/btreemem"
-	"sstable/mem/memtable/datatype"
 	"sstable/mem/memtable/hash/hashmem"
+	"sstable/scanning"
 	"sstable/wal_implementation"
 	"strconv"
 )
@@ -103,9 +103,7 @@ func PUT(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashme
 	if !ok {
 		panic("Greska")
 	}
-	//Trece u LRU
-	lru1.Put(datatype.CreateDataType(key, value))
-
+	// kada je put ne ide u LRU
 }
 
 func DELETE(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashmem.Memtable, key string) {
@@ -231,9 +229,9 @@ func main() {
 	oneFile := false
 
 	m := 10
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 1; i++ {
 		btmem := btreemem.NewBTreeMemtable(m)
-		for j := 0; j < 10; j++ {
+		for j := 0; j < 4; j++ {
 			btmem.AddElement(strconv.Itoa(j+i+10), []byte(strconv.Itoa(j+i)))
 		}
 		btmem.DeleteElement(strconv.Itoa(15))
@@ -250,7 +248,7 @@ func main() {
 	fmt.Printf("Konacna: \n")
 	SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
 	//key := "1"
-
+	scanning.PrefixIterateSSTable("ad", false)
 	//fmt.Printf("Sumary: ")
 	////SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
 	//data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)

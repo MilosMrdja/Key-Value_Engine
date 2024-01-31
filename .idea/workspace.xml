@@ -5,24 +5,30 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="dbdbb27d-1d49-43ea-9ed0-5418a780b765" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/BloomFilter.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/HashMap.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/Data.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/Index.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/Merkle.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/SSTable.bin" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/DataSStable/L1/sstable1/Summary.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/LSM/lsm.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/LSM/lsm.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/EncodedKeys.bin" beforeDir="false" afterPath="$PROJECT_DIR$/structs/EncodedKeys.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/SSTable.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/SSTable.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/deserialization.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/deserialization.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/serialization.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/serialization.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/sizecompaction.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/sizecompaction.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/search.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/SSTableStruct/SSTable/search.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/mem/memtable/btree/btreemem/btreememstruct.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/mem/memtable/btree/btreemem/btreememstruct.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/scanning/scanning.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/scanning/scanning.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/todo.txt" beforeDir="false" afterPath="$PROJECT_DIR$/structs/todo.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
   </component>
   <component name="GOROOT" url="file://C:/Program Files/Go" />
   <component name="Git.Settings">
@@ -36,23 +42,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;lsm&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Admin&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "lsm",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "C:/Users/Admin",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="advancedalg" />
@@ -103,7 +110,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/structs/main.go</url>
-          <line>180</line>
+          <line>178</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
