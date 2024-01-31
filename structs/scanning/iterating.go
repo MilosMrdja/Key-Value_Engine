@@ -17,9 +17,26 @@ func isInRange(value string, valRange []string) bool {
 	return value >= valRange[0] && value <= valRange[1]
 }
 
-func extractMinimalKeys(mapa map[*hashmem.Memtable]datatype.DataType) []*hashmem.Memtable {
+func extractMinimalKeysSS(mapa map[string]datatype.DataType) []string {
 	// Find the minimal value in the map
-	minimalValue := findMinimalValue(mapa)
+	minimalValue := findMinimalValueSS(mapa)
+
+	// Initialize a slice to store keys with minimal value
+	var minimalKeys []string
+
+	// Iterate through the map to find keys with minimal value
+	for key, value := range mapa {
+		if value.GetKey() == minimalValue.GetKey() {
+			minimalKeys = append(minimalKeys, key)
+		}
+	}
+
+	return minimalKeys
+}
+
+func extractMinimalKeysMems(mapa map[*hashmem.Memtable]datatype.DataType) []*hashmem.Memtable {
+	// Find the minimal value in the map
+	minimalValue := findMinimalValueMems(mapa)
 
 	// Initialize a slice to store keys with minimal value
 	var minimalKeys []*hashmem.Memtable
@@ -34,7 +51,7 @@ func extractMinimalKeys(mapa map[*hashmem.Memtable]datatype.DataType) []*hashmem
 	return minimalKeys
 }
 
-func findMinimalValue(mapa map[*hashmem.Memtable]datatype.DataType) datatype.DataType {
+func findMinimalValueSS(mapa map[string]datatype.DataType) datatype.DataType {
 	// Find the minimal value in the map
 	minValue := datatype.DataType{}
 	for _, value := range mapa {
@@ -48,8 +65,22 @@ func findMinimalValue(mapa map[*hashmem.Memtable]datatype.DataType) datatype.Dat
 	}
 	return minValue
 }
-func adjustPositionsRange(mapa map[*hashmem.Memtable]datatype.DataType, memIterator *iterator.RangeIterator) datatype.DataType {
-	minKeys := extractMinimalKeys(mapa)
+func findMinimalValueMems(mapa map[*hashmem.Memtable]datatype.DataType) datatype.DataType {
+	// Find the minimal value in the map
+	minValue := datatype.DataType{}
+	for _, value := range mapa {
+		minValue = value
+		break
+	}
+	for _, value := range mapa {
+		if value.GetKey() < minValue.GetKey() {
+			minValue = value
+		}
+	}
+	return minValue
+}
+func adjustPositionsRangeMem(mapa map[*hashmem.Memtable]datatype.DataType, memIterator *iterator.RangeIterator) datatype.DataType {
+	minKeys := extractMinimalKeysMems(mapa)
 	sort.Slice(minKeys[:], func(i, j int) bool {
 		dataType1 := mapa[minKeys[i]]
 		dataType2 := mapa[minKeys[j]]
@@ -60,18 +91,60 @@ func adjustPositionsRange(mapa map[*hashmem.Memtable]datatype.DataType, memItera
 	}
 	return mapa[minKeys[0]]
 }
-func adjustPositionsPrefix(mapa map[*hashmem.Memtable]datatype.DataType, memIterator *iterator.PrefixIterator) datatype.DataType {
-	minKeys := extractMinimalKeys(mapa)
+
+func adjustPositionPrefixSS(mapa map[string]datatype.DataType, ssIterator *iterator.IteratorPrefixSSTable) []string {
+	minKeys := extractMinimalKeysSS(mapa)
 	sort.Slice(minKeys[:], func(i, j int) bool {
 		dataType1 := mapa[minKeys[i]]
 		dataType2 := mapa[minKeys[j]]
 		return dataType1.GetChangeTime().After(dataType2.GetChangeTime())
 	})
-	for _, k := range minKeys {
-		memIterator.IncrementMemTablePosition(*k)
-	}
-	return mapa[minKeys[0]]
+	//for _, k := range minKeys {
+	//	ssIterator.IncrementElementOffset(k, ssIterator.PositionInSSTable[k][2])
+	//}
+	return minKeys
 }
+
+func adjustPosition(mapaMem map[*hashmem.Memtable]datatype.DataType, mapaSS map[string]datatype.DataType, ssIterator *iterator.IteratorPrefixSSTable, memIterator *iterator.PrefixIterator) datatype.DataType {
+	keyMem := adjustPositionsPrefixMem(mapaMem, memIterator)
+	keySS := adjustPositionPrefixSS(mapaSS, ssIterator)
+	dataType1 := mapaMem[keyMem[0]]
+	dataType2 := mapaSS[keySS[0]]
+	if dataType1.GetKey() > dataType2.GetKey() {
+		for i := 0; i < len(keySS); i++ {
+			ssIterator.IncrementElementOffset(keySS[i], ssIterator.GetSSTableMap()[keySS[i]][2])
+		}
+	} else if dataType1.GetKey() < dataType2.GetKey() {
+		for i := 0; i < len(keyMem); i++ {
+			memIterator.IncrementMemTablePosition(*keyMem[i])
+		}
+	} else {
+		for i := 0; i < len(keySS); i++ {
+			ssIterator.IncrementElementOffset(keySS[i], ssIterator.GetSSTableMap()[keySS[i]][2])
+		}
+		for j := 0; j < len(keyMem); j++ {
+			memIterator.IncrementMemTablePosition(*keyMem[j])
+		}
+	}
+	if dataType1.GetChangeTime().After(dataType2.GetChangeTime()) {
+		return dataType1
+	}
+	return dataType2
+}
+
+func adjustPositionsPrefixMem(mapa map[*hashmem.Memtable]datatype.DataType, memIterator *iterator.PrefixIterator) []*hashmem.Memtable {
+	minKeys := extractMinimalKeysMems(mapa)
+	sort.Slice(minKeys[:], func(i, j int) bool {
+		dataType1 := mapa[minKeys[i]]
+		dataType2 := mapa[minKeys[j]]
+		return dataType1.GetChangeTime().After(dataType2.GetChangeTime())
+	})
+	//for _, k := range minKeys {
+	//	memIterator.IncrementMemTablePosition(*k)
+	//}
+	return minKeys
+}
+
 func RANGE_ITERATE(valueRange []string, memIterator *iterator.RangeIterator) {
 	if memIterator.ValRange()[0] == valueRange[0] || memIterator.ValRange()[1] == valueRange[1] {
 		memIterator.SetValRange(valueRange)
@@ -94,12 +167,12 @@ func RANGE_ITERATE(valueRange []string, memIterator *iterator.RangeIterator) {
 			}
 		}
 	}
-	minInMems := adjustPositionsRange(minMap, memIterator)
+	minInMems := adjustPositionsRangeMem(minMap, memIterator)
 	fmt.Println(minInMems)
 }
 
 // za memtabelu
-func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, compress1 bool, compress2 bool, oneFile bool) {
+func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, compress1 bool, compress2 bool, oneFile bool) datatype.DataType {
 	if prefix != memIterator.CurrPrefix() {
 		memIterator.SetCurrPrefix(prefix)
 		memIterator.ResetMemTableIndexes()
@@ -123,27 +196,28 @@ func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssItera
 			}
 		}
 	}
-	for k, _ := range ssIterator.GetSSTableMap() {
+	minSsstableMap := make(map[string]datatype.DataType)
+	for k, v := range ssIterator.GetSSTableMap() {
 		for {
 			if ssIterator.GetSSTableMap()[k][0] == ssIterator.GetSSTableMap()[k][1] {
 				break
 			}
-			record, _ := SSTable.GetRecord(k, ssIterator.GetSSTableMap()[k][0], compress1, compress2, oneFile)
-			fmt.Println(record)
-			//if !strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) && i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey() > memIterator.CurrPrefix() {
-			//	memIterator.MemTablePositions()[i] = i.GetMaxSize()
-			//	break
-			//} else if strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) {
-			//	minMap[&i] = i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
-			//	break
-			//} else {
-			//	memIterator.MemTablePositions()[i]++
-			//}
+			record, offset := SSTable.GetRecord(k, ssIterator.GetSSTableMap()[k][0], compress1, compress2, oneFile)
+
+			if !strings.HasPrefix(record.GetKey(), ssIterator.Prefix) && record.GetKey() > ssIterator.Prefix {
+				v[0] = v[1]
+				break
+			} else if strings.HasPrefix(record.GetKey(), ssIterator.Prefix) {
+				minSsstableMap[k] = record
+				v[2] = uint64(offset)
+				break
+			} else {
+				ssIterator.IncrementElementOffset(k, uint64(offset))
+			}
 		}
 	}
 
-	minInMems := adjustPositionsPrefix(minMap, memIterator)
-	fmt.Println(minInMems)
+	return adjustPosition(minMap, minSsstableMap, ssIterator, memIterator)
 }
 
 /*
