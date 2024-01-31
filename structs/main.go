@@ -7,9 +7,11 @@ import (
 	"os"
 	"sstable/LSM"
 	"sstable/SSTableStruct/SSTable"
+	"sstable/iterator"
 	"sstable/lru"
-	"sstable/mem/memtable/btree/btreemem"
 	"sstable/mem/memtable/hash/hashmem"
+	"sstable/mem/memtable/hash/hashstruct"
+	"sstable/scanning"
 	"sstable/token_bucket"
 	"sstable/wal_implementation"
 	"strconv"
@@ -130,7 +132,7 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashme
 		var opcija string
 		fmt.Println("Key-Value Engine")
 
-		fmt.Println("\n1. Put\n2. Delete\n3. Get\n4. Izlaz\n")
+		fmt.Println("\n1. Put\n2. Delete\n3. Get\n4. Skeniranje\n5. Izlaz\n")
 		fmt.Printf("Unesite opciju : ")
 		_, err := fmt.Scan(&opcija)
 		if err != nil {
@@ -173,8 +175,36 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashme
 				return
 			}
 			GET(wal, lru1, mem, key)
-		} else {
+		} else if opcija == "4" {
+			for true {
+				fmt.Println("\n1. Range scan\n2. Prefix Scan\n3. Range iterate\n4. Prefix iterate\n")
+				var opcijaSken string
+				fmt.Printf("Unesite opciju : ")
+				_, err := fmt.Scan(&opcijaSken)
+				if err != nil {
+					fmt.Println("Error:", err)
+					return
+				}
+				if opcijaSken == "1" {
+					fmt.Printf("range sken")
+				} else if opcijaSken == "2" {
+					fmt.Printf("pref sken")
+				} else if opcijaSken == "3" {
+					fmt.Printf("range iter")
+				} else if opcijaSken == "4" {
+					fmt.Printf("pref sken")
+				} else if opcijaSken == "5" {
+					fmt.Printf("Izlazak..\n")
+					break
+				} else {
+					fmt.Printf("Izabrali ste pogresnu opcjiu.\n")
+				}
+
+			}
+		} else if opcija == "5" {
 			break
+		} else {
+			fmt.Printf("Izabrali ste pogresnu opciju.\n")
 		}
 	}
 
@@ -241,8 +271,13 @@ func main() {
 	memTableCap := 10
 
 	m := 10
+	var mapMem map[*hashmem.Memtable]int
+	prefix := "1"
+	mapMem = make(map[*hashmem.Memtable]int)
+
 	for i := 0; i < 10; i++ {
-		btmem := btreemem.NewBTreeMemtable(m)
+		btmem := hashmem.Memtable(hashstruct.CreateHashMemtable(m))
+		mapMem[&btmem] = 0
 		for j := 0; j < 10; j++ {
 			btmem.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)))
 		}
@@ -259,21 +294,23 @@ func main() {
 	SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
 	//SSTable.ReadIndex("DataSSTable/L1/sstable1/Summary.bin", compress1, compress2, 2, oneFile)
 	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 3, oneFile)
-	key := "9"
-	//scanning.PrefixIterateSSTable("ad", false)
-	fmt.Printf("Sumary: ")
-	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
-	data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
-	if err4 == true {
-		fmt.Printf("Key: %s\n", data.GetKey())
-		fmt.Printf("Value: %s\n", data.GetData())
-		fmt.Printf("Time: %s\n", data.GetChangeTime())
-	} else {
-		fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
-	}
-
-	rec, _ := SSTable.GetRecord("DataSSTable/L1/sstable1", 0, compress1, compress2, oneFile)
-	fmt.Println(rec)
+	//key := "9"
+	////scanning.PrefixIterateSSTable("ad", false)
+	//fmt.Printf("Sumary: ")
+	////SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
+	//data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
+	//if err4 == true {
+	//	fmt.Printf("Key: %s\n", data.GetKey())
+	//	fmt.Printf("Value: %s\n", data.GetData())
+	//	fmt.Printf("Time: %s\n", data.GetChangeTime())
+	//} else {
+	//	fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
+	//}
+	//Ne brisi, iter test
+	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
+	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
+	scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	//kraj
 	//fmt.Printf("Konacna: \n")
 	//SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
 	//SSTable.ReadIndex("DataSSTable/L1/sstable1/Summary.bin", compress1, compress2, 2, oneFile)
@@ -295,19 +332,5 @@ func main() {
 	//	fmt.Printf("Key: %s ", i2.GetKey())
 	//	fmt.Printf("Value: %s\n", i2.GetData())
 	//}
-
-	//lru1 := lru.NewLRUCache(3)
-	//x1 := datatype.CreateDataType("kljuc1", []byte("vrednost1"))
-	//
-	//lru1.Put(x1)
-	//lru1.Put(datatype.CreateDataType("kljuc2", []byte("vrednost2")))
-	//lru1.Put(datatype.CreateDataType("kljuc3", []byte("vrednost3")))
-	//lru1.Put(datatype.CreateDataType("kljuc4", []byte("vrednost4")))
-	//lru1.Delete("kljuc3")
-	//proba := lru1.GetAll()
-	//for e := proba.Front(); e != nil; e = e.Next() {
-	//	fmt.Println(e.Value.(*datatype.DataType).GetKey())
-	//}
-	//fmt.Println(config.LruCap)
 
 }
