@@ -1,27 +1,54 @@
 package iterator
 
-type IteratorSSTable struct {
-	PositionInSSTable map[string][]int64 // kljuc = pokazivac sstabelu, vrednost = do kog elementa
+type IteratorPrefixSSTable struct {
+	PositionInSSTable map[string][]uint64 // kljuc = pokazivac sstabelu, vrednost = do kog elementa
 	Prefix            string
 }
 
-func (i *IteratorSSTable) getSSTableMap() map[string][]int64 {
+func (i *IteratorPrefixSSTable) getSSTableMap() map[string][]uint64 {
 	return i.PositionInSSTable
 }
 
 // treba provera kada dodjemo do maks el, ali to moze i van funkcije pozivom get offset
-func (i *IteratorSSTable) IncrementElementOffset(table string) {
-	i.PositionInSSTable[table][0]++
+func (i *IteratorPrefixSSTable) IncrementElementOffset(table string, off uint64) {
+	i.PositionInSSTable[table][0] += off
 }
 
-func (i *IteratorSSTable) GetOffsetEl(table string) []int64 {
+func (i *IteratorPrefixSSTable) GetOffsetEl(table string) []uint64 {
 	return i.PositionInSSTable[table]
 }
 
-func (i *IteratorSSTable) getPrefix() string {
+func (i *IteratorPrefixSSTable) getPrefix() string {
 	return i.Prefix
 }
 
-func (i *IteratorSSTable) setPrefix(p string) {
+func (i *IteratorPrefixSSTable) setPrefix(p string) {
 	i.Prefix = p
+}
+
+// iterator za scan
+type IteratorRangeSSTable struct {
+	PositionInSSTable map[string][]uint64 // kljuc = putanja do sstable, [0] = curr, [1] = end
+	Rang              [2]string
+}
+
+func (i *IteratorRangeSSTable) getSSTableMap() map[string][]uint64 {
+	return i.PositionInSSTable
+}
+
+// treba provera kada dodjemo do maks el, ali to moze i van funkcije pozivom get offset
+func (i *IteratorRangeSSTable) IncrementElementOffset(table string, off uint64) {
+	i.PositionInSSTable[table][0] += off
+}
+
+func (i *IteratorRangeSSTable) GetOffsetEl(table string) []uint64 {
+	return i.PositionInSSTable[table]
+}
+
+func (i *IteratorRangeSSTable) getPrefix() [2]string {
+	return i.Rang
+}
+
+func (i *IteratorRangeSSTable) setPrefix(p [2]string) {
+	i.Rang = p
 }

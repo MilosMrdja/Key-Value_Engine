@@ -149,10 +149,10 @@ if elementM < element{
 */
 
 // za sstabelu
-func PrefixIterateSSTable(prefix string, compress1, compress2, oneFile bool) *iterator.IteratorSSTable {
+func PrefixIterateSSTable(prefix string, compress1, compress2, oneFile bool) *iterator.IteratorPrefixSSTable {
 
 	Levels, _ := ioutil.ReadDir("./DataSStable")
-	mapa := make(map[string][]int64)
+	mapa := make(map[string][]uint64)
 	//SSTable.ReadIndex("./DataSStable/L0/sstable1/Summary.bin", true, true, 1, false)
 	for i := 0; i < len(Levels); i++ {
 		ssTemp, _ := ioutil.ReadDir("./DataSStable/L" + strconv.Itoa(i))
@@ -169,11 +169,35 @@ func PrefixIterateSSTable(prefix string, compress1, compress2, oneFile bool) *it
 	for k, v := range mapa {
 		fmt.Printf("\nKey %s - > %d - %d", k, v[0], v[1])
 	}
-	return &iterator.IteratorSSTable{PositionInSSTable: mapa, Prefix: prefix}
+	return &iterator.IteratorPrefixSSTable{PositionInSSTable: mapa, Prefix: prefix}
 }
 
-func GetBeginsEnds(sstableFile string, oneFile bool) []int64 {
-	beginsEnds := make([]int64, 2)
+// string[0] - string[1]
+// preduslov: rang[0] je manje od rang[1]
+func RangeIterateSSTable(rang [2]string, compress1, compress2, oneFile bool) *iterator.IteratorRangeSSTable {
+	Levels, _ := ioutil.ReadDir("./DataSStable")
+	mapa := make(map[string][]uint64)
+	//SSTable.ReadIndex("./DataSStable/L0/sstable1/Summary.bin", true, true, 1, false)
+	for i := 0; i < len(Levels); i++ {
+		ssTemp, _ := ioutil.ReadDir("./DataSStable/L" + strconv.Itoa(i))
+		for j := 0; j < len(ssTemp); j++ {
+			prvi, poslednji, _ := SSTable.GetSummaryMinMax("./DataSStable/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(j+1), compress1, compress2, oneFile)
+			if rang[1] < prvi.GetKey() || rang[0] > poslednji.GetKey() {
+				continue
+			} else {
+				fileSST := "./DataSStable/L" + strconv.Itoa(i) + "/sstable" + strconv.Itoa(j+1)
+				mapa[fileSST] = GetBeginsEnds(fileSST, oneFile)
+			}
+		}
+	}
+	for k, v := range mapa {
+		fmt.Printf("\nKey %s - > %d - %d", k, v[0], v[1])
+	}
+	return &iterator.IteratorRangeSSTable{PositionInSSTable: mapa, Rang: rang}
+}
+
+func GetBeginsEnds(sstableFile string, oneFile bool) []uint64 {
+	beginsEnds := make([]uint64, 2)
 	if oneFile {
 		file, err := os.OpenFile(sstableFile+"/SSTable.bin", os.O_RDONLY, 0666)
 		if err != nil {
@@ -183,7 +207,7 @@ func GetBeginsEnds(sstableFile string, oneFile bool) []int64 {
 
 		start, end := SSTable.PositionInSSTable(*file, 5)
 		beginsEnds[0] = 0
-		beginsEnds[1] = end - start
+		beginsEnds[1] = uint64(end - start)
 
 	} else {
 
@@ -192,7 +216,7 @@ func GetBeginsEnds(sstableFile string, oneFile bool) []int64 {
 			panic(err)
 		}
 		beginsEnds[0] = 0
-		beginsEnds[1] = fileInfo.Size()
+		beginsEnds[1] = uint64(fileInfo.Size())
 
 	}
 	return beginsEnds
