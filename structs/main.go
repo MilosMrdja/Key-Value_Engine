@@ -271,16 +271,17 @@ func main() {
 	memTableCap := 10
 
 	m := 10
-
+	var mapMem map[*hashmem.Memtable]int
 	prefix := "1"
+	mapMem = make(map[*hashmem.Memtable]int)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 2; i++ {
 		btmem := hashmem.Memtable(hashstruct.CreateHashMemtable(m))
 
 		for j := 0; j < 10; j++ {
-			btmem.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)))
+			btmem.AddElement(strconv.Itoa(j+10), []byte(strconv.Itoa(j)))
 		}
-
+		mapMem[&btmem] = 0
 		btmem.DeleteElement(strconv.Itoa(15))
 		btmem.SendToSSTable(compress1, compress2, oneFile, N, M)
 		//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 2, oneFile)
@@ -307,16 +308,12 @@ func main() {
 	//	fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
 	//}
 	//Ne brisi, iter test
-	btm := hashmem.Memtable(hashstruct.CreateHashMemtable(m))
-	for j := 0; j < 10; j++ {
-		btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)))
-	}
-	var mapMem map[*hashmem.Memtable]int
-	mapMem = make(map[*hashmem.Memtable]int)
-	mapMem[&btm] = 0
+
 	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
 	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
-	scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	dataType := scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	fmt.Println(dataType)
 	//kraj
 	//fmt.Printf("Konacna: \n")
 	//SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
