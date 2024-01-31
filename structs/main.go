@@ -7,7 +7,9 @@ import (
 	"os"
 	"sstable/LSM"
 	"sstable/lru"
+	"sstable/mem/memtable/btree/btreemem"
 	"sstable/mem/memtable/hash/hashmem"
+	"sstable/token_bucket"
 	"sstable/wal_implementation"
 	"strconv"
 )
@@ -22,6 +24,7 @@ var memTableCap int
 var memType string
 var walSegmentSize int
 var key, value string
+var rate, maxToken int64
 
 type Config struct {
 	LruCap         int    `json:"lru_cap"`
@@ -121,7 +124,7 @@ func DELETE(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *has
 	lru1.Delete(key)
 }
 
-func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashmem.Memtable) {
+func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashmem.Memtable, tokenb *token_bucket.TokenBucket) {
 	for true {
 		var opcija string
 		fmt.Println("Key-Value Engine")
@@ -132,6 +135,11 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashme
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
+		}
+		mess, moze := tokenb.IsRequestAllowed(9)
+		if !moze {
+			fmt.Printf(mess + "\n")
+			continue
 		}
 
 		if opcija == "1" {
@@ -174,7 +182,10 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashme
 func main() {
 	//setConst()
 	//wal := wal_implementation.NewWriteAheadLog()
-	//
+	//rate = 3
+	//maxToken = 10
+	//tokenb := token_bucket.NewTokenBucket(rate, maxToken)
+	//tokenb.InitRequestsFile("token_bucket/requests.bin")
 	////mem1 := btreemem.NewBTreeMemtable(10)
 	//lru1 := lru.NewLRUCache(3)
 	//var mem hashmem.Memtable
@@ -186,12 +197,12 @@ func main() {
 	//	mem = btreemem.NewBTreeMemtable(10)
 	//}
 	//
-	//meni(wal, lru1, &mem)
+	//meni(wal, lru1, &mem, tokenb)
 	//cursor := cursor2.NewCursor(mem, 0, lru1)
 	//
 	//cursor.MemPointers()[cursor.MemIndex()]
-
-	// Read a single line of input
+	//
+	//Read a single line of input
 	//
 	//fmt.Println("You entered:", key, value, []byte(value))
 
@@ -221,41 +232,44 @@ func main() {
 	//	fmt.Println(rec)
 	//}
 
-	//compress1 := true
-	//compress2 := true
-	//oneFile := false
-	//
-	//m := 10
-	//for i := 0; i < 1; i++ {
-	//	btmem := btreemem.NewBTreeMemtable(m)
-	//	for j := 0; j < 4; j++ {
-	//		btmem.AddElement(strconv.Itoa(j+i+10), []byte(strconv.Itoa(j+i)))
-	//	}
-	//	btmem.DeleteElement(strconv.Itoa(15))
-	//	btmem.SendToSSTable(compress1, compress2, oneFile, 1, 2)
-	//	//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 2, oneFile)
-	//	//
-	//	LSM.CompactSstable(10, compress1, compress2, oneFile)
-	//
-	//}
-	//
-	//LSM.CompactSstable(10, compress1, compress2, oneFile)
-	////SSTable.ReadIndex("DataSSTableCompact/Summary.bin", "", compress1, compress2, 1, oneFile)
-	//////SSTable.ReadIndex("DataSSTableCompact/Index.bin", "", compress1, compress2, 2, oneFile)
-	//fmt.Printf("Konacna: \n")
+	compress1 := true
+	compress2 := true
+	oneFile := true
+	N := 1
+	M := 1
+	memTableCap := 10
+
+	m := 10
+	for i := 0; i < 10; i++ {
+		btmem := btreemem.NewBTreeMemtable(m)
+		for j := 0; j < 10; j++ {
+			btmem.AddElement(strconv.Itoa(j+i), []byte(strconv.Itoa(j+i)))
+		}
+		btmem.DeleteElement(strconv.Itoa(15))
+		btmem.SendToSSTable(compress1, compress2, oneFile, N, M)
+		//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 2, oneFile)
+		//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 3, oneFile)
+		LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap)
+
+	}
+
+	LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap)
+	fmt.Printf("Konacna: \n")
 	//SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
-	////key := "1"
+	//SSTable.ReadIndex("DataSSTable/L1/sstable1/Summary.bin", compress1, compress2, 2, oneFile)
+	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 3, oneFile)
+	key := "9"
 	//scanning.PrefixIterateSSTable("ad", false)
-	//fmt.Printf("Sumary: ")
-	////SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
-	//data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
-	//if err4 == true {
-	//	fmt.Printf("Key: %s\n", data.GetKey())
-	//	fmt.Printf("Value: %s\n", data.GetData())
-	//	fmt.Printf("Time: %s\n", data.GetChangeTime())
-	//} else {
-	//	fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
-	//}
+	fmt.Printf("Sumary: ")
+	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
+	data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
+	if err4 == true {
+		fmt.Printf("Key: %s\n", data.GetKey())
+		fmt.Printf("Value: %s\n", data.GetData())
+		fmt.Printf("Time: %s\n", data.GetChangeTime())
+	} else {
+		fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
+	}
 	//lista, _, _, _ := LSM.GetDataByPrefix(15, "2", compress1, compress2, oneFile)
 	//for _, i2 := range lista {
 	//	fmt.Printf("Key: %s ", i2.GetKey())
@@ -275,20 +289,5 @@ func main() {
 	//	fmt.Println(e.Value.(*datatype.DataType).GetKey())
 	//}
 	//fmt.Println(config.LruCap)
-
-	wal := wal_implementation.NewWriteAheadLog()
-	for i := 0; i < 10; i++ {
-		key := "kljuc" + strconv.Itoa(i)
-		value_string := "vrednost" + strconv.Itoa(i)
-		value := []byte(value_string)
-		wal.Log(key, value, false)
-	}
-	records, err := wal.ReadAllRecords()
-	if err != nil {
-		fmt.Println(err)
-	}
-	for _, rec := range records {
-		fmt.Println(rec)
-	}
 
 }
