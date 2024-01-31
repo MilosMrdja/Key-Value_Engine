@@ -1,7 +1,6 @@
 package cursor
 
 import (
-	"sstable/LSM"
 	"sstable/lru"
 	"sstable/mem/memtable/hash/hashmem"
 )
@@ -85,7 +84,7 @@ func (c *Cursor) AddToMemtable(key string, value []byte) bool {
 	if c.memPointers[c.memIndex].IsReadOnly() {
 		c.memIndex = (c.memIndex - 1 + len(c.memPointers)) % len(c.memPointers)
 		c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M)
-		LSM.CompactSstable(c.numTables, c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap)
+		//LSM.CompactSstable(c.numTables, c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap)
 	}
 	return true
 }

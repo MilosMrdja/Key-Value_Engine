@@ -13,17 +13,16 @@ import (
 )
 
 // N i M su nam redom razudjenost u index-u, i u summary-ju
-func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string, N, M, memtableLen int, compres1, compres2, oneFile bool) bool {
+func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, N, M, memtableLen int, compres1, compres2, oneFile bool) bool {
 
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
 	var serializedData, indexData []byte
-	var duzinaPodatka, acc, accIndex, duzinaDataList int
+	var duzinaPodatka, acc, accIndex int
 	acc = 0
 	accIndex = 0
-	duzinaDataList = numberSSTable * memtableLen
 	var err error
-	bloomFilter := bloomfilter.CreateBloomFilter(duzinaDataList)
+	bloomFilter := bloomfilter.CreateBloomFilter(memtableLen)
 
 	// mapa za enkodirane vrednosti
 	dictionary, err := DeserializationHashMap("EncodedKeys.bin")
@@ -62,16 +61,13 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 	//Bloom Filter fajl
 	fileBloom := newFilePath + "/BloomFilter.bin"
 
-	startOffsetList, endOffsetList, greska := setStartEndOffset(oldFilePath, numberSSTable, oneFile)
-	if greska != true {
-		return false
-	}
+	GetOffsetStartEnd(&compSSTable, oneFile)
 
 	//var minData, maxData datatype.DataType
 
 	// glavna petlja
 
-	minData, maxData := GetGlobalSummaryMinMax(oldFilePath, numberSSTable, compres1, compres2, oneFile)
+	minData, maxData := GetGlobalSummaryMinMax(&compSSTable, compres1, compres2, oneFile)
 	indexData, err = SerializeIndexData(minData.GetKey(), accIndex, compres1, compres2, (*dictionary)[minData.GetKey()])
 	if err != nil {
 		return false
@@ -85,7 +81,7 @@ func NewSSTableCompact(newFilePath string, numberSSTable int, oldFilePath string
 	i := 0
 	for true {
 
-		data, greska := getNextRecord(oldFilePath, startOffsetList, endOffsetList, compres1, compres2, oneFile)
+		data, greska := getNextRecord(&compSSTable, compres1, compres2, oneFile)
 		if greska == false && data.GetKey() != "" {
 			continue
 		}
@@ -200,11 +196,6 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 			panic(err)
 		}
 
-	}
-	if oneFile {
-		filePath += "/SSTable.bin"
-	} else {
-		filePath += "/Data.bin"
 	}
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
@@ -468,24 +459,28 @@ func setStartEndOffset(filePath string, numberSSTable int, oneFile bool) ([]int6
 	return startOffsetList, endOffsetList, true
 }
 
-func getNextRecord(filePath string, startOffsetList, endOffsetList []int64, compres1, compres2, oneFile bool) (datatype.DataType, bool) {
+func getNextRecord(compSSTable *map[string][]int64, compres1, compres2, oneFile bool) (datatype.DataType, bool) {
 	var elem int
 	elem = 5
 	var data datatype.DataType
 	data.SetKey("")
 	same := 0
-	for i := 1; i <= len(startOffsetList); i++ {
-		if startOffsetList[i-1] == endOffsetList[i-1] {
+	filename := "/Data.bin"
+	if oneFile {
+		filename = "/SSTable.bin"
+	}
+	for path, _ := range *compSSTable {
+		if (*compSSTable)[path][0] == (*compSSTable)[path][3] {
 			same += 1
 			continue
 		}
-		file, err := os.OpenFile(filePath+"/sstable"+strconv.Itoa(i), os.O_RDONLY, 0666)
+		file, err := os.OpenFile(path, os.O_RDONLY, 0666)
 		if err != nil {
 			return data, false
 		}
 		defer file.Close()
 
-		currentData, _, err1 := ReadDataCompact(filePath+"/sstable"+strconv.Itoa(i), compres1, compres2, startOffsetList[i-1], oneFile, elem)
+		currentData, _, err1 := ReadDataCompact(path+filename, compres1, compres2, (*compSSTable)[path][0], oneFile, elem)
 		if err1 != true {
 			return data, false
 		}
@@ -500,27 +495,27 @@ func getNextRecord(filePath string, startOffsetList, endOffsetList []int64, comp
 		}
 	}
 
-	if same == len(startOffsetList) {
+	if same == len(*compSSTable) {
 		data.SetKey("")
 		return data, true
 	}
-	for i := 1; i <= len(startOffsetList); i++ {
-		if startOffsetList[i-1] == endOffsetList[i-1] {
+	for path, _ := range *compSSTable {
+		if (*compSSTable)[path][0] == (*compSSTable)[path][3] {
 			same += 1
 			continue
 		}
-		file, err := os.OpenFile(filePath+"/sstable"+strconv.Itoa(i), os.O_RDONLY, 0666)
+		file, err := os.OpenFile(path, os.O_RDONLY, 0666)
 		if err != nil {
 			return data, false
 		}
 		defer file.Close()
 
-		currentData, read, err1 := ReadDataCompact(filePath+"/sstable"+strconv.Itoa(i), compres1, compres2, startOffsetList[i-1], oneFile, elem)
+		currentData, read, err1 := ReadDataCompact(path+filename, compres1, compres2, (*compSSTable)[path][0], oneFile, elem)
 		if err1 != true {
 			return data, false
 		}
 		if currentData.GetKey() == data.GetKey() {
-			startOffsetList[i-1] += read
+			(*compSSTable)[path][0] += read
 		}
 	}
 	if data.IsDeleted() == true {

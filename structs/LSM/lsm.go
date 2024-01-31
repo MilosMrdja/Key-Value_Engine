@@ -4,9 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
+	"sort"
 	"sstable/SSTableStruct/SSTable"
+	"sstable/mem/memtable/datatype"
 	"strconv"
+	"strings"
 )
 
 func FindNextDestination(layer int) (string, bool) {
@@ -30,7 +34,7 @@ func FindNextDestination(layer int) (string, bool) {
 	return newSstableName, false
 }
 
-func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memtableCap int) {
+func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memtableCap int, compType string) {
 
 	//ovako za gore u entrijim
 	dataDir, err := os.Open("./DataSStable")
@@ -42,40 +46,173 @@ func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memta
 		return
 	}
 	layerNames, err := dataDir.Readdirnames(-1)
-	for i, name := range layerNames {
-		filelayer, err := os.Open(dataDir.Name() + "/" + name)
-		if err != nil {
-			return
-		}
-		err = filelayer.Close()
-		if err != nil {
-			return
-		}
-		sstableName, errNames := filelayer.Readdirnames(-1)
-		if errNames != nil {
-			panic(errNames)
-		}
 
-		if len(sstableName) >= numTables*int(math.Pow10(i)) {
-			if _, err := os.Stat(dataDir.Name() + "/L" + strconv.Itoa(i+1)); errors.Is(err, os.ErrNotExist) {
-				err := os.Mkdir(dataDir.Name()+"/L"+strconv.Itoa(i+1), os.ModePerm)
-				if err != nil {
-					panic(err)
-				}
+	if compType == "size" {
+
+		var compSSTable map[string][]int64
+		compSSTable = make(map[string][]int64)
+
+		for i, name := range layerNames {
+			filelayer, err := os.Open(dataDir.Name() + "/" + name)
+			if err != nil {
+				return
 			}
-			newSstableName, _ := FindNextDestination(i + 1)
-			fmt.Println(newSstableName)
-			createSstableNextLayer(newSstableName, dataDir.Name()+"/L"+strconv.Itoa(i), compres1, compres2, oneFile, N, M, memtableCap)
-			deleteLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
-			createLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
-		}
+			err = filelayer.Close()
+			if err != nil {
+				return
+			}
+			sstableName, errNames := filelayer.Readdirnames(-1)
+			if errNames != nil {
+				panic(errNames)
+			}
 
+			if len(sstableName) >= numTables {
+				if _, err := os.Stat(dataDir.Name() + "/L" + strconv.Itoa(i+1)); errors.Is(err, os.ErrNotExist) {
+					err := os.Mkdir(dataDir.Name()+"/L"+strconv.Itoa(i+1), os.ModePerm)
+					if err != nil {
+						panic(err)
+					}
+				}
+				newSstableName, _ := FindNextDestination(i + 1)
+				fmt.Println(newSstableName)
+				//jedna tabela sa prethodnog novoa + ostale tabele sa narednog nivoa
+				maxElemSize := memtableCap * int(math.Pow(10, float64(i)))
+				for j := 0; j < len(sstableName); j++ {
+					a := make([]int64, 2)
+					compSSTable[dataDir.Name()+"/L"+strconv.Itoa(i)+"/"+sstableName[j]] = a
+				}
+				SSTable.GetOffsetStartEnd(&compSSTable, oneFile)
+				SSTable.NewSSTableCompact(newSstableName, compSSTable, N, M, maxElemSize, compres1, compres2, oneFile)
+				fmt.Printf("%d", maxElemSize)
+				deleteLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
+			}
+
+		}
+	} else if compType == "level" {
+
+		var compSSTable map[string][]int64
+
+		for i, name := range layerNames {
+			filelayer, err := os.Open(dataDir.Name() + "/" + name)
+			if err != nil {
+				return
+			}
+			err = filelayer.Close()
+			if err != nil {
+				return
+			}
+			sstableName, errNames := filelayer.Readdirnames(-1)
+			if errNames != nil {
+				panic(errNames)
+			}
+
+			if len(sstableName) >= numTables*int(math.Pow10(i)) {
+
+				//jedna tabela sa prethodnog novoa + ostale tabele sa narednog nivoa
+				maxElemSize := memtableCap * int(math.Pow(10, float64(i)))
+				randSST := rand.Intn(len(sstableName)-1) + 1
+				minData, maxData, _ := SSTable.GetSummaryMinMax(dataDir.Name()+"/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(randSST), compres1, compres2, oneFile)
+
+				compSSTable = GetSSTableLevelComp(minData, maxData, dataDir.Name()+"/L"+strconv.Itoa(i+1), compres1, compres2, oneFile)
+				if compSSTable == nil {
+					compSSTable = make(map[string][]int64)
+				}
+				a := make([]int64, 2)
+				compSSTable[dataDir.Name()+"/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(randSST)] = a
+				SSTable.GetOffsetStartEnd(&compSSTable, oneFile)
+				fmt.Printf("%s", maxElemSize)
+				newSstableName, _ := FindNextDestination(i + 1)
+				fmt.Println(newSstableName)
+				SSTable.NewSSTableCompact(newSstableName, compSSTable, N, M, maxElemSize, compres1, compres2, oneFile)
+
+				for path, _ := range compSSTable {
+					err = os.RemoveAll(path)
+					for err != nil {
+						err = os.RemoveAll(path)
+					}
+				}
+
+				//preimenovati sve sstabele
+				for _, name = range layerNames {
+					filelayer, err = os.Open(dataDir.Name() + "/" + name)
+					if err != nil {
+						panic(err)
+					}
+					err = filelayer.Close()
+					if err != nil {
+						panic(err)
+					}
+					sstableName, errNames = filelayer.Readdirnames(-1)
+					if errNames != nil {
+						panic(errNames)
+					}
+					sort.Slice(sstableName, func(i, j int) bool {
+						a, err := strconv.ParseInt(strings.Split(sstableName[i], "e")[1], 10, 32)
+						if err != nil {
+							panic(err)
+						}
+						b, err := strconv.ParseInt(strings.Split(sstableName[j], "e")[1], 10, 32)
+						if err != nil {
+							panic(err)
+						}
+						return a < b
+					})
+
+					for i = 0; i < len(sstableName); i++ {
+						if sstableName[i] != "sstable"+strconv.Itoa(i+1) {
+							err := os.Rename(dataDir.Name()+"/"+name+"/"+sstableName[i], dataDir.Name()+"/"+name+"/"+"sstable"+strconv.Itoa(i+1))
+							if err != nil {
+								return
+							}
+						}
+					}
+				}
+
+			}
+
+		}
 	}
 }
-func createSstableNextLayer(newSstableName, oldFilePath string, compres1, compres2, oneFile bool, N, M, memtableCap int) {
-	SSTable.NewSSTableCompact(newSstableName, 10, oldFilePath, N, M, memtableCap, compres1, compres2, oneFile)
 
+func GetSSTableLevelComp(minData, maxData datatype.DataType, filePath string, compres1, compres2, oneFile bool) map[string][]int64 {
+	var compSSTable map[string][]int64
+	compSSTable = make(map[string][]int64)
+
+	filelayer, err := os.Open(filePath)
+	if err != nil {
+		return compSSTable
+	}
+	err = filelayer.Close()
+	if err != nil {
+		return compSSTable
+	}
+	sstableName, errNames := filelayer.Readdirnames(-1)
+	if errNames != nil {
+		panic(errNames)
+	}
+
+	for _, name := range sstableName {
+		currentMin, currentMax, _ := SSTable.GetSummaryMinMax(filePath+"/"+name, compres1, compres2, oneFile)
+		if currentMin.GetKey() <= minData.GetKey() && currentMax.GetKey() >= minData.GetKey() {
+
+			a := make([]int64, 2)
+			compSSTable[filePath+"/"+name] = a
+
+		}
+		if minData.GetKey() <= currentMin.GetKey() && maxData.GetKey() >= currentMax.GetKey() {
+
+			a := make([]int64, 2)
+			compSSTable[filePath+"/"+name] = a
+
+		}
+		if currentMin.GetKey() <= maxData.GetKey() && currentMax.GetKey() >= maxData.GetKey() {
+			a := make([]int64, 2)
+			compSSTable[filePath+"/"+name] = a
+		}
+	}
+	return compSSTable
 }
+
 func deleteLayer(layerName string) {
 	file, err := os.Open(layerName)
 	if err != nil {

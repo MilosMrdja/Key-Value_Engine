@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sstable/LSM"
+	"sstable/SSTableStruct/SSTable"
 	"sstable/lru"
 	"sstable/mem/memtable/btree/btreemem"
 	"sstable/mem/memtable/hash/hashmem"
@@ -244,17 +245,33 @@ func main() {
 	for i := 0; i < 10; i++ {
 		btmem := btreemem.NewBTreeMemtable(m)
 		for j := 0; j < 10; j++ {
-			btmem.AddElement(strconv.Itoa(j+i), []byte(strconv.Itoa(j+i)))
+			btmem.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)))
 		}
 		btmem.DeleteElement(strconv.Itoa(15))
 		btmem.SendToSSTable(compress1, compress2, oneFile, N, M)
 		//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 2, oneFile)
 		//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 3, oneFile)
-		LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap)
+		LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap, "level")
 
 	}
 
-	LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap)
+	LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap, "level")
+	fmt.Printf("Konacna: \n")
+	SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
+	//SSTable.ReadIndex("DataSSTable/L1/sstable1/Summary.bin", compress1, compress2, 2, oneFile)
+	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 3, oneFile)
+	key := "9"
+	//scanning.PrefixIterateSSTable("ad", false)
+	fmt.Printf("Sumary: ")
+	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
+	data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
+	if err4 == true {
+		fmt.Printf("Key: %s\n", data.GetKey())
+		fmt.Printf("Value: %s\n", data.GetData())
+		fmt.Printf("Time: %s\n", data.GetChangeTime())
+	} else {
+		fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
+	}
 
 	scanning.PrefixIterateSSTable("1", compress1, compress2, oneFile)
 	//fmt.Printf("Konacna: \n")

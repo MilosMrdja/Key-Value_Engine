@@ -4,18 +4,13 @@ import (
 	"encoding/binary"
 	"os"
 	"sstable/mem/memtable/datatype"
-	"strconv"
 )
 
 // prva vrednost je min,druga je max
-func GetGlobalSummaryMinMax(filePath string, numberSSTable int, compress1, compress2, oneFile bool) (datatype.DataType, datatype.DataType) {
+func GetGlobalSummaryMinMax(compSSTable *map[string][]int64, compress1, compress2, oneFile bool) (datatype.DataType, datatype.DataType) {
 	var minData, maxData datatype.DataType
-	fileName := "/Summary.bin"
-	if oneFile {
-		fileName = "/SSTable.bin"
-	}
-	for i := 1; i <= numberSSTable; i++ {
-		currentMin, currentMax, _ := GetSummaryMinMax(filePath+"/sstable"+strconv.Itoa(i)+fileName, compress1, compress2, oneFile)
+	for path, _ := range *compSSTable {
+		currentMin, currentMax, _ := GetSummaryMinMax(path, compress1, compress2, oneFile)
 		if minData.GetKey() == "" || minData.GetKey() > currentMin.GetKey() {
 			minData = currentMin
 		}
@@ -29,12 +24,12 @@ func GetGlobalSummaryMinMax(filePath string, numberSSTable int, compress1, compr
 
 // prva vrednost je min,druga je max
 func GetSummaryMinMax(filePath string, compress1, compress2, oneFile bool) (datatype.DataType, datatype.DataType, int64) {
+	var minData, maxData datatype.DataType
 	fileName := "/Summary.bin"
 	if oneFile {
 		fileName = "/SSTable.bin"
 	}
 	filePath += fileName
-	var minData, maxData datatype.DataType
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
 		return minData, maxData, 0
