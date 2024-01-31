@@ -47,8 +47,7 @@ func findMinimalValue(mapa map[*hashmem.Memtable]datatype.DataType) datatype.Dat
 	}
 	return minValue
 }
-
-func adjustPositions(mapa map[*hashmem.Memtable]datatype.DataType, iterator *iterator.Iterator) datatype.DataType {
+func adjustPositionsRange(mapa map[*hashmem.Memtable]datatype.DataType, iterator *iterator.RangeIterator) datatype.DataType {
 	minKeys := extractMinimalKeys(mapa)
 	sort.Slice(minKeys[:], func(i, j int) bool {
 		dataType1 := mapa[minKeys[i]]
@@ -60,9 +59,46 @@ func adjustPositions(mapa map[*hashmem.Memtable]datatype.DataType, iterator *ite
 	}
 	return mapa[minKeys[0]]
 }
+func adjustPositionsPrefix(mapa map[*hashmem.Memtable]datatype.DataType, iterator *iterator.PrefixIterator) datatype.DataType {
+	minKeys := extractMinimalKeys(mapa)
+	sort.Slice(minKeys[:], func(i, j int) bool {
+		dataType1 := mapa[minKeys[i]]
+		dataType2 := mapa[minKeys[j]]
+		return dataType1.GetChangeTime().After(dataType2.GetChangeTime())
+	})
+	for _, k := range minKeys {
+		iterator.IncrementMemTablePosition(*k)
+	}
+	return mapa[minKeys[0]]
+}
+func RANGE_ITERATE(valueRange []string, iterator *iterator.RangeIterator) {
+	if iterator.ValRange()[0] == valueRange[0] || iterator.ValRange()[1] == valueRange[1] {
+		iterator.SetValRange(valueRange)
+		iterator.ResetMemTableIndexes()
+	}
+	minMap := make(map[*hashmem.Memtable]datatype.DataType)
+	for i := range iterator.MemTablePositions() {
+		for {
+			if i.GetMaxSize() == iterator.MemTablePositions()[i] {
+				break
+
+			} else if !isInRange(i.GetSortedDataTypes()[iterator.MemTablePositions()[i]].GetKey(), iterator.ValRange()) {
+				iterator.MemTablePositions()[i] = i.GetMaxSize()
+				break
+			} else if isInRange(i.GetSortedDataTypes()[iterator.MemTablePositions()[i]].GetKey(), iterator.ValRange()) {
+				minMap[&i] = i.GetSortedDataTypes()[iterator.MemTablePositions()[i]]
+				break
+			} else {
+				iterator.MemTablePositions()[i]++
+			}
+		}
+	}
+	minInMems := adjustPositionsRange(minMap, iterator)
+	fmt.Println(minInMems)
+}
 
 // za memtabelu
-func PREFIX_ITERATE(prefix string, iterator *iterator.Iterator) {
+func PREFIX_ITERATE(prefix string, iterator *iterator.PrefixIterator) {
 	if prefix != iterator.CurrPrefix() {
 		iterator.SetCurrPrefix(prefix)
 		iterator.ResetMemTableIndexes()
@@ -83,7 +119,7 @@ func PREFIX_ITERATE(prefix string, iterator *iterator.Iterator) {
 			}
 		}
 	}
-	minInMems := adjustPositions(minMap, iterator)
+	minInMems := adjustPositionsPrefix(minMap, iterator)
 	fmt.Println(minInMems)
 }
 

@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="04dae56e-b024-459f-b606-0967eeaee51e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/Key-Value_Engine.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Key-Value_Engine.iml" afterDir="false" />
+    <list default="true" id="f3e1aa10-da0b-4bc4-b2c7-db0465199ff8" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/Key-Value_Engine.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/iterator/iterator.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/iterator/iterator.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/structs/scanning/iterating.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/scanning/iterating.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -18,10 +20,11 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 2
-}</component>
-  <component name="ProjectId" id="2biVfY6hRRO2M1ek0x96izlFMlb" />
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 2
+}]]></component>
+  <component name="ProjectId" id="2bijE4Tpx0e1N2pa1IeTXPWuU6Y" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
@@ -43,38 +46,11 @@
     "node.js.selected.package.eslint": "(autodetect)"
   }
 }]]></component>
-  <component name="RunManager">
-    <configuration name="go build sstable" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
-      <module name="Key-Value_Engine" />
-      <working_directory value="$PROJECT_DIR$/structs" />
-      <kind value="PACKAGE" />
-      <package value="sstable" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$/structs/main.go" />
-      <method v="2" />
-    </configuration>
-    <recent_temporary>
-      <list>
-        <item itemvalue="Go Build.go build sstable" />
-      </list>
-    </recent_temporary>
-  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/structs/scanning/iterating.go</url>
-          <line>41</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>
