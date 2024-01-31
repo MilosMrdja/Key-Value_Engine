@@ -87,7 +87,7 @@ func adjustPositionsRangeMem(mapa map[*hashmem.Memtable]datatype.DataType, memIt
 		return dataType1.GetChangeTime().After(dataType2.GetChangeTime())
 	})
 	for _, k := range minKeys {
-		memIterator.IncrementMemTablePosition(*k)
+		memIterator.IncrementMemTablePosition(k)
 	}
 	return mapa[minKeys[0]]
 }
@@ -116,14 +116,14 @@ func adjustPosition(mapaMem map[*hashmem.Memtable]datatype.DataType, mapaSS map[
 		}
 	} else if dataType1.GetKey() < dataType2.GetKey() {
 		for i := 0; i < len(keyMem); i++ {
-			memIterator.IncrementMemTablePosition(*keyMem[i])
+			memIterator.IncrementMemTablePosition(keyMem[i])
 		}
 	} else {
 		for i := 0; i < len(keySS); i++ {
 			ssIterator.IncrementElementOffset(keySS[i], ssIterator.GetSSTableMap()[keySS[i]][2])
 		}
 		for j := 0; j < len(keyMem); j++ {
-			memIterator.IncrementMemTablePosition(*keyMem[j])
+			memIterator.IncrementMemTablePosition(keyMem[j])
 		}
 	}
 	if dataType1.GetChangeTime().After(dataType2.GetChangeTime()) {
@@ -153,14 +153,15 @@ func RANGE_ITERATE(valueRange []string, memIterator *iterator.RangeIterator) {
 	minMap := make(map[*hashmem.Memtable]datatype.DataType)
 	for i := range memIterator.MemTablePositions() {
 		for {
-			if i.GetMaxSize() == memIterator.MemTablePositions()[i] {
+			j := *i
+			if j.GetMaxSize() == memIterator.MemTablePositions()[i] {
 				break
 
-			} else if !isInRange(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.ValRange()) {
-				memIterator.MemTablePositions()[i] = i.GetMaxSize()
+			} else if !isInRange(j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.ValRange()) {
+				memIterator.MemTablePositions()[i] = j.GetMaxSize()
 				break
-			} else if isInRange(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.ValRange()) {
-				minMap[&i] = i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
+			} else if isInRange(j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.ValRange()) {
+				minMap[&j] = j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
 				break
 			} else {
 				memIterator.MemTablePositions()[i]++
@@ -183,16 +184,17 @@ func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssItera
 	minMap := make(map[*hashmem.Memtable]datatype.DataType)
 	for i := range memIterator.MemTablePositions() {
 		for {
-			if i.GetMaxSize() == memIterator.MemTablePositions()[i] {
+			j := *i
+			if j.GetMaxSize() == memIterator.MemTablePositions()[i] {
 				break
-			} else if !strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) && i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey() > memIterator.CurrPrefix() {
-				memIterator.MemTablePositions()[i] = i.GetMaxSize()
+			} else if !strings.HasPrefix(j.GetSortedDataTypes()[memIterator.MemTablePositions()[&j]].GetKey(), memIterator.CurrPrefix()) && j.GetSortedDataTypes()[memIterator.MemTablePositions()[&j]].GetKey() > memIterator.CurrPrefix() {
+				memIterator.MemTablePositions()[&j] = j.GetMaxSize()
 				break
-			} else if strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) {
-				minMap[&i] = i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
+			} else if strings.HasPrefix(j.GetSortedDataTypes()[memIterator.MemTablePositions()[&j]].GetKey(), memIterator.CurrPrefix()) {
+				minMap[&j] = j.GetSortedDataTypes()[memIterator.MemTablePositions()[&j]]
 				break
 			} else {
-				memIterator.MemTablePositions()[i]++
+				memIterator.MemTablePositions()[&j]++
 			}
 		}
 	}
