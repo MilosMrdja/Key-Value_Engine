@@ -5,58 +5,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="04dae56e-b024-459f-b606-0967eeaee51e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/advancedalg.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/Key-Value_Engine.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Key-Value_Engine.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/wal_implementation/wal.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00001.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00002.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00003.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00004.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00005.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00006.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00007.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00008.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00009.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00010.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00011.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00012.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00013.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00014.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00015.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00016.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00017.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00018.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00019.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00020.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00021.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00022.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00023.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00024.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00025.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00026.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00027.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00028.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00029.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00030.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00031.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00032.log" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/structs/wal_implementation/wal/wal_00033.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/structs/scanning/iterating.go" beforeDir="false" afterPath="$PROJECT_DIR$/structs/scanning/iterating.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="GOROOT" url="file://$PROJECT_DIR$/../../../../../../Program Files/Go" />
+  <component name="GOROOT" url="file://$PROJECT_DIR$/../../../../Program Files/Go" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 2
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
   <component name="ProjectId" id="2biVfY6hRRO2M1ek0x96izlFMlb" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -74,7 +38,7 @@
     "git-widget-placeholder": "lsm",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "C:/homework/fakultet/semestar3/nasp/projekat4/Key-Value_Engine",
+    "last_opened_file_path": "C:/Users/Nikola",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)"
   }
@@ -101,5 +65,16 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/structs/scanning/iterating.go</url>
+          <line>41</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
