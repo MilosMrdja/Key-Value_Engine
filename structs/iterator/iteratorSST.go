@@ -5,7 +5,7 @@ type IteratorPrefixSSTable struct {
 	Prefix            string
 }
 
-func (i *IteratorPrefixSSTable) getSSTableMap() map[string][]uint64 {
+func (i *IteratorPrefixSSTable) GetSSTableMap() map[string][]uint64 {
 	return i.PositionInSSTable
 }
 

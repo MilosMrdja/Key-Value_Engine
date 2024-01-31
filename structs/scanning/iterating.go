@@ -48,7 +48,7 @@ func findMinimalValue(mapa map[*hashmem.Memtable]datatype.DataType) datatype.Dat
 	}
 	return minValue
 }
-func adjustPositionsRange(mapa map[*hashmem.Memtable]datatype.DataType, iterator *iterator.RangeIterator) datatype.DataType {
+func adjustPositionsRange(mapa map[*hashmem.Memtable]datatype.DataType, memIterator *iterator.RangeIterator) datatype.DataType {
 	minKeys := extractMinimalKeys(mapa)
 	sort.Slice(minKeys[:], func(i, j int) bool {
 		dataType1 := mapa[minKeys[i]]
@@ -56,11 +56,11 @@ func adjustPositionsRange(mapa map[*hashmem.Memtable]datatype.DataType, iterator
 		return dataType1.GetChangeTime().After(dataType2.GetChangeTime())
 	})
 	for _, k := range minKeys {
-		iterator.IncrementMemTablePosition(*k)
+		memIterator.IncrementMemTablePosition(*k)
 	}
 	return mapa[minKeys[0]]
 }
-func adjustPositionsPrefix(mapa map[*hashmem.Memtable]datatype.DataType, iterator *iterator.PrefixIterator) datatype.DataType {
+func adjustPositionsPrefix(mapa map[*hashmem.Memtable]datatype.DataType, memIterator *iterator.PrefixIterator) datatype.DataType {
 	minKeys := extractMinimalKeys(mapa)
 	sort.Slice(minKeys[:], func(i, j int) bool {
 		dataType1 := mapa[minKeys[i]]
@@ -68,59 +68,80 @@ func adjustPositionsPrefix(mapa map[*hashmem.Memtable]datatype.DataType, iterato
 		return dataType1.GetChangeTime().After(dataType2.GetChangeTime())
 	})
 	for _, k := range minKeys {
-		iterator.IncrementMemTablePosition(*k)
+		memIterator.IncrementMemTablePosition(*k)
 	}
 	return mapa[minKeys[0]]
 }
-func RANGE_ITERATE(valueRange []string, iterator *iterator.RangeIterator) {
-	if iterator.ValRange()[0] == valueRange[0] || iterator.ValRange()[1] == valueRange[1] {
-		iterator.SetValRange(valueRange)
-		iterator.ResetMemTableIndexes()
+func RANGE_ITERATE(valueRange []string, memIterator *iterator.RangeIterator) {
+	if memIterator.ValRange()[0] == valueRange[0] || memIterator.ValRange()[1] == valueRange[1] {
+		memIterator.SetValRange(valueRange)
+		memIterator.ResetMemTableIndexes()
 	}
 	minMap := make(map[*hashmem.Memtable]datatype.DataType)
-	for i := range iterator.MemTablePositions() {
+	for i := range memIterator.MemTablePositions() {
 		for {
-			if i.GetMaxSize() == iterator.MemTablePositions()[i] {
+			if i.GetMaxSize() == memIterator.MemTablePositions()[i] {
 				break
 
-			} else if !isInRange(i.GetSortedDataTypes()[iterator.MemTablePositions()[i]].GetKey(), iterator.ValRange()) {
-				iterator.MemTablePositions()[i] = i.GetMaxSize()
+			} else if !isInRange(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.ValRange()) {
+				memIterator.MemTablePositions()[i] = i.GetMaxSize()
 				break
-			} else if isInRange(i.GetSortedDataTypes()[iterator.MemTablePositions()[i]].GetKey(), iterator.ValRange()) {
-				minMap[&i] = i.GetSortedDataTypes()[iterator.MemTablePositions()[i]]
+			} else if isInRange(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.ValRange()) {
+				minMap[&i] = i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
 				break
 			} else {
-				iterator.MemTablePositions()[i]++
+				memIterator.MemTablePositions()[i]++
 			}
 		}
 	}
-	minInMems := adjustPositionsRange(minMap, iterator)
+	minInMems := adjustPositionsRange(minMap, memIterator)
 	fmt.Println(minInMems)
 }
 
 // za memtabelu
-func PREFIX_ITERATE(prefix string, iterator *iterator.PrefixIterator) {
-	if prefix != iterator.CurrPrefix() {
-		iterator.SetCurrPrefix(prefix)
-		iterator.ResetMemTableIndexes()
+func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, compress1 bool, compress2 bool, oneFile bool) {
+	if prefix != memIterator.CurrPrefix() {
+		memIterator.SetCurrPrefix(prefix)
+		memIterator.ResetMemTableIndexes()
+	}
+	if prefix != ssIterator.Prefix {
+		ssIterator = PrefixIterateSSTable(prefix, compress1, compress2, oneFile)
 	}
 	minMap := make(map[*hashmem.Memtable]datatype.DataType)
-	for i := range iterator.MemTablePositions() {
+	for i := range memIterator.MemTablePositions() {
 		for {
-			if i.GetMaxSize() == iterator.MemTablePositions()[i] {
+			if i.GetMaxSize() == memIterator.MemTablePositions()[i] {
 				break
-			} else if !strings.HasPrefix(i.GetSortedDataTypes()[iterator.MemTablePositions()[i]].GetKey(), iterator.CurrPrefix()) && i.GetSortedDataTypes()[iterator.MemTablePositions()[i]].GetKey() > iterator.CurrPrefix() {
-				iterator.MemTablePositions()[i] = i.GetMaxSize()
+			} else if !strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) && i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey() > memIterator.CurrPrefix() {
+				memIterator.MemTablePositions()[i] = i.GetMaxSize()
 				break
-			} else if strings.HasPrefix(i.GetSortedDataTypes()[iterator.MemTablePositions()[i]].GetKey(), iterator.CurrPrefix()) {
-				minMap[&i] = i.GetSortedDataTypes()[iterator.MemTablePositions()[i]]
+			} else if strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) {
+				minMap[&i] = i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
 				break
 			} else {
-				iterator.MemTablePositions()[i]++
+				memIterator.MemTablePositions()[i]++
 			}
 		}
 	}
-	minInMems := adjustPositionsPrefix(minMap, iterator)
+	for k, v := range ssIterator.GetSSTableMap() {
+		for {
+			if ssIterator.GetSSTableMap()[k][0] == ssIterator.GetSSTableMap()[k][1] {
+				break
+			}
+			record, _ := SSTable.ReadData(k, compress1, compress2, ssIterator.GetSSTableMap()[k][0], ssIterator.GetSSTableMap()[k][1])
+			if !strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) && i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey() > memIterator.CurrPrefix() {
+				memIterator.MemTablePositions()[i] = i.GetMaxSize()
+				break
+			} else if strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) {
+				minMap[&i] = i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
+				break
+			} else {
+				memIterator.MemTablePositions()[i]++
+			}
+		}
+	}
+
+	minInMems := adjustPositionsPrefix(minMap, memIterator)
 	fmt.Println(minInMems)
 }
 
