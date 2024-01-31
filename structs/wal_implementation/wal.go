@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sstable/SSTableStruct/SSTable"
 	"strconv"
 	"strings"
 
@@ -30,7 +31,7 @@ func (e CustomError) Error() string {
 }
 
 const (
-	MAXSIZE       = 50
+	MAXSIZE       = 1000
 	SEGMENTS_NAME = "wal_"
 	//LOW_WATER_MARK = 5 //index to which segments will be deleted
 	HEADER_SIZE = 8 //first 4 bytes is how much of record remains from last segment and last 4 bytes are indicating if this is the last segment (all zeors means its not)
@@ -57,25 +58,35 @@ func NewWriteAheadLog() *WriteAheadLog {
 	if len(listOfSegments) == 0 {
 		filePath = fmt.Sprintf("%s%c%s%s.log", fp, os.PathSeparator, SEGMENTS_NAME, "00001")
 		listOfSegments = append(listOfSegments, fmt.Sprintf("%s%s.log", SEGMENTS_NAME, "00001"))
-		file, err = os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
+		file, err = os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0777)
 		err = file.Truncate(MAXSIZE)
 		mmapf, _ := mmap.Map(file, mmap.RDWR, 0)
-		defer mmapf.Unmap()
+		defer func(mmapf *mmap.MMap) {
+			err := mmapf.Unmap()
+			if err != nil {
+
+			}
+		}(&mmapf)
 		byteArray := make([]byte, HEADER_SIZE)
 		binary.LittleEndian.PutUint64(byteArray[:HEADER_SIZE], 0)
 		copy(mmapf[0:HEADER_SIZE], byteArray)
 		err = mmapf.Flush()
 	} else {
 		filePath = fmt.Sprintf("%s%c%s", fp, os.PathSeparator, listOfSegments[len(listOfSegments)-1])
-		file, err = os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
+		file, err = os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0777)
 		mmapf, _ := mmap.Map(file, mmap.RDWR, 0)
-		defer mmapf.Unmap()
+		defer func(mmapf *mmap.MMap) {
+			err := mmapf.Unmap()
+			if err != nil {
+
+			}
+		}(&mmapf)
 		buffer := make([]byte, HEADER_SIZE/2)
 		copy(buffer, mmapf[HEADER_SIZE/2:HEADER_SIZE])
 		writingPosition = int(binary.LittleEndian.Uint32(buffer))
 	}
 	filePath = fmt.Sprintf("%s%c%s%s.log", fp, os.PathSeparator, SEGMENTS_NAME, "00001")
-	readingFile, err := os.OpenFile(filePath, os.O_RDONLY, 0644)
+	readingFile, err := os.OpenFile(filePath, os.O_RDONLY, 0777)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -121,7 +132,12 @@ func (wal *WriteAheadLog) clearLog() error {
 	newSegment := fmt.Sprintf("%s%c%s%s.log", wal.folderPath, os.PathSeparator, SEGMENTS_NAME, logsNumber)
 	wal.Segments = append(wal.Segments, fmt.Sprintf("%s%s.log", SEGMENTS_NAME, logsNumber))
 	mmapf, err := mmap.Map(wal.openedFileWrite, mmap.RDWR, 0)
-	defer mmapf.Unmap()
+	defer func(mmapf *mmap.MMap) {
+		err := mmapf.Unmap()
+		if err != nil {
+
+		}
+	}(&mmapf)
 	byteArray := make([]byte, HEADER_SIZE/2)
 	binary.LittleEndian.PutUint32(byteArray[:HEADER_SIZE/2], 0)
 	copy(mmapf[HEADER_SIZE/2:HEADER_SIZE], byteArray)
@@ -130,7 +146,7 @@ func (wal *WriteAheadLog) clearLog() error {
 	if err != nil {
 		return err
 	}
-	wal.openedFileWrite, err = os.OpenFile(newSegment, os.O_RDWR|os.O_CREATE, 0644)
+	wal.openedFileWrite, err = os.OpenFile(newSegment, os.O_RDWR|os.O_CREATE, 0777)
 	if err != nil {
 		return err
 	}
@@ -155,6 +171,27 @@ func (wal *WriteAheadLog) DeleteSegmentsTilWatermark(lowWaterMark int) error {
 	if err != nil {
 		return err
 	}
+	firstFile := fmt.Sprintf("%s%c%s%s.log", wal.folderPath, os.PathSeparator, SEGMENTS_NAME, "00001")
+	for i := 1; i < lwm; i++ {
+		s := wal.Segments[i-1]
+		parts := strings.Split(s, "_")
+		numStr := strings.TrimLeft(parts[1], "0")
+		num, err := strconv.Atoi(strings.Split(numStr, ".")[0])
+		if err != nil {
+			return err
+		}
+		logsNumber := fmt.Sprintf("%05d", num)
+		filePath := fmt.Sprintf("%s%c%s%s.log", wal.folderPath, os.PathSeparator, SEGMENTS_NAME, logsNumber)
+		////som, err := os.Stat(filePath)
+		////fmt.Println(som, err)
+
+		err = os.Rename(filePath, firstFile)
+
+		if err != nil {
+			return err
+		}
+	}
+
 	// If newpath already exists and is not a directory, Rename replaces it.
 	wal.Segments = wal.Segments[lwm-1:]
 	newSegments := make([]string, 0)
@@ -163,6 +200,9 @@ func (wal *WriteAheadLog) DeleteSegmentsTilWatermark(lowWaterMark int) error {
 		logsNumber := fmt.Sprintf("%05d", i+1)
 		newPath := fmt.Sprintf("%s%c%s%s.log", wal.folderPath, os.PathSeparator, SEGMENTS_NAME, logsNumber)
 		err = os.Rename(oldPath, newPath)
+		if err != nil {
+			return err
+		}
 		newSegments = append(newSegments, fmt.Sprintf("%s%s.log", SEGMENTS_NAME, logsNumber))
 	}
 	wal.Segments = newSegments
@@ -170,13 +210,19 @@ func (wal *WriteAheadLog) DeleteSegmentsTilWatermark(lowWaterMark int) error {
 	if err != nil {
 		return err
 	}
-	wal.openedFileWrite, err = os.OpenFile(lastPath, os.O_RDWR|os.O_CREATE, 0644)
+	wal.openedFileWrite, err = os.OpenFile(lastPath, os.O_RDWR, 0777)
 	mmapf, _ := mmap.Map(wal.openedFileWrite, mmap.RDWR, 0)
+	defer func(mmapf *mmap.MMap) {
+		err := mmapf.Unmap()
+		if err != nil {
+
+		}
+	}(&mmapf)
 	buffer := make([]byte, HEADER_SIZE/2)
 	copy(buffer, mmapf[HEADER_SIZE/2:HEADER_SIZE])
 	wal.currentWritePosition = int(binary.LittleEndian.Uint32(buffer))
 	firstPath := fmt.Sprintf("%s%c%s", wal.folderPath, os.PathSeparator, wal.Segments[0])
-	wal.openedFileRead, err = os.OpenFile(firstPath, os.O_RDWR|os.O_CREATE, 0644)
+	wal.openedFileRead, err = os.OpenFile(firstPath, os.O_RDONLY, 0777)
 	wal.currentReadPosition = 0
 	return nil
 }
@@ -196,7 +242,7 @@ func (wal *WriteAheadLog) goToNextReadFile() error {
 	if err != nil {
 		return err
 	}
-	wal.openedFileRead, err = os.OpenFile(newSegment, os.O_RDONLY, 0644)
+	wal.openedFileRead, err = os.OpenFile(newSegment, os.O_RDONLY, 0777)
 	if err != nil {
 		return err
 	}
@@ -208,16 +254,29 @@ func (wal *WriteAheadLog) readOverflow() []byte {
 	if err != nil {
 		return nil
 	}
-	defer mmapf.Unmap()
+	defer func(mmapf *mmap.MMap) {
+		err := mmapf.Unmap()
+		if err != nil {
+
+		}
+	}(&mmapf)
 	data := make([]byte, MAXSIZE-wal.currentReadPosition)
 	copy(data, mmapf[wal.currentReadPosition:MAXSIZE])
 	for true {
-		wal.goToNextReadFile()
+		err := wal.goToNextReadFile()
+		if err != nil {
+			return nil
+		}
 		mmapf, err := mmap.Map(wal.openedFileRead, mmap.RDONLY, 0)
 		if err != nil {
 			return nil
 		}
-		defer mmapf.Unmap()
+		defer func(mmapf *mmap.MMap) {
+			err := mmapf.Unmap()
+			if err != nil {
+
+			}
+		}(&mmapf)
 		buffer := make([]byte, HEADER_SIZE/2)
 		copy(buffer, mmapf[:HEADER_SIZE/2])
 		wal.currentReadPosition = int(binary.LittleEndian.Uint32(buffer))
@@ -238,17 +297,25 @@ func (wal *WriteAheadLog) ReadRecord() (*LogRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer mmapf.Unmap()
+	defer func(mmapf *mmap.MMap) {
+		err := mmapf.Unmap()
+		if err != nil {
+
+		}
+	}(&mmapf)
 	buffer := make([]byte, HEADER_SIZE/2)
 	copy(buffer, mmapf[HEADER_SIZE/2:HEADER_SIZE])
 	isLastFile := int(binary.LittleEndian.Uint32(buffer))
+	firstFile := fmt.Sprintf("%s%c%s%s.log", wal.folderPath, os.PathSeparator, SEGMENTS_NAME, "00001")
 	if isLastFile != 0 && isLastFile == wal.currentReadPosition {
+		return nil, CustomError{"NO MORE RECORDS"}
+	} else if isLastFile == 0 && isLastFile == wal.currentReadPosition && wal.currentWritePosition == 0 && wal.openedFileRead.Name() == firstFile {
 		return nil, CustomError{"NO MORE RECORDS"}
 	}
 
 	if wal.currentReadPosition == 0 {
 		buffer := make([]byte, HEADER_SIZE/2)
-		copy(buffer, mmapf[0:HEADER_SIZE/2])
+		copy(buffer, mmapf[:HEADER_SIZE/2])
 		wal.currentReadPosition = int(binary.LittleEndian.Uint32(buffer))
 		wal.currentReadPosition += HEADER_SIZE
 	}
@@ -266,7 +333,7 @@ func (wal *WriteAheadLog) ReadRecord() (*LogRecord, error) {
 		if uint64(wal.currentReadPosition)+kSize+vSize > MAXSIZE {
 			buffer = append(buffer, wal.readOverflow()...)
 		} else {
-			newBuffer := make([]byte, 37)
+			newBuffer := make([]byte, kSize+vSize)
 			copy(newBuffer, mmapf[wal.currentReadPosition:uint64(wal.currentReadPosition)+kSize+vSize])
 			buffer = append(buffer, newBuffer...)
 			wal.currentReadPosition += int(kSize) + int(vSize)
@@ -292,7 +359,12 @@ func (r *LogRecord) AppendToFile(wal *WriteAheadLog) error {
 	// Serialize the LogRecord
 	data, err := r.ToBinary()
 	mmapf, err := mmap.Map(wal.openedFileWrite, mmap.RDWR, 0)
-	defer mmapf.Unmap()
+	defer func(mmapf *mmap.MMap) {
+		err := mmapf.Unmap()
+		if err != nil {
+
+		}
+	}(&mmapf)
 	if wal.currentWritePosition == 0 {
 		wal.currentWritePosition = HEADER_SIZE
 	}
@@ -312,7 +384,10 @@ func (r *LogRecord) AppendToFile(wal *WriteAheadLog) error {
 		data = data[:0]
 	}
 	for len(data) > 0 {
-		wal.clearLog()
+		err := wal.clearLog()
+		if err != nil {
+			return err
+		}
 		wal.currentWritePosition = HEADER_SIZE
 		var dataLen int
 		dataLen = len(data)
@@ -357,6 +432,102 @@ func (wal *WriteAheadLog) ReadAllRecords() ([]*LogRecord, error) {
 		}
 	}
 	return records, nil
+}
+
+func (wal *WriteAheadLog) DeleteMemTable() error {
+	pathToFile := fmt.Sprintf("wal_implementation%cEndsOfMemtables.bin", os.PathSeparator)
+	memEnds, err := SSTable.DeserializationHashMap(pathToFile)
+	if err != nil {
+		return err
+	}
+	minFile := ""
+	minNumber := -1
+	if len(*memEnds) == 0 {
+		return nil
+	}
+
+	for s1 := range *memEnds {
+		s := strings.Split(s1, string(os.PathSeparator))[2]
+		parts := strings.Split(s, "_")
+		numStr := strings.TrimLeft(parts[1], "0")
+		num, err := strconv.Atoi(strings.Split(numStr, ".")[0])
+		if err != nil {
+			return err
+		}
+
+		// If this is the first number we've seen, or if it's smaller than the current minimum, update the minimum
+		if minNumber == -1 || num < minNumber {
+			minFile = s1
+			minNumber = num
+		}
+	}
+	mfp, err := os.OpenFile(minFile, os.O_RDWR, 0777)
+	mmapf, err := mmap.Map(mfp, mmap.RDWR, 0)
+
+	defer func(mmapf *mmap.MMap) {
+		err := mmapf.Unmap()
+		if err != nil {
+
+		}
+	}(&mmapf)
+	byteArray := make([]byte, HEADER_SIZE/2)
+	//fmt.Println(uint32((*memEnds)[minFile]))
+	binary.LittleEndian.PutUint32(byteArray[:HEADER_SIZE/2], uint32((*memEnds)[minFile])-HEADER_SIZE)
+	copy(mmapf[:HEADER_SIZE/2], byteArray)
+	err = mmapf.Flush()
+	if err != nil {
+		return err
+	}
+	delete(*memEnds, minFile)
+	//pomeri sve ostale kljuceve
+	tempMap := make(map[string]int32)
+	for s1 := range *memEnds {
+		s := strings.Split(s1, string(os.PathSeparator))[2]
+		parts := strings.Split(s, "_")
+		numStr := strings.TrimLeft(parts[1], "0")
+		num, err := strconv.Atoi(strings.Split(numStr, ".")[0])
+		if err != nil {
+			return err
+		}
+		logsNumber := fmt.Sprintf("%05d", num-minNumber+1)
+		filePath := fmt.Sprintf("%s%c%s%s.log", wal.folderPath, os.PathSeparator, SEGMENTS_NAME, logsNumber)
+		tempMap[filePath] = (*memEnds)[s1]
+
+	}
+	memEnds = &tempMap
+	_, err = SSTable.SerializeHashmap(pathToFile, memEnds)
+	if err != nil {
+		return err
+	}
+	err = mfp.Close()
+	if err != nil {
+		return err
+	}
+	err = wal.DeleteSegmentsTilWatermark(minNumber)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (wal *WriteAheadLog) EndMemTable() error {
+	pathToFile := fmt.Sprintf("wal_implementation%cEndsOfMemtables.bin", os.PathSeparator)
+	memEnds, err := SSTable.DeserializationHashMap(pathToFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			mapa := make(map[string]int32)
+			memEnds = &mapa
+		} else {
+			return err
+		}
+	}
+	(*memEnds)[wal.openedFileWrite.Name()] = int32(wal.currentWritePosition)
+	_, err = SSTable.SerializeHashmap(pathToFile, memEnds)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
