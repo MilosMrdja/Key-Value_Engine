@@ -4,7 +4,7 @@ import "sstable/mem/memtable/hash/hashmem"
 
 type RangeIterator struct {
 	memTablePositions map[*hashmem.Memtable]int
-	valRange          []string
+	valRange          [2]string
 }
 
 func (i *RangeIterator) ResetMemTableIndexes() {
@@ -27,11 +27,11 @@ func (i *RangeIterator) AllOnEnd() bool {
 	return false
 }
 
-func (i *RangeIterator) ValRange() []string {
+func (i *RangeIterator) ValRange() [2]string {
 	return i.valRange
 }
 
-func (i *RangeIterator) SetValRange(valrange []string) {
+func (i *RangeIterator) SetValRange(valrange [2]string) {
 	i.valRange = valrange
 }
 
@@ -48,7 +48,7 @@ func (i *RangeIterator) IncrementMemTablePosition(memTablePtr *hashmem.Memtable)
 	}
 
 }
-func NewRangeIterator(memTablePositions map[*hashmem.Memtable]int, valRange []string) *RangeIterator {
+func NewRangeIterator(memTablePositions map[*hashmem.Memtable]int, valRange [2]string) *RangeIterator {
 	return &RangeIterator{memTablePositions: memTablePositions, valRange: valRange}
 }
 
