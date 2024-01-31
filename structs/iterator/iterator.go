@@ -93,13 +93,16 @@ func (i *PrefixIterator) SetCurrPrefix(currPrefix string) {
 func (i *PrefixIterator) MemTablePositions() map[*hashmem.Memtable]int {
 	return i.memTablePositions
 }
+func (i *PrefixIterator) incIndexByMem(mem *hashmem.Memtable) {
+	i.memTablePositions[mem] += 1
+}
 
 func (i *PrefixIterator) IncrementMemTablePosition(memTablePtr *hashmem.Memtable) {
 	a := *memTablePtr
 	if a.GetMaxSize() == i.memTablePositions[memTablePtr] {
 		i.memTablePositions[memTablePtr] = a.GetMaxSize()
 	} else {
-		i.memTablePositions[memTablePtr]++
+		i.incIndexByMem(memTablePtr)
 	}
 
 }

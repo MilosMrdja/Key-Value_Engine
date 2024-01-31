@@ -106,11 +106,26 @@ func adjustPositionPrefixSS(mapa map[string]datatype.DataType, ssIterator *itera
 }
 
 func adjustPosition(mapaMem map[*hashmem.Memtable]datatype.DataType, mapaSS map[string]datatype.DataType, ssIterator *iterator.IteratorPrefixSSTable, memIterator *iterator.PrefixIterator) datatype.DataType {
-	keyMem := adjustPositionsPrefixMem(mapaMem, memIterator)
-	keySS := adjustPositionPrefixSS(mapaSS, ssIterator)
 
-	dataType1 := mapaMem[keyMem[0]]
-	dataType2 := mapaSS[keySS[0]]
+	var dataType1 datatype.DataType
+	var keyMem []*hashmem.Memtable
+
+	var dataType2 datatype.DataType // prazan constructor
+	var keySS []string
+
+	if len(mapaMem) == 0 {
+		keyMem = make([]*hashmem.Memtable, 0)
+	} else {
+		keyMem = adjustPositionsPrefixMem(mapaMem, memIterator)
+		dataType1 = mapaMem[keyMem[0]]
+	}
+
+	if len(mapaSS) == 0 {
+		keySS = make([]string, 0)
+	} else {
+		keySS = adjustPositionPrefixSS(mapaSS, ssIterator)
+		dataType2 = mapaSS[keySS[0]]
+	}
 
 	if dataType1.GetKey() > dataType2.GetKey() {
 		for i := 0; i < len(keySS); i++ {
@@ -194,7 +209,7 @@ func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssItera
 				memIterator.MemTablePositions()[i] = j.GetMaxSize()
 				break
 			} else if strings.HasPrefix(j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) {
-				minMap[&j] = j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
+				minMap[i] = j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
 				break
 			} else {
 				memIterator.IncrementMemTablePosition(i)

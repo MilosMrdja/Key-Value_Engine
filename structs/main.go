@@ -309,9 +309,19 @@ func main() {
 	//}
 	//Ne brisi, iter test
 
+	btm := hashmem.Memtable(hashstruct.CreateHashMemtable(m))
+	for j := 0; j < 10; j++ {
+		btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)))
+	}
+	mapMem[&btm] = 0
 	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
 	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
 	dataType := scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	fmt.Println(dataType)
+	dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	fmt.Println(dataType)
+	dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	fmt.Println(dataType)
 	dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
 	fmt.Println(dataType)
 	//kraj
