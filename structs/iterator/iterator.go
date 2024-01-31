@@ -56,6 +56,10 @@ type PrefixIterator struct {
 	currPrefix        string
 }
 
+func NewPrefixIterator(memTablePositions map[hashmem.Memtable]int, currPrefix string) *PrefixIterator {
+	return &PrefixIterator{memTablePositions: memTablePositions, currPrefix: currPrefix}
+}
+
 func (i *PrefixIterator) ResetMemTableIndexes() {
 	for k := range i.memTablePositions {
 		i.memTablePositions[k] = 0

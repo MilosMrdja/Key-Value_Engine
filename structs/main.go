@@ -9,6 +9,7 @@ import (
 	"sstable/lru"
 	"sstable/mem/memtable/btree/btreemem"
 	"sstable/mem/memtable/hash/hashmem"
+	"sstable/scanning"
 	"sstable/token_bucket"
 	"sstable/wal_implementation"
 	"strconv"
@@ -254,22 +255,24 @@ func main() {
 	}
 
 	LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap)
-	fmt.Printf("Konacna: \n")
+
+	scanning.PrefixIterateSSTable("1", compress1, compress2, oneFile)
+	//fmt.Printf("Konacna: \n")
 	//SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
 	//SSTable.ReadIndex("DataSSTable/L1/sstable1/Summary.bin", compress1, compress2, 2, oneFile)
 	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 3, oneFile)
-	key := "9"
-	//scanning.PrefixIterateSSTable("ad", false)
-	fmt.Printf("Sumary: ")
-	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
-	data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
-	if err4 == true {
-		fmt.Printf("Key: %s\n", data.GetKey())
-		fmt.Printf("Value: %s\n", data.GetData())
-		fmt.Printf("Time: %s\n", data.GetChangeTime())
-	} else {
-		fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
-	}
+	//key := "9"
+	////scanning.PrefixIterateSSTable("ad", false)
+	//fmt.Printf("Sumary: ")
+	////SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 2, oneFile)
+	//data, err4 := LSM.GetByKey(key, compress1, compress2, oneFile)
+	//if err4 == true {
+	//	fmt.Printf("Key: %s\n", data.GetKey())
+	//	fmt.Printf("Value: %s\n", data.GetData())
+	//	fmt.Printf("Time: %s\n", data.GetChangeTime())
+	//} else {
+	//	fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
+	//}
 	//lista, _, _, _ := LSM.GetDataByPrefix(15, "2", compress1, compress2, oneFile)
 	//for _, i2 := range lista {
 	//	fmt.Printf("Key: %s ", i2.GetKey())

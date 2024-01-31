@@ -29,6 +29,11 @@ func GetGlobalSummaryMinMax(filePath string, numberSSTable int, compress1, compr
 
 // prva vrednost je min,druga je max
 func GetSummaryMinMax(filePath string, compress1, compress2, oneFile bool) (datatype.DataType, datatype.DataType, int64) {
+	fileName := "/Summary.bin"
+	if oneFile {
+		fileName = "/SSTable.bin"
+	}
+	filePath += fileName
 	var minData, maxData datatype.DataType
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
@@ -50,7 +55,7 @@ func GetSummaryMinMax(filePath string, compress1, compress2, oneFile bool) (data
 	}
 	var size, sizeEnd int64
 	if oneFile {
-		size, sizeEnd = positionInSSTable(*file, 2)
+		size, sizeEnd = PositionInSSTable(*file, 2)
 		end = sizeEnd - size
 		_, err1 := file.Seek(size, 0)
 		if err1 != nil {

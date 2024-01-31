@@ -228,7 +228,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 	end := fileInfo.Size()
 
 	if oneFile {
-		size, sizeEnd = positionInSSTable(*file, elem)
+		size, sizeEnd = PositionInSSTable(*file, elem)
 		offsetStart += size
 		end = sizeEnd - size
 		if err != nil {
@@ -449,7 +449,7 @@ func setStartEndOffset(filePath string, numberSSTable int, oneFile bool) ([]int6
 			}
 			defer file.Close()
 
-			start, end := positionInSSTable(*file, elem)
+			start, end := PositionInSSTable(*file, elem)
 			endOffsetList[i-1] = end - start
 			startOffsetList[i-1] = 0
 		}

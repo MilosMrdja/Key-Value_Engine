@@ -31,7 +31,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 
 	var size, sizeEnd int64
 	if oneFile {
-		size, sizeEnd = positionInSSTable(*file, 5)
+		size, sizeEnd = PositionInSSTable(*file, 5)
 
 		end = sizeEnd - size
 		_, err1 := file.Seek(size, 0)
@@ -273,7 +273,7 @@ func ReadIndex(fileName string, compress1, compress2 bool, elem int, oneFile boo
 	}
 	var size, sizeEnd int64
 	if oneFile {
-		size, sizeEnd = positionInSSTable(*file, elem)
+		size, sizeEnd = PositionInSSTable(*file, elem)
 		end = sizeEnd - size
 		_, err1 := file.Seek(size, 0)
 		if err1 != nil {

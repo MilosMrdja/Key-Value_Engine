@@ -206,7 +206,7 @@ position 3 === index
 position 4 === merkled
 position 5 === data
 */
-func positionInSSTable(file os.File, position int) (int64, int64) {
+func PositionInSSTable(file os.File, position int) (int64, int64) {
 	var bytes []byte
 	var size, sizeEnd int64
 

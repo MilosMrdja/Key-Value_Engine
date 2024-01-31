@@ -62,9 +62,9 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 	var size, sizeEnd int64
 	if oneFile {
 		if compress2 == true {
-			size, sizeEnd = positionInSSTable(*file, 4)
+			size, sizeEnd = PositionInSSTable(*file, 4)
 		} else {
-			size, sizeEnd = positionInSSTable(*file, 3)
+			size, sizeEnd = PositionInSSTable(*file, 3)
 		}
 		if offsetEnd == 0 {
 			offsetEnd = sizeEnd

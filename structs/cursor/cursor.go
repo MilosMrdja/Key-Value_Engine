@@ -18,6 +18,7 @@ type Cursor struct {
 	N         int
 	M         int
 	numTables int
+	memCap    int
 }
 
 func (c *Cursor) Compress1() bool {
@@ -84,7 +85,7 @@ func (c *Cursor) AddToMemtable(key string, value []byte) bool {
 	if c.memPointers[c.memIndex].IsReadOnly() {
 		c.memIndex = (c.memIndex - 1 + len(c.memPointers)) % len(c.memPointers)
 		c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M)
-		LSM.CompactSstable(c.numTables, c.Compress1(), c.Compress2(), c.OneFile())
+		LSM.CompactSstable(c.numTables, c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap)
 	}
 	return true
 }

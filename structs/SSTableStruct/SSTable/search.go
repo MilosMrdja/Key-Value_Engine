@@ -18,7 +18,7 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 		if err != nil {
 			return data, false
 		}
-		size, _ := positionInSSTable(*file, 1)
+		size, _ := PositionInSSTable(*file, 1)
 		file.Seek(size, 0)
 		bloomFilter, err2 := bloomfilter.DeserializeBloomFilter(file)
 		if err2 != nil {
@@ -111,7 +111,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 	end := fileInfo.Size()
 	var size, sizeEnd int64
 	if oneFile {
-		size, sizeEnd = positionInSSTable(*file, 5)
+		size, sizeEnd = PositionInSSTable(*file, 5)
 		if offsetEnd == 0 {
 			offsetEnd = sizeEnd
 		} else {
@@ -386,7 +386,7 @@ func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, off
 	sizeEnd = fileInfo.Size()
 
 	if oneFile {
-		size, sizeEnd = positionInSSTable(*file, elem)
+		size, sizeEnd = PositionInSSTable(*file, elem)
 
 		if offsetEnd == 0 {
 			offsetEnd = sizeEnd

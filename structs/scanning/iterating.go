@@ -3,6 +3,7 @@ package scanning
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"sort"
 	"sstable/SSTableStruct/SSTable"
 	"sstable/iterator"
@@ -128,11 +129,6 @@ func PREFIX_ITERATE(prefix string, iterator *iterator.PrefixIterator) {
 	l1  [0,0,0,0]  [1250,1500,2000,2690]
 	l2  [0,0,0,0]  [12500,15000,20000,26900]
 
-
-
-		aa
-
-
 for SVE{
     l0  sst 1    aa
 	l0 	sst2      ab
@@ -153,26 +149,51 @@ if elementM < element{
 */
 
 // za sstabelu
-func PrefixIterateSSTable(prefix string, compress1, compress2, oneFile bool) {
+func PrefixIterateSSTable(prefix string, compress1, compress2, oneFile bool) *iterator.IteratorSSTable {
+
 	Levels, _ := ioutil.ReadDir("./DataSStable")
-	SSTable.ReadIndex("./DataSStable/L0/sstable1/Summary.bin", true, true, 1, false)
+	mapa := make(map[string][]int64)
+	//SSTable.ReadIndex("./DataSStable/L0/sstable1/Summary.bin", true, true, 1, false)
 	for i := 0; i < len(Levels); i++ {
 		ssTemp, _ := ioutil.ReadDir("./DataSStable/L" + strconv.Itoa(i))
-		for j := len(ssTemp) - 1; j >= 0; j-- {
-			if oneFile {
+		for j := 0; j < len(ssTemp); j++ {
+			prvi, poslednji, _ := SSTable.GetSummaryMinMax("./DataSStable/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(j+1), compress1, compress2, oneFile)
+			if prefix < prvi.GetKey() || prefix > poslednji.GetKey() {
 				continue
 			} else {
-				prvi, poslednji, _ := SSTable.GetSummaryMinMax("./DataSStable/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(j+1)+"/Summary.bin", compress1, compress2, oneFile)
-				if prefix < prvi.GetKey() || prefix > poslednji.GetKey() {
-					continue
-				} else {
-					// kreiranje iteratorSSTable
-					break
-				}
+				fileSST := "./DataSStable/L" + strconv.Itoa(i) + "/sstable" + strconv.Itoa(j+1)
+				mapa[fileSST] = GetBeginsEnds(fileSST, oneFile)
 			}
-			// Ideja: uzmemo iz summarija prvi i poslednji, ako je manji od prvog ili veci od poslednjeg preskacemo sstabelu
-			// ako je dobro uzimamo tu sstabelu sa tog nivoa i prekidamo petlju, idemo na drugi nivo
-			// i tako smo postavili sstabele u iterate koje nam trebaju za scan
 		}
 	}
+	for k, v := range mapa {
+		fmt.Printf("\nKey %s - > %d - %d", k, v[0], v[1])
+	}
+	return &iterator.IteratorSSTable{PositionInSSTable: mapa, Prefix: prefix}
+}
+
+func GetBeginsEnds(sstableFile string, oneFile bool) []int64 {
+	beginsEnds := make([]int64, 2)
+	if oneFile {
+		file, err := os.OpenFile(sstableFile+"/SSTable.bin", os.O_RDONLY, 0666)
+		if err != nil {
+			return nil
+		}
+		defer file.Close()
+
+		start, end := SSTable.PositionInSSTable(*file, 5)
+		beginsEnds[0] = 0
+		beginsEnds[1] = end - start
+
+	} else {
+
+		fileInfo, err := os.Stat(sstableFile + "/Data.bin")
+		if err != nil {
+			panic(err)
+		}
+		beginsEnds[0] = 0
+		beginsEnds[1] = fileInfo.Size()
+
+	}
+	return beginsEnds
 }
