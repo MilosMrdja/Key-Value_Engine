@@ -10,7 +10,6 @@ import (
 	"sstable/lru"
 	"sstable/mem/memtable/btree/btreemem"
 	"sstable/mem/memtable/hash/hashmem"
-	"sstable/scanning"
 	"sstable/token_bucket"
 	"sstable/wal_implementation"
 	"strconv"
@@ -273,7 +272,8 @@ func main() {
 		fmt.Printf("Ne postoji podatak sa kljucem %s\n", key)
 	}
 
-	scanning.PrefixIterateSSTable("1", compress1, compress2, oneFile)
+	rec, _ := SSTable.GetRecord("DataSSTable/L1/sstable1", 0, compress1, compress2, oneFile)
+	fmt.Println(rec)
 	//fmt.Printf("Konacna: \n")
 	//SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
 	//SSTable.ReadIndex("DataSSTable/L1/sstable1/Summary.bin", compress1, compress2, 2, oneFile)

@@ -123,21 +123,22 @@ func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssItera
 			}
 		}
 	}
-	for k, v := range ssIterator.GetSSTableMap() {
+	for k, _ := range ssIterator.GetSSTableMap() {
 		for {
 			if ssIterator.GetSSTableMap()[k][0] == ssIterator.GetSSTableMap()[k][1] {
 				break
 			}
-			record, _ := SSTable.ReadData(k, compress1, compress2, ssIterator.GetSSTableMap()[k][0], ssIterator.GetSSTableMap()[k][1])
-			if !strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) && i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey() > memIterator.CurrPrefix() {
-				memIterator.MemTablePositions()[i] = i.GetMaxSize()
-				break
-			} else if strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) {
-				minMap[&i] = i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
-				break
-			} else {
-				memIterator.MemTablePositions()[i]++
-			}
+			record, _ := SSTable.GetRecord(k, ssIterator.GetSSTableMap()[k][0], compress1, compress2, oneFile)
+			fmt.Println(record)
+			//if !strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) && i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey() > memIterator.CurrPrefix() {
+			//	memIterator.MemTablePositions()[i] = i.GetMaxSize()
+			//	break
+			//} else if strings.HasPrefix(i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.CurrPrefix()) {
+			//	minMap[&i] = i.GetSortedDataTypes()[memIterator.MemTablePositions()[i]]
+			//	break
+			//} else {
+			//	memIterator.MemTablePositions()[i]++
+			//}
 		}
 	}
 
