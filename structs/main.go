@@ -217,6 +217,17 @@ func scantest() {
 	mapMem = make(map[*hashmem.Memtable]int)
 
 	j := 0
+
+	for i := 0; i < 5; i++ {
+		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
+		for k := 0; k < 14; k++ {
+			btm.AddElement(strconv.Itoa(k), []byte(strconv.Itoa(k)))
+
+		}
+		btm.SendToSSTable(compress1, compress2, oneFile, 2, 3)
+
+	}
+	j = 17
 	for i := 0; i < 5; i++ {
 		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
 		for k := 0; k < 10; k++ {
@@ -228,7 +239,7 @@ func scantest() {
 	}
 	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
 	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
-	scanning.PREFIX_SCAN_OUTPUT(prefix, 3, 5, iterMem, iterSSTable, compress1, compress2, oneFile)
+	scanning.PREFIX_SCAN_OUTPUT(prefix, 1, 10, iterMem, iterSSTable, compress1, compress2, oneFile)
 
 	for k, _ := range mapMem {
 		mapMem[k] = 0
@@ -254,7 +265,10 @@ func main() {
 			fmt.Println(err)
 		}
 		if i%100 == 0 && i != 0 {
-			wal.EndMemTable()
+			err := wal.EndMemTable()
+			if err != nil {
+				return
+			}
 		}
 	}
 	err := wal.DeleteMemTable()
