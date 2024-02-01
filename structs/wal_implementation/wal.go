@@ -9,6 +9,7 @@ import (
 	"sstable/SSTableStruct/SSTable"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/edsrzf/mmap-go"
 )
@@ -20,6 +21,7 @@ type WriteAheadLog struct {
 	currentWritePosition int
 	currentReadPosition  int
 	folderPath           string
+	segmentSize          int
 }
 
 type CustomError struct {
@@ -38,8 +40,11 @@ const (
 
 )
 
-func NewWriteAheadLog() *WriteAheadLog {
+func NewWriteAheadLog(SegmentSize int) *WriteAheadLog {
 	// Specify the folder path here
+	if SegmentSize < MAXSIZE {
+		SegmentSize = MAXSIZE
+	}
 	fp := fmt.Sprintf("wal_implementation%cwal", os.PathSeparator) // ako se promeni mora se i u funkciji goToNextReadFile split promeniti za promenljivu s
 	listOfSegments := make([]string, 0)
 	files, err := os.ReadDir(fp)
@@ -59,7 +64,7 @@ func NewWriteAheadLog() *WriteAheadLog {
 		filePath = fmt.Sprintf("%s%c%s%s.log", fp, os.PathSeparator, SEGMENTS_NAME, "00001")
 		listOfSegments = append(listOfSegments, fmt.Sprintf("%s%s.log", SEGMENTS_NAME, "00001"))
 		file, err = os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0777)
-		err = file.Truncate(MAXSIZE)
+		err = file.Truncate(int64(SegmentSize))
 		mmapf, _ := mmap.Map(file, mmap.RDWR, 0)
 		defer func(mmapf *mmap.MMap) {
 			err := mmapf.Unmap()
@@ -98,11 +103,21 @@ func NewWriteAheadLog() *WriteAheadLog {
 		currentWritePosition: writingPosition,
 		currentReadPosition:  0,
 		folderPath:           fp,
+		segmentSize:          SegmentSize,
 	}
 }
 
-func (wal *WriteAheadLog) Log(key string, value []byte, tombstone bool) error {
-	record := NewLogRecord(key, value, tombstone)
+func (wal *WriteAheadLog) Log(key string, value []byte, tombstone bool, timestamp time.Time) error {
+	record := NewLogRecord(key, value, tombstone, timestamp)
+	err := wal.DirectLog(record)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (wal *WriteAheadLog) LogDelete(key string, timestamp time.Time) error {
+	record := NewLogRecord(key, []byte(""), true, timestamp)
 	err := wal.DirectLog(record)
 	if err != nil {
 		return err
@@ -150,7 +165,7 @@ func (wal *WriteAheadLog) clearLog() error {
 	if err != nil {
 		return err
 	}
-	err = wal.openedFileWrite.Truncate(MAXSIZE)
+	err = wal.openedFileWrite.Truncate(int64(wal.segmentSize))
 	wal.currentWritePosition = 0
 	if err != nil {
 		return err
@@ -260,8 +275,8 @@ func (wal *WriteAheadLog) readOverflow() []byte {
 
 		}
 	}(&mmapf)
-	data := make([]byte, MAXSIZE-wal.currentReadPosition)
-	copy(data, mmapf[wal.currentReadPosition:MAXSIZE])
+	data := make([]byte, wal.segmentSize-wal.currentReadPosition)
+	copy(data, mmapf[wal.currentReadPosition:wal.segmentSize])
 	for true {
 		err := wal.goToNextReadFile()
 		if err != nil {
@@ -284,7 +299,7 @@ func (wal *WriteAheadLog) readOverflow() []byte {
 		newBuffer := make([]byte, wal.currentReadPosition-HEADER_SIZE)
 		copy(newBuffer, mmapf[HEADER_SIZE:wal.currentReadPosition])
 		data = append(data, newBuffer...)
-		if wal.currentReadPosition < MAXSIZE {
+		if wal.currentReadPosition < wal.segmentSize {
 			break
 		}
 
@@ -321,7 +336,7 @@ func (wal *WriteAheadLog) ReadRecord() (*LogRecord, error) {
 	}
 	endIndex := 37
 	buffer = make([]byte, 0)
-	if endIndex+wal.currentReadPosition > MAXSIZE {
+	if endIndex+wal.currentReadPosition > wal.segmentSize {
 		buffer = append(buffer, wal.readOverflow()...)
 	} else {
 		newBuffer := make([]byte, 37)
@@ -330,7 +345,7 @@ func (wal *WriteAheadLog) ReadRecord() (*LogRecord, error) {
 		wal.currentReadPosition += endIndex
 		kSize := binary.BigEndian.Uint64(buffer[21:29])
 		vSize := binary.BigEndian.Uint64(buffer[29:37])
-		if uint64(wal.currentReadPosition)+kSize+vSize > MAXSIZE {
+		if uint64(wal.currentReadPosition)+kSize+vSize > uint64(wal.segmentSize) {
 			buffer = append(buffer, wal.readOverflow()...)
 		} else {
 			newBuffer := make([]byte, kSize+vSize)
@@ -369,8 +384,8 @@ func (r *LogRecord) AppendToFile(wal *WriteAheadLog) error {
 		wal.currentWritePosition = HEADER_SIZE
 	}
 	dataLen := len(data)
-	if dataLen+wal.currentWritePosition > MAXSIZE {
-		dataLen = MAXSIZE - wal.currentWritePosition
+	if dataLen+wal.currentWritePosition > wal.segmentSize {
+		dataLen = wal.segmentSize - wal.currentWritePosition
 	}
 	copy(mmapf[wal.currentWritePosition:wal.currentWritePosition+dataLen], data[:dataLen])
 	wal.currentWritePosition += dataLen
@@ -391,8 +406,8 @@ func (r *LogRecord) AppendToFile(wal *WriteAheadLog) error {
 		wal.currentWritePosition = HEADER_SIZE
 		var dataLen int
 		dataLen = len(data)
-		if dataLen+wal.currentWritePosition > MAXSIZE {
-			dataLen = MAXSIZE - wal.currentWritePosition
+		if dataLen+wal.currentWritePosition > wal.segmentSize {
+			dataLen = wal.segmentSize - wal.currentWritePosition
 		}
 		mmapf, err = mmap.Map(wal.openedFileWrite, mmap.RDWR, 0)
 		byteArray := make([]byte, HEADER_SIZE/2)
@@ -533,12 +548,12 @@ func (wal *WriteAheadLog) EndMemTable() error {
 func main() {
 	// Example usage
 
-	wal := NewWriteAheadLog()
+	wal := NewWriteAheadLog(1000)
 	for i := 0; i < 10; i++ {
 		key := "kljucnestone" + strconv.Itoa(i)
 		value_string := "vrednostneka" + strconv.Itoa(i)
 		value := []byte(value_string)
-		wal.Log(key, value, false)
+		wal.Log(key, value, false, time.Now())
 	}
 	err := wal.DeleteSegmentsTilWatermark(5)
 	if err != nil {

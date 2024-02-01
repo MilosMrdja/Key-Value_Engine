@@ -59,12 +59,12 @@ func (r *LogRecord) ToBinary() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func NewLogRecord(key string, value []byte, tombstone bool) *LogRecord {
+func NewLogRecord(key string, value []byte, tombstone bool, timestamp time.Time) *LogRecord {
 	t := byte(0)
 	if tombstone {
 		t = 1
 	}
-	currentTime := time.Now()
+	currentTime := timestamp
 	currentTimeBytes := make([]byte, 16)
 
 	// Serialize the current time into the byte slice

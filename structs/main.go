@@ -6,15 +6,12 @@ import (
 	"log"
 	"os"
 	"sstable/LSM"
-	"sstable/SSTableStruct/SSTable"
-	"sstable/iterator"
 	"sstable/lru"
 	"sstable/mem/memtable/hash/hashmem"
-	"sstable/mem/memtable/hash/hashstruct"
-	"sstable/scanning"
 	"sstable/token_bucket"
 	"sstable/wal_implementation"
 	"strconv"
+	"time"
 )
 
 var compress1 bool
@@ -91,7 +88,8 @@ func GET(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashme
 func PUT(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashmem.Memtable, key string, value []byte) {
 
 	//Prvo u WAL
-	err := wal.Log(key, value, false)
+	timestamp := time.Now()
+	err := wal.Log(key, value, false, timestamp)
 	if err != nil {
 		panic(err)
 	}
@@ -111,8 +109,8 @@ func PUT(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashme
 
 func DELETE(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashmem.Memtable, key string) {
 	//Ukoliko je unos DELETE
-
-	err := wal.Log(key, []byte(""), true)
+	timestamp := time.Now()
+	err := wal.LogDelete(key, timestamp)
 	if err != nil {
 		panic(err)
 	}
@@ -211,7 +209,38 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashme
 }
 
 func main() {
-	//setConst()
+	setConst()
+	wal := wal_implementation.NewWriteAheadLog(walSegmentSize)
+	for i := 0; i < 1000; i++ {
+		key := "kljuc" + strconv.Itoa(i)
+		value_string := "vrednost" + strconv.Itoa(i)
+		value := []byte(value_string)
+		err := wal.Log(key, value, false, time.Now())
+		if err != nil {
+			fmt.Println(err)
+		}
+		if i%100 == 0 && i != 0 {
+			wal.EndMemTable()
+		}
+	}
+	err := wal.DeleteMemTable()
+	if err != nil {
+		fmt.Println(err)
+	}
+	err = wal.DeleteMemTable()
+	if err != nil {
+		fmt.Println(err)
+	}
+	//wal.DeleteSegmentsTilWatermark()
+	records, err := wal.ReadAllRecords()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(len(records))
+	for _, rec := range records {
+		fmt.Println(rec)
+	}
+
 	//wal := wal_implementation.NewWriteAheadLog()
 	//rate = 3
 	//maxToken = 10
@@ -263,36 +292,36 @@ func main() {
 	//	fmt.Println(rec)
 	//}
 
-	compress1 := true
-	compress2 := true
-	oneFile := true
-	N := 1
-	M := 1
-	memTableCap := 10
-
-	m := 10
-	var mapMem map[*hashmem.Memtable]int
-	prefix := "1"
-	mapMem = make(map[*hashmem.Memtable]int)
-
-	for i := 0; i < 2; i++ {
-		btmem := hashmem.Memtable(hashstruct.CreateHashMemtable(m))
-
-		for j := 0; j < 10; j++ {
-			btmem.AddElement(strconv.Itoa(j+10), []byte(strconv.Itoa(j)))
-		}
-		mapMem[&btmem] = 0
-		btmem.DeleteElement(strconv.Itoa(15))
-		btmem.SendToSSTable(compress1, compress2, oneFile, N, M)
-		//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 2, oneFile)
-		//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 3, oneFile)
-		LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap, "level")
-
-	}
-
-	LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap, "level")
-	fmt.Printf("Konacna: \n")
-	SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
+	//compress1 := true
+	//compress2 := true
+	//oneFile := true
+	//N := 1
+	//M := 1
+	//memTableCap := 10
+	//
+	//m := 10
+	//var mapMem map[*hashmem.Memtable]int
+	//prefix := "1"
+	//mapMem = make(map[*hashmem.Memtable]int)
+	//
+	//for i := 0; i < 2; i++ {
+	//	btmem := hashmem.Memtable(hashstruct.CreateHashMemtable(m))
+	//
+	//	for j := 0; j < 10; j++ {
+	//		btmem.AddElement(strconv.Itoa(j+10), []byte(strconv.Itoa(j)))
+	//	}
+	//	mapMem[&btmem] = 0
+	//	btmem.DeleteElement(strconv.Itoa(15))
+	//	btmem.SendToSSTable(compress1, compress2, oneFile, N, M)
+	//	//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 2, oneFile)
+	//	//SSTable.ReadIndex("DataSSTable/L0/sstable"+strconv.Itoa(i+1), compress1, compress2, 3, oneFile)
+	//	LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap, "level")
+	//
+	//}
+	//
+	//LSM.CompactSstable(10, compress1, compress2, oneFile, N, M, memTableCap, "level")
+	//fmt.Printf("Konacna: \n")
+	//SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)
 	//SSTable.ReadIndex("DataSSTable/L1/sstable1/Summary.bin", compress1, compress2, 2, oneFile)
 	//SSTable.ReadIndex("DataSSTable/L1/sstable1", compress1, compress2, 3, oneFile)
 	//key := "9"
@@ -309,21 +338,21 @@ func main() {
 	//}
 	//Ne brisi, iter test
 
-	btm := hashmem.Memtable(hashstruct.CreateHashMemtable(m))
-	for j := 0; j < 10; j++ {
-		btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)))
-	}
-	mapMem[&btm] = 0
-	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
-	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
-	dataType := scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
-	fmt.Println(dataType)
-	dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
-	fmt.Println(dataType)
-	dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
-	fmt.Println(dataType)
-	dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
-	fmt.Println(dataType)
+	//btm := hashmem.Memtable(hashstruct.CreateHashMemtable(m))
+	//for j := 0; j < 10; j++ {
+	//	btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)))
+	//}
+	//mapMem[&btm] = 0
+	//iterMem := iterator.NewPrefixIterator(mapMem, prefix)
+	//iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
+	//dataType := scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	//fmt.Println(dataType)
+	//dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	//fmt.Println(dataType)
+	//dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	//fmt.Println(dataType)
+	//dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
+	//fmt.Println(dataType)
 	//kraj
 	//fmt.Printf("Konacna: \n")
 	//SSTable.ReadSSTable("DataSSTable/L1/sstable1", compress1, compress2, oneFile)

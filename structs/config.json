@@ -7,7 +7,7 @@
 "M": 4,
 "memTableCap": 10,
 "memType": "btree",
-"walSegmentSize": 100
+"walSegmentSize": 2000
 }
 
 
