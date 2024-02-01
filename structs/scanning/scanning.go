@@ -1,11 +1,24 @@
 package scanning
 
 import (
+	"fmt"
 	"sstable/iterator"
 	"sstable/mem/memtable/datatype"
 )
 
 // Function to perform PREFIX_SCAN
+func PREFIX_SCAN_OUTPUT(prefix string, pageNumber int, pageSize int, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, compress1 bool, compress2 bool, oneFile bool) {
+	page := PREFIX_SCAN(prefix, pageNumber, pageSize, memIterator, ssIterator, compress1, compress2, oneFile)
+	for _, d := range page {
+		fmt.Printf("Key: %s, Value: %s", d.GetKey(), d.GetData())
+	}
+}
+func RANGE_SCAN_OUTPUT(valrange [2]string, pageNumber int, pageSize int, memIterator *iterator.RangeIterator, ssIterator *iterator.IteratorRangeSSTable, compress1 bool, compress2 bool, oneFile bool) {
+	page := RANGE_SCAN(valrange, pageNumber, pageSize, memIterator, ssIterator, compress1, compress2, oneFile)
+	for _, d := range page {
+		fmt.Printf("Key: %s, Value: %s", d.GetKey(), d.GetData())
+	}
+}
 func PREFIX_SCAN(prefix string, pageNumber int, pageSize int, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, compress1 bool, compress2 bool, oneFile bool) []*datatype.DataType {
 	m := pageSize * (pageNumber - 1)
 	n := pageSize

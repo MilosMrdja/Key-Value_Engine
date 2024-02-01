@@ -222,12 +222,8 @@ func scantest() {
 	mapMem[&btm] = 0
 	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
 	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
-	dataType := scanning.PREFIX_SCAN(prefix, 2, 5, iterMem, iterSSTable, compress1, compress2, oneFile)
-	for _, d := range dataType {
-		fmt.Print(d.GetKey())
-		fmt.Println(d.GetData())
+	scanning.PREFIX_SCAN_OUTPUT(prefix, 2, 5, iterMem, iterSSTable, compress1, compress2, oneFile)
 
-	}
 }
 
 func main() {
