@@ -443,3 +443,34 @@ func DeserializationHashMap(fileName string) (*map[string]int32, error) {
 
 	return &mapa, nil
 }
+
+func DeserializeTuples(filename string) ([]Tuple, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var tuples []Tuple
+
+	for {
+		var xLen uint32
+		if err := binary.Read(file, binary.BigEndian, &xLen); err != nil {
+			break // Assuming EOF reached
+		}
+
+		xBytes := make([]byte, xLen)
+		if _, err := file.Read(xBytes); err != nil {
+			return nil, err
+		}
+
+		var y int32
+		if err := binary.Read(file, binary.BigEndian, &y); err != nil {
+			return nil, err
+		}
+
+		tuples = append(tuples, Tuple{X: string(xBytes), Y: y})
+	}
+
+	return tuples, nil
+}
