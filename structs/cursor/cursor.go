@@ -2,7 +2,6 @@ package cursor
 
 import (
 	"encoding/binary"
-	"errors"
 	"sstable/LSM"
 	"sstable/lru"
 	"sstable/mem/memtable/btree/btreemem"
@@ -12,14 +11,6 @@ import (
 	"sstable/wal_implementation"
 	"time"
 )
-
-type CustomError struct {
-	message string
-}
-
-func (e CustomError) Error() string {
-	return e.message
-}
 
 type Cursor struct {
 	memPointers []hashmem.Memtable //lista pokazivaca na memtabele
@@ -210,15 +201,12 @@ func (c *Cursor) DeleteElement(key string, time time.Time) bool {
 func (c *Cursor) Fill(wal *wal_implementation.WriteAheadLog) {
 	for true {
 		rec, err := wal.ReadRecord()
-		if err != nil {
-			if errors.Is(err, CustomError{"NO MORE RECORDS"}) {
-				break
-			}
-			if rec == nil {
+		if err != "" {
+			if err == "NO MORE RECORDS" {
 				break
 			}
 		}
-		if !errors.Is(err, CustomError{"CRC FAILED!"}) {
+		if err != "CRC FAILED!" {
 			nano := int64(binary.BigEndian.Uint64(rec.Timestamp[8:]))
 			timestamp := time.Unix(nano, 0)
 			c.AddToMemtable(rec.Key, rec.Value, timestamp, wal)

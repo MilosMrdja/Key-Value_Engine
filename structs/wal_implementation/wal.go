@@ -2,7 +2,6 @@ package wal_implementation
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -307,10 +306,10 @@ func (wal *WriteAheadLog) readOverflow() []byte {
 	return data
 }
 
-func (wal *WriteAheadLog) ReadRecord() (*LogRecord, error) {
+func (wal *WriteAheadLog) ReadRecord() (*LogRecord, string) {
 	mmapf, err := mmap.Map(wal.openedFileRead, mmap.RDONLY, 0)
 	if err != nil {
-		return nil, err
+		return nil, ""
 	}
 	defer func(mmapf *mmap.MMap) {
 		err := mmapf.Unmap()
@@ -323,9 +322,9 @@ func (wal *WriteAheadLog) ReadRecord() (*LogRecord, error) {
 	isLastFile := int(binary.LittleEndian.Uint32(buffer))
 	firstFile := fmt.Sprintf("%s%c%s%s.log", wal.folderPath, os.PathSeparator, SEGMENTS_NAME, "00001")
 	if isLastFile != 0 && isLastFile == wal.currentReadPosition {
-		return nil, CustomError{"NO MORE RECORDS"}
+		return nil, "NO MORE RECORDS"
 	} else if isLastFile == 0 && isLastFile == wal.currentReadPosition && wal.currentWritePosition == 0 && wal.openedFileRead.Name() == firstFile {
-		return nil, CustomError{"NO MORE RECORDS"}
+		return nil, "NO MORE RECORDS"
 	}
 
 	if wal.currentReadPosition == 0 {
@@ -364,10 +363,10 @@ func (wal *WriteAheadLog) ReadRecord() (*LogRecord, error) {
 	r.Value = buffer[37+r.KeySize : 37+r.KeySize+r.ValueSize]
 	expectedCRC := CRC32(buffer[4:])
 	if expectedCRC == r.CRC {
-		return &r, nil
+		return &r, ""
 	}
 
-	return nil, CustomError{"CRC FAILED!"}
+	return nil, "CRC FAILED!"
 }
 
 func (r *LogRecord) AppendToFile(wal *WriteAheadLog) error {
@@ -437,12 +436,12 @@ func (wal *WriteAheadLog) ReadAllRecords() ([]*LogRecord, error) {
 	records := make([]*LogRecord, 0)
 	for true {
 		rec, err := wal.ReadRecord()
-		if err != nil {
-			if errors.Is(err, CustomError{"NO MORE RECORDS"}) {
+		if err != "" {
+			if err == "NO MORE RECORDS" {
 				break
 			}
 		}
-		if !errors.Is(err, CustomError{"CRC FAILED!"}) {
+		if err != "CRC FAILED!" {
 			records = append(records, rec)
 		}
 	}
