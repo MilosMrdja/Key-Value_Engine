@@ -5,6 +5,7 @@ import (
 	"sstable/SSTableStruct/SSTable"
 	"sstable/mem/memtable/btree/btree"
 	"sstable/mem/memtable/datatype"
+	"time"
 )
 
 type BTreeMemtable struct {
@@ -54,27 +55,27 @@ func NewBTreeMemtable(capacity int) *BTreeMemtable {
 	}
 }
 
-func (btmem *BTreeMemtable) AddElement(key string, data []byte) bool {
+func (btmem *BTreeMemtable) UpdateElement(key string, data []byte, time time.Time) {
+	btmem.data.Update(key, data, time)
+}
 
-	//provera da li element sa tim kljucem vec postoji
-	_, found := btmem.data.Search(key)
-	if found == false {
-		//ukoliko ima mesta u memtable, samo se upisuje podatak
-		if btmem.length < btmem.capacity {
-			e := datatype.CreateDataType(key, data)
-			btmem.data.Insert(e)
-			btmem.length++
-			return true
+func (btmem *BTreeMemtable) AddElement(key string, data []byte, time time.Time) bool {
 
-			//ako je popunjen, postavlja se na read only
-		} else if btmem.length == btmem.capacity {
-			btmem.readOnly = true
-			return false
-		}
+	//ukoliko ima mesta u memtable, samo se upisuje podatak
+	if btmem.length < btmem.capacity {
+		e := datatype.CreateDataType(key, data, time)
+		btmem.data.Insert(e)
+		btmem.length++
+
+		//ako je popunjen, postavlja se na read only
 	}
-	// ukoliko podatak sa tim kljucem postoji azuriramo podatak
-	btmem.data.Update(key, data)
-	return true
+	if btmem.length == btmem.capacity {
+		btmem.readOnly = true
+	}
+	if btmem.IsReadOnly() {
+		return true
+	}
+	return false
 }
 
 func (btmem *BTreeMemtable) GetElement(key string) (bool, []byte) {
@@ -87,8 +88,8 @@ func (btmem *BTreeMemtable) GetElement(key string) (bool, []byte) {
 func (btmem *BTreeMemtable) GetMaxSize() int {
 	return btmem.length
 }
-func (btmem *BTreeMemtable) DeleteElement(key string) bool {
-	found := btmem.data.Delete(key)
+func (btmem *BTreeMemtable) DeleteElement(key string, time time.Time) bool {
+	found := btmem.data.Delete(key, time)
 	return found
 }
 func (btmem *BTreeMemtable) GetSortedDataTypes() []datatype.DataType {
@@ -104,9 +105,11 @@ func (btmem *BTreeMemtable) SortDataTypes() []datatype.DataType {
 func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool {
 
 	dataList := btmem.SortDataTypes()
+
 	newSstableName, _ := LSM.FindNextDestination(0)
 	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
+
 	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
 	btmem.readOnly = false

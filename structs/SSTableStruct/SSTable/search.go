@@ -93,7 +93,7 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 }
 
 func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, key string, oneFile bool, hashMap *map[string]int32) (datatype.DataType, bool) {
-	Data := datatype.CreateDataType("", []byte(""))
+	Data := datatype.CreateDataType("", []byte(""), time.Now())
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
 		return *Data, false
@@ -141,7 +141,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 	currentKey = ""
 	var currentData []byte
 	currentData = []byte("")
-	data := datatype.CreateDataType(currentKey, currentData)
+	data := datatype.CreateDataType(currentKey, currentData, timestamp)
 	for offsetStart <= offsetEnd {
 		//read CRC
 		bytes := make([]byte, 4)

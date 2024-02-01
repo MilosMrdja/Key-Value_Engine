@@ -1,23 +1,59 @@
 package cursor
 
 import (
+	"sstable/LSM"
 	"sstable/lru"
+	"sstable/mem/memtable/btree/btreemem"
 	"sstable/mem/memtable/hash/hashmem"
+	"sstable/mem/memtable/hash/hashstruct"
+	"sstable/mem/memtable/skiplist/skiplistmem"
+	"sstable/wal_implementation"
+	"time"
 )
 
 type Cursor struct {
-	memPointers []hashmem.Memtable
-	maxMem      int
-	memIndex    int
-	lruPointer  *lru.LRUCache
+	memPointers []hashmem.Memtable //lista pokazivaca na memtabele
+	maxMem      int                // maksimalan Broj memtabela
+	memIndex    int                // broj metabele koja je trenutno aktivna
+	lruPointer  *lru.LRUCache      // pokazivac na kes
 
-	compress1 bool
-	compress2 bool
-	oneFile   bool
-	N         int
-	M         int
-	numTables int
-	memCap    int
+	compress1 bool   // da li je ukljucena kompresija duzine
+	compress2 bool   // da li je ukljucena kompresija sa recnikom
+	oneFile   bool   // da li se SSTable cuva u jednom fajlu
+	N         int    // razudjenost Index-a
+	M         int    // razudjenost Summary-ja
+	numTables int    // broj SSTabela na nivou
+	memCap    int    //kapacitet memtabele
+	compType  string //koja kompakcija se koristi
+}
+
+func NewCursor(memType string, maxMem int, lruPointer *lru.LRUCache, compress1 bool, compress2 bool, oneFile bool, n int, m int, numTables int, memCap int, compType string) *Cursor {
+	memPointers := make([]hashmem.Memtable, maxMem)
+	for i := 0; i < maxMem; i++ {
+		if memType == "hash" {
+			memPointers[i] = hashstruct.CreateHashMemtable(memCap)
+		} else if memType == "skupl" {
+			memPointers[i] = skiplistmem.CreateSkipListMemtable(memCap)
+		} else {
+			memPointers[i] = btreemem.NewBTreeMemtable(memCap)
+		}
+
+	}
+
+	return &Cursor{
+		memPointers: memPointers,
+		maxMem:      maxMem,
+		memIndex:    0,
+		lruPointer:  lruPointer,
+		compress1:   compress1,
+		compress2:   compress2,
+		oneFile:     oneFile,
+		N:           n,
+		M:           m,
+		numTables:   numTables,
+		memCap:      memCap,
+		compType:    compType,
+	}
 }
 
 func (c *Cursor) Compress1() bool {
@@ -76,15 +112,87 @@ func (c *Cursor) SetLruPointer(lruPointer *lru.LRUCache) {
 	c.lruPointer = lruPointer
 }
 
-func (c *Cursor) AddToMemtable(key string, value []byte) bool {
+func (c *Cursor) AddToMemtable(key string, value []byte, time time.Time, wal *wal_implementation.WriteAheadLog) bool {
+	var full bool
+	full = false
 
-	if c.memPointers[c.memIndex].IsReadOnly() {
-		c.memIndex = (c.memIndex + 1) % len(c.memPointers)
+	j, find := c.findElement(key)
+	if !find {
+		if c.memPointers[c.memIndex].IsReadOnly() {
+			c.memIndex = (c.memIndex + 1) % len(c.memPointers)
+			if c.memPointers[c.memIndex].IsReadOnly() {
+				c.memIndex = (c.memIndex - 1 + c.maxMem) % c.maxMem
+				c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M)
+				LSM.CompactSstable(c.numTables, c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap, c.compType)
+				//Salje se signal u WAL da je memtable upisana na disk
+				err := wal.DeleteMemTable()
+				if err != nil {
+					return false
+				}
+				full = c.memPointers[c.memIndex].AddElement(key, value, time)
+
+			}
+		} else {
+			full = c.memPointers[c.memIndex].AddElement(key, value, time)
+		}
+
+	} else {
+		c.memPointers[j].UpdateElement(key, value, time)
 	}
-	if c.memPointers[c.memIndex].IsReadOnly() {
-		c.memIndex = (c.memIndex - 1 + len(c.memPointers)) % len(c.memPointers)
-		c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M)
-		//LSM.CompactSstable(c.numTables, c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap)
+
+	//ako se memtable popunio salje se signal u WAL
+	if full {
+		c.memIndex = (c.memIndex + 1) % c.maxMem
+		err := wal.EndMemTable()
+		if err != nil {
+			return false
+		}
 	}
+
 	return true
+}
+
+func (c *Cursor) findElement(key string) (int, bool) {
+
+	var find bool
+
+	find = false
+	j := c.memIndex
+	for true {
+		find, _ = c.memPointers[j].GetElement(key)
+		if find {
+			break
+		}
+		j = (j - 1 + c.maxMem) % c.maxMem
+		if j == c.memIndex {
+			break
+		}
+
+	}
+
+	return j, find
+}
+
+func (c *Cursor) GetElement(key string) ([]byte, bool) {
+
+	var value []byte
+
+	j, find := c.findElement(key)
+
+	if find {
+		_, value = c.memPointers[j].GetElement(key)
+	}
+
+	return value, find
+}
+
+func (c *Cursor) DeleteElement(key string, time time.Time) bool {
+	j, find := c.findElement(key)
+
+	if find {
+		c.memPointers[j].DeleteElement(key, time)
+		return true
+	}
+	return false
+
 }

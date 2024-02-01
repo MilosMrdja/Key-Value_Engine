@@ -248,7 +248,9 @@ func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFil
 		}
 
 	}
-	dataType := datatype.CreateDataType(KEY, []byte(VALUE))
+
+	dataType := datatype.CreateDataType(KEY, []byte(VALUE), TIME)
+
 	dataType.SetChangeTime(TIME)
 	dataType.SetDelete(DELETE)
 	return *dataType, uint32(currentRead)

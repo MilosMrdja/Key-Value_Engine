@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"sstable/mem/memtable/datatype"
 	"strings"
+	"time"
 )
 
 type SkiplistNode struct {
@@ -17,10 +18,10 @@ func isInRange(value string, valRange []string) bool {
 	return value >= valRange[0] && value <= valRange[1]
 }
 
-func CreateSkiplistNode(key string, data []byte, level int) *SkiplistNode {
+func CreateSkiplistNode(data *datatype.DataType, level int) *SkiplistNode {
 	return &SkiplistNode{
-		key:  key,
-		data: datatype.CreateDataType(key, data),
+		key:  data.GetKey(),
+		data: data,
 		next: make([]*SkiplistNode, level+1),
 	}
 }
@@ -33,14 +34,14 @@ type SkipList struct {
 
 func CreateSkipList(maxLevel int) *SkipList {
 	return &SkipList{
-		head:     CreateSkiplistNode("", nil, 0),
+		head:     CreateSkiplistNode(datatype.CreateDataType("", []byte(""), time.Now()), 0),
 		level:    0,
 		maxLevel: maxLevel,
 	}
 }
 
-func (sl *SkipList) Insert(key string, data []byte) bool {
-	found, elem := sl.GetElement(key)
+func (sl *SkipList) Insert(data *datatype.DataType) bool {
+	found, elem := sl.GetElement(data.GetKey())
 	if found == false {
 		newLevel := 0
 
@@ -58,7 +59,7 @@ func (sl *SkipList) Insert(key string, data []byte) bool {
 
 		for i := sl.level; i >= 0; i-- {
 
-			for current.next[i] != nil && current.next[i].key < key {
+			for current.next[i] != nil && current.next[i].key < data.GetKey() {
 				current = current.next[i]
 			}
 
@@ -67,8 +68,8 @@ func (sl *SkipList) Insert(key string, data []byte) bool {
 
 		current = current.next[0]
 
-		if current == nil || current.key != key {
-			newNode := CreateSkiplistNode(key, data, sl.level)
+		if current == nil || current.key != data.GetKey() {
+			newNode := CreateSkiplistNode(data, sl.level)
 
 			for i := 0; i <= newLevel; i++ {
 				newNode.next[i] = update[i].next[i]
@@ -79,12 +80,14 @@ func (sl *SkipList) Insert(key string, data []byte) bool {
 		} else {
 			return false
 		}
+	} else {
+		elem.UpdateDataType(data.GetData(), data.GetChangeTime())
 	}
-	elem.UpdateDataType(data)
+
 	return true
 }
 
-func (sl *SkipList) DeleteElement(key string) bool {
+func (sl *SkipList) DeleteElement(key string, time time.Time) bool {
 	current := sl.head
 	for i := sl.level; i >= 0; i-- {
 		for current.next[i] != nil && current.next[i].key < key {
@@ -95,7 +98,7 @@ func (sl *SkipList) DeleteElement(key string) bool {
 	current = current.next[0]
 
 	if current != nil && current.key == key {
-		current.data.DeleteDataType()
+		current.data.DeleteDataType(time)
 		return true
 	}
 	return false
@@ -112,7 +115,6 @@ func (sl *SkipList) GetElement(key string) (bool, *datatype.DataType) {
 	current = current.next[0]
 
 	if current != nil && current.key == key {
-		current.data.DeleteDataType()
 		return true, current.data
 	}
 	return false, nil

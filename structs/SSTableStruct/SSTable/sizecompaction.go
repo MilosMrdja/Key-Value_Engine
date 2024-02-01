@@ -184,7 +184,7 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, N, M,
 }
 func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64, oneFile bool, elem int) (datatype.DataType, int64, bool) {
 	var decodeMap *map[string]int32
-	Data := datatype.CreateDataType("", []byte(""))
+	Data := datatype.CreateDataType("", []byte(""), time.Now())
 	var size, sizeEnd int64
 	//var fileNameHash string
 

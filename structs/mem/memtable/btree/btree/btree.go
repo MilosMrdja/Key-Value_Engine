@@ -4,6 +4,7 @@ import (
 	"sstable/mem/memtable/btree/btreenode"
 	"sstable/mem/memtable/btree/myutils"
 	"sstable/mem/memtable/datatype"
+	"time"
 )
 
 type BTree struct {
@@ -19,11 +20,11 @@ func InsertInplace(array []*btreenode.BTreeNode, i int, element *btreenode.BTree
 	array[i] = element
 	return array
 }
-func (t *BTree) Delete(k string) bool {
+func (t *BTree) Delete(k string, time time.Time) bool {
 
 	output, _ := t.Search(k)
 	if output != nil {
-		output.DeleteDataType()
+		output.DeleteDataType(time)
 		return true
 	}
 
@@ -64,10 +65,10 @@ func (t *BTree) Search(k string) (*datatype.DataType, bool) {
 	return nil, false
 }
 
-func (t *BTree) Update(k string, data []byte) bool {
+func (t *BTree) Update(k string, data []byte, time time.Time) bool {
 	if t.Root != nil {
 		e := t.Root.Search(k)
-		e.UpdateDataType(data)
+		e.UpdateDataType(data, time)
 		return true
 	}
 	return false

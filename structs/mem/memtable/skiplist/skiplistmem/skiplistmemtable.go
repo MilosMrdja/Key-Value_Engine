@@ -5,6 +5,7 @@ import (
 	"sstable/SSTableStruct/SSTable"
 	"sstable/mem/memtable/datatype"
 	"sstable/mem/memtable/skiplist/skipliststruct"
+	"time"
 )
 
 type SkipListMemtable struct {
@@ -50,25 +51,31 @@ func (slmem *SkipListMemtable) SendToSSTable(compress1, compress2, oneFile bool,
 	slmem.readOnly = false
 	return true
 }
-func (slmem *SkipListMemtable) AddElement(key string, data []byte) bool {
-	found, elem := slmem.data.GetElement(key)
-	if found == false {
-		//ukoliko ima mesta u memtable, samo se upisuje podatak
-		if slmem.length < slmem.capacity {
-			if slmem.data.Insert(key, data) == true {
-				slmem.length++
-				return true
-			}
-			return false
 
-			//ako je popunjen, postavlja se na read only
-		} else if slmem.length == slmem.capacity {
-			slmem.readOnly = true
-			return false
+func (slmem *SkipListMemtable) UpdateElement(key string, data []byte, time time.Time) {
+	_, elem := slmem.data.GetElement(key)
+	elem.UpdateDataType(data, time)
+}
+
+func (slmem *SkipListMemtable) AddElement(key string, data []byte, time time.Time) bool {
+
+	//ukoliko ima mesta u memtable, samo se upisuje podatak
+	if slmem.length < slmem.capacity {
+		temp := datatype.CreateDataType(key, data, time)
+		if slmem.data.Insert(temp) == true {
+			slmem.length++
 		}
+
 	}
-	elem.UpdateDataType(data)
-	return true
+	//ako je popunjen, postavlja se na read only
+	if slmem.length == slmem.capacity {
+		slmem.readOnly = true
+	}
+	if slmem.IsReadOnly() {
+		return true
+	}
+	return false
+
 }
 func (slmem *SkipListMemtable) GetElement(key string) (bool, []byte) {
 	err, elem := slmem.data.GetElement(key)
@@ -78,8 +85,8 @@ func (slmem *SkipListMemtable) GetElement(key string) (bool, []byte) {
 	return false, nil
 }
 
-func (slmem *SkipListMemtable) DeleteElement(key string) bool {
-	if slmem.DeleteElement(key) == true {
+func (slmem *SkipListMemtable) DeleteElement(key string, time time.Time) bool {
+	if slmem.data.DeleteElement(key, time) == true {
 		slmem.length--
 		return true
 	}

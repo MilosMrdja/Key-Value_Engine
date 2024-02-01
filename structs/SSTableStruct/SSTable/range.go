@@ -93,7 +93,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 	currentKey = ""
 	var currentData []byte
 	currentData = []byte("")
-	data := datatype.CreateDataType(currentKey, currentData)
+	data := datatype.CreateDataType(currentKey, currentData, timestamp)
 	for offsetStart <= offsetEnd {
 		if *number == 0 {
 			return result, offsetStart, true
@@ -160,7 +160,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 					currentData = bytes
 				}
 				if isInRange(currentKey, valRange) && tomb == 0 {
-					data = datatype.CreateDataType(currentKey, currentData)
+					data = datatype.CreateDataType(currentKey, currentData, timestamp)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
 					*number--
@@ -209,7 +209,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 					currentData = buff
 				}
 				if isInRange(currentKey, valRange) && tomb == 0 {
-					data = datatype.CreateDataType(currentKey, currentData)
+					data = datatype.CreateDataType(currentKey, currentData, timestamp)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
 					*number--
@@ -256,7 +256,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 					currentData = bytes
 				}
 				if isInRange(currentKey, valRange) && tomb == 0 {
-					data = datatype.CreateDataType(currentKey, currentData)
+					data = datatype.CreateDataType(currentKey, currentData, timestamp)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
 					*number--
@@ -307,7 +307,7 @@ func ReadByRange(filePath string, compress1, compress2 bool, offsetStart, offset
 					currentData = bytes
 				}
 				if isInRange(currentKey, valRange) && tomb == 0 {
-					data = datatype.CreateDataType(currentKey, currentData)
+					data = datatype.CreateDataType(currentKey, currentData, timestamp)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
 					*number--

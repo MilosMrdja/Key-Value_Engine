@@ -41,23 +41,29 @@ func (dt *DataType) SetChangeTime(changeTime time.Time) {
 	dt.changeTime = changeTime
 }
 
-func CreateDataType(key string, data []byte) *DataType {
+func CreateDataType(key string, data []byte, time time.Time) *DataType {
+	var del bool
+	if string(data) == "" {
+		del = true
+	} else {
+		del = false
+	}
 	return &DataType{
 		key:        key,
 		data:       data,
-		delete:     false,
-		changeTime: time.Now(),
+		delete:     del,
+		changeTime: time,
 	}
 }
 
-func (dt *DataType) UpdateDataType(data []byte) {
+func (dt *DataType) UpdateDataType(data []byte, time time.Time) {
 	dt.data = data
-	dt.changeTime = time.Now()
+	dt.changeTime = time
 }
 
-func (dt *DataType) DeleteDataType() {
+func (dt *DataType) DeleteDataType(time time.Time) {
 	dt.delete = true
-	dt.changeTime = time.Now()
+	dt.changeTime = time
 }
 
 func (dt *DataType) IsDeleted() bool {

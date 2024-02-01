@@ -95,7 +95,7 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 	currentKey = ""
 	var currentData []byte
 	currentData = []byte("")
-	data := datatype.CreateDataType(currentKey, currentData)
+	data := datatype.CreateDataType(currentKey, currentData, time.Now())
 	for offsetStart <= offsetEnd {
 		if *number == 0 {
 			return result, offsetStart, true
@@ -162,7 +162,7 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 					currentData = bytes
 				}
 				if strings.HasPrefix(currentKey, prefix) && tomb == 0 {
-					data = datatype.CreateDataType(currentKey, currentData)
+					data = datatype.CreateDataType(currentKey, currentData, timestamp)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
 					*number--
@@ -210,7 +210,7 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 					currentData = buff
 				}
 				if strings.HasPrefix(currentKey, prefix) && tomb == 0 {
-					data = datatype.CreateDataType(currentKey, currentData)
+					data = datatype.CreateDataType(currentKey, currentData, timestamp)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
 					*number--
@@ -257,7 +257,7 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 					currentData = bytes
 				}
 				if strings.HasPrefix(currentKey, prefix) && tomb == 0 {
-					data = datatype.CreateDataType(currentKey, currentData)
+					data = datatype.CreateDataType(currentKey, currentData, timestamp)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
 					*number--
@@ -308,7 +308,7 @@ func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offse
 					currentData = bytes
 				}
 				if strings.HasPrefix(currentKey, prefix) && tomb == 0 {
-					data = datatype.CreateDataType(currentKey, currentData)
+					data = datatype.CreateDataType(currentKey, currentData, timestamp)
 					data.SetChangeTime(timestamp)
 					result = append(result, *data)
 					*number--

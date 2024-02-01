@@ -2,10 +2,6 @@ package lru
 
 import (
 	"container/list"
-	"fmt"
-	"gopkg.in/yaml.v2"
-	"log"
-	"os"
 	"sstable/mem/memtable/datatype"
 )
 
@@ -60,27 +56,27 @@ type Config struct {
 	LruCap int `yaml:"lru_cap"`
 }
 
-func mainn() {
-	var config Config
-	configData, err := os.ReadFile("config.yaml")
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = yaml.Unmarshal(configData, &config)
-	if err != nil {
-		log.Fatal(err)
-	}
-	lru := NewLRUCache(config.LruCap)
-	x1 := datatype.CreateDataType("kljuc1", []byte("vrednost1"))
-
-	lru.Put(x1)
-	lru.Put(datatype.CreateDataType("kljuc2", []byte("vrednost2")))
-	lru.Put(datatype.CreateDataType("kljuc3", []byte("vrednost3")))
-	lru.Put(datatype.CreateDataType("kljuc4", []byte("vrednost4")))
-	lru.Delete("kljuc3")
-	proba := lru.GetAll()
-	for e := proba.Front(); e != nil; e = e.Next() {
-		fmt.Println(e.Value.(*datatype.DataType).GetKey())
-	}
-	//fmt.Println(config.LruCap)
-}
+//func mainn() {
+//	var config Config
+//	configData, err := os.ReadFile("config.yaml")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	err = yaml.Unmarshal(configData, &config)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	lru := NewLRUCache(config.LruCap)
+//	x1 := datatype.CreateDataType("kljuc1", []byte("vrednost1"))
+//
+//	lru.Put(x1)
+//	lru.Put(datatype.CreateDataType("kljuc2", []byte("vrednost2")))
+//	lru.Put(datatype.CreateDataType("kljuc3", []byte("vrednost3")))
+//	lru.Put(datatype.CreateDataType("kljuc4", []byte("vrednost4")))
+//	lru.Delete("kljuc3")
+//	proba := lru.GetAll()
+//	for e := proba.Front(); e != nil; e = e.Next() {
+//		fmt.Println(e.Value.(*datatype.DataType).GetKey())
+//	}
+//	//fmt.Println(config.LruCap)
+//}

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sstable/LSM"
+	"sstable/cursor"
 	"sstable/iterator"
 	"sstable/lru"
 	"sstable/mem/memtable/hash/hashmem"
@@ -20,14 +21,14 @@ import (
 var compress1 bool
 var compress2 bool
 var oneFile bool
-var number int
+var number, lruCap int
 var N int
 var M int
-var memTableCap int
-var memType string
+var memTableCap, memTableNumber int
+var memType, compType string
 var walSegmentSize int
-var key, value string
 var rate, maxToken int64
+var key, value string
 
 type Config struct {
 	LruCap         int    `json:"lru_cap"`
@@ -37,9 +38,13 @@ type Config struct {
 	Number         int    `json:"numberOfSSTable"`
 	N              int    `json:"N"` // razudjenost u indexu
 	M              int    `json:"M"` // razudjenost u summary
+	MemTableNumber int    `json:"memTableNumber"`
 	MemTableCap    int    `json:"memTableCap"`
 	MemType        string `json:"memType"`
 	WalSegmentSize int    `json:"walSegmentSize"`
+	Rate           int64  `json:"rate"`
+	MaxToken       int64  `json:"maxToken"`
+	CompType       string `json:"compType"`
 }
 
 func setConst() {
@@ -54,21 +59,25 @@ func setConst() {
 		log.Fatal(err)
 	}
 	fmt.Println(config)
+	lruCap = config.LruCap
 	compress1 = config.Compress1
 	compress2 = config.Compress2
 	oneFile = config.OneFile
 	number = config.Number
 	N = config.N
 	M = config.M
+	memTableNumber = config.MemTableNumber
 	memTableCap = config.MemTableCap
 	memType = config.MemType
 	walSegmentSize = config.WalSegmentSize
+	rate = config.Rate
+	maxToken = config.MaxToken
+	compType = config.CompType
 
 }
-
-func GET(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashmem.Memtable, key string) {
+func GET(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor, key string) {
 	////ukoliko je GET
-	ok, value := (*mem1).GetElement(key)
+	value, ok := memtable.GetElement(key)
 	if ok {
 		fmt.Printf("Value: %s\n", value)
 	}
@@ -88,7 +97,7 @@ func GET(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashme
 }
 
 // Ukoliko je unos PUT
-func PUT(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashmem.Memtable, key string, value []byte) {
+func PUT(wal *wal_implementation.WriteAheadLog, memtable *cursor.Cursor, key string, value []byte) {
 
 	//Prvo u WAL
 	timestamp := time.Now()
@@ -98,37 +107,33 @@ func PUT(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashme
 	}
 	//Drugo u mem
 
-	if (*mem1).IsReadOnly() {
-		(*mem1).SendToSSTable(compress1, compress2, oneFile, N, M)
-	}
-	//LSM.CompactSstable(number, compress1, compress2, oneFile)
-
-	ok := (*mem1).AddElement(key, value)
+	ok := memtable.AddToMemtable(key, value, timestamp, wal)
 	if !ok {
 		panic("Greska")
 	}
 	// kada je put ne ide u LRU
 }
 
-func DELETE(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem1 *hashmem.Memtable, key string) {
+func DELETE(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor, key string) {
 	//Ukoliko je unos DELETE
 	timestamp := time.Now()
 	err := wal.LogDelete(key, timestamp)
 	if err != nil {
 		panic(err)
 	}
-
-	ok := (*mem1).DeleteElement(key)
+	ok := memtable.DeleteElement(key, timestamp)
 	if ok {
-		fmt.Printf("Obrisan iz mem1")
+		fmt.Printf("Obrisan")
 	} else {
-		fmt.Printf("Nije u mem1")
+		//zapis se dodaje u memtable kao nov sa detele na true
+		ok = memtable.AddToMemtable(key, []byte(""), timestamp, wal)
+		fmt.Printf("Obrisan ")
 	}
 
 	lru1.Delete(key)
 }
 
-func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashmem.Memtable, tokenb *token_bucket.TokenBucket) {
+func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor, tokenb *token_bucket.TokenBucket) {
 	for true {
 		var opcija string
 		fmt.Println("Key-Value Engine")
@@ -159,7 +164,7 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashme
 				fmt.Println("Error:", err)
 				return
 			}
-			PUT(wal, lru1, mem, key, []byte(value))
+			PUT(wal, memtable, key, []byte(value))
 		} else if opcija == "2" {
 			fmt.Printf("Unesite key : ")
 			_, err := fmt.Scan(&key)
@@ -167,7 +172,7 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashme
 				fmt.Println("Error:", err)
 				return
 			}
-			DELETE(wal, lru1, mem, key)
+			DELETE(wal, lru1, memtable, key)
 		} else if opcija == "3" {
 			fmt.Printf("Unesite key : ")
 			_, err := fmt.Scan(&key)
@@ -175,7 +180,7 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashme
 				fmt.Println("Error:", err)
 				return
 			}
-			GET(wal, lru1, mem, key)
+			GET(wal, lru1, memtable, key)
 		} else if opcija == "4" {
 			for true {
 				fmt.Println("\n1. Range scan\n2. Prefix Scan\n3. Range iterate\n4. Prefix iterate\n")
@@ -221,7 +226,7 @@ func scantest() {
 	for i := 0; i < 5; i++ {
 		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(15))
 		for k := 0; k < 14; k++ {
-			btm.AddElement(strconv.Itoa(k), []byte(strconv.Itoa(k)))
+			btm.AddElement(strconv.Itoa(k), []byte(strconv.Itoa(k)), time.Now())
 
 		}
 		btm.SendToSSTable(compress1, compress2, oneFile, 2, 3)
@@ -231,7 +236,7 @@ func scantest() {
 	for i := 0; i < 5; i++ {
 		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
 		for k := 0; k < 10; k++ {
-			btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)))
+			btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)), time.Now())
 			j++
 		}
 
@@ -254,40 +259,49 @@ func scantest() {
 
 func main() {
 	setConst()
-	scantest()
+
+	//kreiranje potrebnih instanci
 	wal := wal_implementation.NewWriteAheadLog(walSegmentSize)
-	for i := 0; i < 1000; i++ {
-		key := "kljuc" + strconv.Itoa(i)
-		value_string := "vrednost" + strconv.Itoa(i)
-		value := []byte(value_string)
-		err := wal.Log(key, value, false, time.Now())
-		if err != nil {
-			fmt.Println(err)
-		}
-		if i%100 == 0 && i != 0 {
-			err := wal.EndMemTable()
-			if err != nil {
-				return
-			}
-		}
-	}
-	err := wal.DeleteMemTable()
-	if err != nil {
-		fmt.Println(err)
-	}
-	err = wal.DeleteMemTable()
-	if err != nil {
-		fmt.Println(err)
-	}
-	//wal.DeleteSegmentsTilWatermark()
-	records, err := wal.ReadAllRecords()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(len(records))
-	for _, rec := range records {
-		fmt.Println(rec)
-	}
+	tokenb := token_bucket.NewTokenBucket(rate, maxToken)
+	tokenb.InitRequestsFile("token_bucket/requests.bin")
+	lru1 := lru.NewLRUCache(lruCap)
+
+	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, number, memTableCap, compType)
+	meni(wal, lru1, memtable, tokenb)
+	//scantest()
+	//wal := wal_implementation.NewWriteAheadLog(walSegmentSize)
+	//for i := 0; i < 1000; i++ {
+	//	key := "kljuc" + strconv.Itoa(i)
+	//	value_string := "vrednost" + strconv.Itoa(i)
+	//	value := []byte(value_string)
+	//	err := wal.Log(key, value, false, time.Now())
+	//	if err != nil {
+	//		fmt.Println(err)
+	//	}
+	//	if i%100 == 0 && i != 0 {
+	//		err := wal.EndMemTable()
+	//		if err != nil {
+	//			return
+	//		}
+	//	}
+	//}
+	//err := wal.DeleteMemTable()
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//err = wal.DeleteMemTable()
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	////wal.DeleteSegmentsTilWatermark()
+	//records, err := wal.ReadAllRecords()
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Println(len(records))
+	//for _, rec := range records {
+	//	fmt.Println(rec)
+	//}
 
 	//wal := wal_implementation.NewWriteAheadLog()
 	//rate = 3

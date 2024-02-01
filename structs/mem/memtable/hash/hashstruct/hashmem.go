@@ -6,6 +6,7 @@ import (
 	"sstable/SSTableStruct/SSTable"
 	"sstable/mem/memtable/datatype"
 	"strings"
+	"time"
 )
 
 type HashMemtable struct {
@@ -48,6 +49,7 @@ func (mem *HashMemtable) SortDataTypes() []datatype.DataType {
 	return dataList
 
 }
+
 func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool {
 
 	dataList := mem.SortDataTypes()
@@ -61,26 +63,26 @@ func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M 
 	return true
 }
 
-func (mem *HashMemtable) AddElement(key string, data []byte) bool {
-	//provera da li element sa tim kljucem vec postoji
-	elem, _ := mem.GetElement(key)
-	if elem == false {
-		//ukoliko ima mesta u memtable, samo se upisuje podatak
-		if mem.length < mem.capacity {
-			e := datatype.CreateDataType(key, data)
-			mem.data[key] = e
-			mem.length++
-			return true
+func (mem *HashMemtable) UpdateElement(key string, data []byte, time time.Time) {
+	mem.data[key].UpdateDataType(data, time)
+}
 
-			//ako je popunjen, postavlja se na read only
-		} else if mem.length == mem.capacity {
-			mem.readOnly = true
-			return false
-		}
+func (mem *HashMemtable) AddElement(key string, data []byte, time time.Time) bool {
+	//ukoliko ima mesta u memtable, samo se upisuje podatak
+	if mem.length < mem.capacity {
+		e := datatype.CreateDataType(key, data, time)
+		mem.data[key] = e
+		mem.length++
+
+		//ako je popunjen, postavlja se na read only
 	}
-	// ukoliko podatak sa tim kljucem postoji azuriramo podatak
-	mem.data[key].UpdateDataType(data)
-	return true
+	if mem.length == mem.capacity {
+		mem.readOnly = true
+	}
+	if mem.IsReadOnly() {
+		return true
+	}
+	return false
 }
 
 func (mem *HashMemtable) GetElement(key string) (bool, []byte) {
@@ -91,10 +93,10 @@ func (mem *HashMemtable) GetElement(key string) (bool, []byte) {
 	return true, elem.GetData()
 }
 
-func (mem *HashMemtable) DeleteElement(key string) bool {
+func (mem *HashMemtable) DeleteElement(key string, time time.Time) bool {
 	elem, found := mem.data[key]
 	if found {
-		elem.DeleteDataType()
+		elem.DeleteDataType(time)
 		return true
 	}
 	return false

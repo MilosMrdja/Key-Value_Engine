@@ -1,13 +1,17 @@
 {"lru_cap": 3,
-"compress1": true,
-"compress2": true,
-"oneFile": true,
-"numberOfSSTable": 5,
-"N": 3,
-"M": 4,
-"memTableCap": 10,
-"memType": "btree",
-"walSegmentSize": 2000
+  "compress1": true,
+  "compress2": true,
+  "oneFile": true,
+  "numberOfSSTable": 5,
+  "N": 3,
+  "M": 4,
+  "memTableNumber" : 2,
+  "memTableCap": 3,
+  "memType": "hash",
+  "walSegmentSize": 2000,
+  "rate": 3,
+  "maxToken": 10,
+  "compType": "size"
 }
 
 
