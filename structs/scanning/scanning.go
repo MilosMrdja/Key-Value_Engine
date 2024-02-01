@@ -1,119 +1,40 @@
 package scanning
 
 import (
-	"fmt"
-	"slices"
-	"sort"
-	"sstable/LSM"
 	"sstable/cursor"
+	"sstable/iterator"
 	"sstable/mem/memtable/datatype"
-	"strings"
 )
 
 // Function to perform PREFIX_SCAN
-func PREFIX_SCAN(prefix string, pageNumber, pageSize int, cursor *cursor.Cursor) []*datatype.DataType {
-	var result []*datatype.DataType
-	var dt *datatype.DataType
-
-	n := pageNumber * pageSize
-
-	j := cursor.MemIndex()
-
-	for true {
-		cursor.MemPointers()[j].GetElementByPrefix(result, &n, prefix)
-
-		j = (j - 1 + len(cursor.MemPointers())) % len(cursor.MemPointers())
-		if j == cursor.MemIndex() {
-			break
-		}
-		if n == 0 {
-			break
-		}
+func PREFIX_SCAN(prefix string, pageNumber int, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, pageSize int, compress1 bool, compress2 bool, oneFile bool, cursor *cursor.Cursor) []*datatype.DataType {
+	m := pageSize * (pageNumber - 1)
+	n := pageSize
+	page := make([]*datatype.DataType, 0)
+	for m != 0 {
+		PREFIX_ITERATE(prefix, memIterator, ssIterator, compress1, compress2, oneFile)
+		m--
 	}
-
-	lruData := cursor.LruPointer().GetAll()
-	for e := lruData.Front(); e != nil; e = e.Next() {
-		dt = e.Value.(*datatype.DataType)
-		if slices.Contains(result, dt) == false && strings.HasPrefix(dt.GetKey(), prefix) && dt.IsDeleted() == false {
-			result = append(result, dt)
-			n -= 1
-			if n == 0 {
-				break
-			}
-		}
+	for n != 0 {
+		a := PREFIX_ITERATE(prefix, memIterator, ssIterator, compress1, compress2, oneFile)
+		page = append(page, &a)
+		n--
 	}
-
-	for (len(result)) < n {
-		ssData, _, _, _ := LSM.GetDataByPrefix(&n, prefix, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
-		fmt.Println(ssData)
-		if n == 0 {
-			break
-		}
-	}
-
-	// Implement pagination
-	startIndex := (pageNumber - 1) * pageSize
-	endIndex := startIndex + pageSize
-
-	// Sort the result by key
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].GetKey() < result[j].GetKey()
-	})
-
-	// Return the paginated result
-	return result[startIndex:endIndex]
+	return page
 }
 
-//func RANGE_SCAN(keyRange []string, pageNumber, pageSize int, core *cursor.Cursor) []*datatype.DataType {
-//	var result []*datatype.DataType
-//	var dt *datatype.DataType
-//
-//	// Implement pagination
-//	startIndex := (pageNumber - 1) * pageSize
-//	endIndex := startIndex + pageSize
-//
-//	n := pageNumber * pageSize
-//
-//	j := core.MemIndex()
-//	for true {
-//		core.MemPointers()[j].GetElementByRange(result, &n, keyRange)
-//
-//		j = (j - 1 + len(core.MemPointers())) % len(core.MemPointers())
-//		if j == core.MemIndex() {
-//			break
-//		}
-//		if n == 0 {
-//			break
-//		}
-//	}
-//	lruData := core.LruPointer().GetAll()
-//	for e := lruData.Front(); e != nil; e = e.Next() {
-//		dt = e.Value.(*datatype.DataType)
-//		if isInRange(dt.GetKey(), keyRange) && dt.IsDeleted() == false {
-//			result = append(result, dt)
-//			n -= 1
-//			if n == 0 {
-//				break
-//			}
-//		}
-//	}
-//
-//	//offset := 0
-//	//path := ""
-//
-//	for (len(result)) < n {
-//		ssData, _, _, _ := LSM.GetDataByRange(&n, keyRange, core.Compress1(), core.Compress2(), core.OneFile())
-//		fmt.Println(ssData)
-//		if n == 0 {
-//			break
-//		}
-//	}
-//
-//	// Sort the result by key
-//	sort.Slice(result, func(i, j int) bool {
-//		return result[i].GetKey() < result[j].GetKey()
-//	})
-//
-//	// Return the paginated result
-//	return result[startIndex:endIndex]
-//}
+func RANGE_SCAN(valRange [2]string, pageNumber int, memIterator *iterator.RangeIterator, ssIterator *iterator.IteratorRangeSSTable, pageSize int, compress1 bool, compress2 bool, oneFile bool, cursor *cursor.Cursor) []*datatype.DataType {
+	m := pageSize * (pageNumber - 1)
+	n := pageSize
+	page := make([]*datatype.DataType, 0)
+	for m != 0 {
+		RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
+		m--
+	}
+	for n != 0 {
+		a := RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
+		page = append(page, &a)
+		n--
+	}
+	return page
+}
