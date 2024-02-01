@@ -59,7 +59,7 @@ func RANGE_ITERATE(valueRange [2]string, memIterator *iterator.RangeIterator, ss
 }
 
 // za memtabelu
-func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, compress1 bool, compress2 bool, oneFile bool) datatype.DataType {
+func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, compress1 bool, compress2 bool, oneFile bool) (datatype.DataType, bool) {
 	if prefix != memIterator.CurrPrefix() {
 		memIterator.SetCurrPrefix(prefix)
 		memIterator.ResetMemTableIndexes()

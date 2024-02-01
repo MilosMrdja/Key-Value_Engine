@@ -6,8 +6,11 @@ import (
 	"log"
 	"os"
 	"sstable/LSM"
+	"sstable/iterator"
 	"sstable/lru"
 	"sstable/mem/memtable/hash/hashmem"
+	"sstable/mem/memtable/hash/hashstruct"
+	"sstable/scanning"
 	"sstable/token_bucket"
 	"sstable/wal_implementation"
 	"strconv"
@@ -208,8 +211,28 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, mem *hashme
 
 }
 
+func scantest() {
+	var mapMem map[*hashmem.Memtable]int
+	prefix := "1"
+	mapMem = make(map[*hashmem.Memtable]int)
+	btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
+	for j := 0; j < 10; j++ {
+		btm.AddElement(strconv.Itoa(10+j), []byte(strconv.Itoa(j)))
+	}
+	mapMem[&btm] = 0
+	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
+	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
+	dataType := scanning.PREFIX_SCAN(prefix, 2, 5, iterMem, iterSSTable, compress1, compress2, oneFile)
+	for _, d := range dataType {
+		fmt.Print(d.GetKey())
+		fmt.Println(d.GetData())
+
+	}
+}
+
 func main() {
 	setConst()
+	scantest()
 	wal := wal_implementation.NewWriteAheadLog(walSegmentSize)
 	for i := 0; i < 1000; i++ {
 		key := "kljuc" + strconv.Itoa(i)
@@ -338,15 +361,6 @@ func main() {
 	//}
 	//Ne brisi, iter test
 
-	//btm := hashmem.Memtable(hashstruct.CreateHashMemtable(m))
-	//for j := 0; j < 10; j++ {
-	//	btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)))
-	//}
-	//mapMem[&btm] = 0
-	//iterMem := iterator.NewPrefixIterator(mapMem, prefix)
-	//iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
-	//dataType := scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
-	//fmt.Println(dataType)
 	//dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)
 	//fmt.Println(dataType)
 	//dataType = scanning.PREFIX_ITERATE(prefix, iterMem, iterSSTable, compress1, compress2, oneFile)

@@ -1,29 +1,34 @@
 package scanning
 
 import (
-	"sstable/cursor"
 	"sstable/iterator"
 	"sstable/mem/memtable/datatype"
 )
 
 // Function to perform PREFIX_SCAN
-func PREFIX_SCAN(prefix string, pageNumber int, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, pageSize int, compress1 bool, compress2 bool, oneFile bool, cursor *cursor.Cursor) []*datatype.DataType {
+func PREFIX_SCAN(prefix string, pageNumber int, pageSize int, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, compress1 bool, compress2 bool, oneFile bool) []*datatype.DataType {
 	m := pageSize * (pageNumber - 1)
 	n := pageSize
 	page := make([]*datatype.DataType, 0)
 	for m != 0 {
-		PREFIX_ITERATE(prefix, memIterator, ssIterator, compress1, compress2, oneFile)
+		_, flag := PREFIX_ITERATE(prefix, memIterator, ssIterator, compress1, compress2, oneFile)
+		if !flag {
+			break
+		}
 		m--
 	}
 	for n != 0 {
-		a := PREFIX_ITERATE(prefix, memIterator, ssIterator, compress1, compress2, oneFile)
+		a, flag := PREFIX_ITERATE(prefix, memIterator, ssIterator, compress1, compress2, oneFile)
+		if !flag {
+			break
+		}
 		page = append(page, &a)
 		n--
 	}
 	return page
 }
 
-func RANGE_SCAN(valRange [2]string, pageNumber int, memIterator *iterator.RangeIterator, ssIterator *iterator.IteratorRangeSSTable, pageSize int, compress1 bool, compress2 bool, oneFile bool, cursor *cursor.Cursor) []*datatype.DataType {
+func RANGE_SCAN(valRange [2]string, pageNumber int, pageSize int, memIterator *iterator.RangeIterator, ssIterator *iterator.IteratorRangeSSTable, compress1 bool, compress2 bool, oneFile bool) []*datatype.DataType {
 	m := pageSize * (pageNumber - 1)
 	n := pageSize
 	page := make([]*datatype.DataType, 0)
