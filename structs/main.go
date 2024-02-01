@@ -219,7 +219,7 @@ func scantest() {
 	j := 0
 
 	for i := 0; i < 5; i++ {
-		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
+		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(15))
 		for k := 0; k < 14; k++ {
 			btm.AddElement(strconv.Itoa(k), []byte(strconv.Itoa(k)))
 
@@ -249,7 +249,7 @@ func scantest() {
 	iterMemR := iterator.NewRangeIterator(mapMem, valRange)
 	iterSSTableR := scanning.RangeIterateSSTable(valRange, compress2, compress1, oneFile)
 	scanning.RANGE_SCAN_OUTPUT(valRange, 1, 10, iterMemR, iterSSTableR, compress1, compress2, oneFile)
-
+	fmt.Println("")
 }
 
 func main() {

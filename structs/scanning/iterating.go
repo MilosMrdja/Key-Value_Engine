@@ -1,7 +1,6 @@
 package scanning
 
 import (
-	"fmt"
 	"sstable/SSTableStruct/SSTable"
 	"sstable/iterator"
 	"sstable/mem/memtable/datatype"
@@ -25,8 +24,6 @@ func RANGE_ITERATE(valueRange [2]string, memIterator *iterator.RangeIterator, ss
 				break
 
 			}
-			aaa := j.GetSortedDataTypes()
-			fmt.Println(aaa)
 			if !isInRange(j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.ValRange()) && j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey() > memIterator.ValRange()[1] {
 				memIterator.MemTablePositions()[i] = j.GetMaxSize()
 				break
