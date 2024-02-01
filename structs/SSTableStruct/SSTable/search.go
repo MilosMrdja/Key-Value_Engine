@@ -20,7 +20,7 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 		}
 		size, _ := PositionInSSTable(*file, 1)
 		file.Seek(size, 0)
-		bloomFilter, err2 := bloomfilter.DeserializeBloomFilter(file)
+		bloomFilter, err2 := bloomfilter.ReadFromFile(file)
 		if err2 != nil {
 			return data, false
 		}
@@ -55,7 +55,7 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 		if err != nil {
 			return data, false
 		}
-		bloomFilter, err2 := bloomfilter.DeserializeBloomFilter(file)
+		bloomFilter, err2 := bloomfilter.ReadFromFile(file)
 		if err2 != nil {
 			return data, false
 		}

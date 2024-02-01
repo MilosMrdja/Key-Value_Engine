@@ -201,12 +201,12 @@ func (c *Cursor) DeleteElement(key string, time time.Time) bool {
 func (c *Cursor) Fill(wal *wal_implementation.WriteAheadLog) {
 	for true {
 		rec, err := wal.ReadRecord()
-		if err != "" {
-			if err == "NO MORE RECORDS" {
+		if err.Error() != "" {
+			if err.Error() == "NO MORE RECORDS" {
 				break
 			}
 		}
-		if err != "CRC FAILED!" {
+		if err.Error() != "CRC FAILED!" {
 			nano := int64(binary.BigEndian.Uint64(rec.Timestamp[8:]))
 			timestamp := time.Unix(nano, 0)
 			c.AddToMemtable(rec.Key, rec.Value, timestamp, wal)

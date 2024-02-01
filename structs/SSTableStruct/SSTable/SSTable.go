@@ -128,7 +128,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	CreateMerkleTree(arrToMerkle, fileName+"/Merkle.bin")
 
 	//Serijalizacija i upis bloom filtera
-	err = bloomfilter.SerializeBloomFilter(bloomFilter, fileName+"/BloomFilter.bin")
+	err = bloomfilter.SaveToFile(bloomFilter, fileName+"/BloomFilter.bin")
 	if err != nil {
 		return false
 	}

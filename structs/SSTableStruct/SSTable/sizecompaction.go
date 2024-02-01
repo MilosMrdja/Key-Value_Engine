@@ -143,7 +143,7 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, N, M,
 	//Kreiranje i upis Merkle Stabla
 	CreateMerkleTree(arrToMerkle, newFilePath+"/Merkle.bin")
 	//Serijalizacija i upis bloom filtera
-	err = bloomfilter.SerializeBloomFilter(bloomFilter, fileBloom)
+	err = bloomfilter.SaveToFile(bloomFilter, fileBloom)
 	if err != nil {
 		return false
 	}

@@ -22,7 +22,7 @@ type HyperLogLog struct {
 	alpha     float64
 }
 
-func SerializeHyperLogLog(hll *HyperLogLog, fileName string) error {
+func SaveHyperLogLogToFile(hll *HyperLogLog, fileName string) error {
 
 	_, err := os.Stat(fileName)
 	if err == nil {
@@ -82,7 +82,60 @@ func SerializeHyperLogLog(hll *HyperLogLog, fileName string) error {
 	return nil
 }
 
-func DeserializeHyperLogLog(fileName string) (*HyperLogLog, error) {
+func SerializeHyperLogLog(hll *HyperLogLog) ([]byte, error) {
+
+	resultArray := make([]byte, 0)
+	numOfBuckets := make([]byte, 8)
+	binary.BigEndian.PutUint64(numOfBuckets, hll.b)
+	resultArray = append(resultArray, numOfBuckets...)
+
+	alphaArray := make([]byte, 8)
+	binary.BigEndian.PutUint64(alphaArray[:], math.Float64bits(hll.alpha))
+	resultArray = append(resultArray, alphaArray...)
+
+	registerNumArray := make([]byte, 8)
+	binary.BigEndian.PutUint64(registerNumArray, hll.m)
+	resultArray = append(resultArray, registerNumArray...)
+
+	registerArray := make([]byte, 8)
+	var i uint64 = 0
+	for i = 0; i < hll.m; i++ {
+		binary.BigEndian.PutUint64(registerArray, uint64(hll.registers[i]))
+		resultArray = append(resultArray, registerArray...)
+
+	}
+	return resultArray, nil
+}
+
+func DeserializeHyperLogLog(byteArray []byte) (*HyperLogLog, error) {
+
+	curr_offset := 8
+	b := byteArray[:curr_offset]
+	numBuckets := binary.BigEndian.Uint64(b)
+
+	b = byteArray[curr_offset : curr_offset+8]
+	curr_offset += 8
+	alphaVal := math.Float64frombits(binary.BigEndian.Uint64(b))
+
+	b = byteArray[curr_offset : curr_offset+8]
+	curr_offset += 8
+	numRegisters := binary.BigEndian.Uint64(b)
+
+	var i uint64 = 0
+	register := make([]int64, numRegisters)
+	for i = 0; i < numRegisters; i++ {
+
+		registerArray := byteArray[curr_offset : curr_offset+8]
+		curr_offset += 8
+		register[i] = int64(binary.BigEndian.Uint64(registerArray))
+	}
+	hll := HyperLogLog{
+		registers: register, m: numRegisters, b: numBuckets, alpha: alphaVal,
+	}
+	return &hll, nil
+}
+
+func LoadHyperLogLogFromFile(fileName string) (*HyperLogLog, error) {
 	_, err := os.Stat(fileName)
 	if err != nil {
 		return nil, err

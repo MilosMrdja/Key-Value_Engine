@@ -46,8 +46,7 @@ type BloomFilter struct {
 	probability   float64
 }
 
-func DeserializeBloomFilter(file *os.File) (*BloomFilter, error) {
-
+func ReadFromFile(file *os.File) (*BloomFilter, error) {
 	b := make([]byte, 8)
 	err := binary.Read(file, binary.BigEndian, b)
 	if err != nil {
@@ -80,9 +79,34 @@ func DeserializeBloomFilter(file *os.File) (*BloomFilter, error) {
 
 	return &bf, nil
 }
+func DeserializeBloomFilter(bytearray []byte) (*BloomFilter, error) {
 
-func SerializeBloomFilter(f *BloomFilter, fileName string) error {
+	curr_offset := 8
+	b := bytearray[:curr_offset]
 
+	prob := binary.BigEndian.Uint64(b)
+	probF := math.Float64frombits(prob)
+
+	b = bytearray[curr_offset : curr_offset+8]
+
+	bitsizeLen := binary.BigEndian.Uint64(b)
+	curr_offset += 8
+
+	bitsetArray := make([]byte, bitsizeLen)
+	bitsetArray = bytearray[curr_offset : curr_offset+int(bitsizeLen)]
+	curr_offset += int(bitsizeLen)
+
+	b = bytearray[curr_offset : curr_offset+8]
+	numOfHash := binary.BigEndian.Uint64(b)
+
+	bf := BloomFilter{
+		bitsetLength: bitsizeLen, bitset: bitsetArray, numOfHashes: numOfHash, hashFunctions: generateHashFunctions(bitsizeLen, 10), probability: probF,
+	}
+
+	return &bf, nil
+}
+
+func SaveToFile(f *BloomFilter, fileName string) error {
 	_, err := os.Stat(fileName)
 	if err == nil {
 
@@ -135,6 +159,30 @@ func SerializeBloomFilter(f *BloomFilter, fileName string) error {
 		return err
 	}
 	return nil
+}
+
+func SerializeBloomFilter(f *BloomFilter) ([]byte, error) {
+
+	resultArray := make([]byte, 0)
+	probabilityArray := make([]byte, 8)
+	binary.BigEndian.PutUint64(probabilityArray[:], math.Float64bits(f.probability))
+
+	resultArray = append(resultArray, probabilityArray...)
+
+	bitsetLengthArray := make([]byte, 8)
+	binary.BigEndian.PutUint64(bitsetLengthArray, uint64(f.bitsetLength))
+
+	resultArray = append(resultArray, bitsetLengthArray...)
+
+	bitsetArray := f.bitset
+	resultArray = append(resultArray, bitsetArray...)
+
+	numOfHashArray := make([]byte, 8)
+	binary.BigEndian.PutUint64(numOfHashArray, uint64(f.numOfHashes))
+
+	resultArray = append(resultArray, numOfHashArray...)
+
+	return resultArray, nil
 }
 
 func CreateBloomFilter(n int) *BloomFilter { //Constructor
