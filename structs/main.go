@@ -215,14 +215,29 @@ func scantest() {
 	var mapMem map[*hashmem.Memtable]int
 	prefix := "1"
 	mapMem = make(map[*hashmem.Memtable]int)
-	btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
-	for j := 0; j < 10; j++ {
-		btm.AddElement(strconv.Itoa(10+j), []byte(strconv.Itoa(j)))
+
+	j := 0
+	for i := 0; i < 5; i++ {
+		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
+		for k := 0; k < 10; k++ {
+			btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)))
+			j++
+		}
+
+		mapMem[&btm] = 0
 	}
-	mapMem[&btm] = 0
 	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
 	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
-	scanning.PREFIX_SCAN_OUTPUT(prefix, 2, 5, iterMem, iterSSTable, compress1, compress2, oneFile)
+	scanning.PREFIX_SCAN_OUTPUT(prefix, 3, 5, iterMem, iterSSTable, compress1, compress2, oneFile)
+
+	for k, _ := range mapMem {
+		mapMem[k] = 0
+	}
+	j = 0
+	valRange := [2]string{"1", "2"}
+	iterMemR := iterator.NewRangeIterator(mapMem, valRange)
+	iterSSTableR := scanning.RangeIterateSSTable(valRange, compress2, compress1, oneFile)
+	scanning.RANGE_SCAN_OUTPUT(valRange, 1, 10, iterMemR, iterSSTableR, compress1, compress2, oneFile)
 
 }
 

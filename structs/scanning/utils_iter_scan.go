@@ -116,48 +116,59 @@ func adjustPositionSS(mapa map[string]datatype.DataType) []string {
 	//}
 	return minKeys
 }
-func AdjustPositionRange(mapaMem map[*hashmem.Memtable]datatype.DataType, mapaSS map[string]datatype.DataType, ssIterator *iterator.IteratorRangeSSTable, memIterator *iterator.RangeIterator) datatype.DataType {
-
+func AdjustPositionRange(mapaMem map[*hashmem.Memtable]datatype.DataType, mapaSS map[string]datatype.DataType, ssIterator *iterator.IteratorRangeSSTable, memIterator *iterator.RangeIterator) (datatype.DataType, bool) {
 	var dataType1 datatype.DataType
 	var keyMem []*hashmem.Memtable
 
 	var dataType2 datatype.DataType // prazan constructor
 	var keySS []string
 
-	if len(mapaMem) == 0 {
-		keyMem = make([]*hashmem.Memtable, 0)
-	} else {
+	if len(mapaMem) != 0 && len(mapaSS) != 0 {
 		keyMem = adjustPositionsMem(mapaMem)
 		dataType1 = mapaMem[keyMem[0]]
-	}
 
-	if len(mapaSS) == 0 {
-		keySS = make([]string, 0)
-	} else {
 		keySS = adjustPositionSS(mapaSS)
 		dataType2 = mapaSS[keySS[0]]
-	}
-
-	if dataType1.GetKey() > dataType2.GetKey() {
+		if dataType1.GetKey() > dataType2.GetKey() {
+			for i := 0; i < len(keySS); i++ {
+				ssIterator.IncrementElementOffset(keySS[i], ssIterator.PositionInSSTable[keySS[i]][2])
+			}
+			return dataType2, true
+		} else if dataType1.GetKey() < dataType2.GetKey() {
+			for i := 0; i < len(keyMem); i++ {
+				memIterator.IncrementMemTablePosition(keyMem[i])
+			}
+			return dataType1, true
+		} else {
+			for i := 0; i < len(keySS); i++ {
+				ssIterator.IncrementElementOffset(keySS[i], ssIterator.PositionInSSTable[keySS[i]][2])
+			}
+			for j := 0; j < len(keyMem); j++ {
+				memIterator.IncrementMemTablePosition(keyMem[j])
+			}
+			if dataType1.GetChangeTime().After(dataType2.GetChangeTime()) {
+				return dataType1, true
+			} else {
+				return dataType2, true
+			}
+		}
+	} else if len(mapaMem) == 0 && len(mapaSS) != 0 {
+		keySS = adjustPositionSS(mapaSS)
+		dataType2 = mapaSS[keySS[0]]
 		for i := 0; i < len(keySS); i++ {
 			ssIterator.IncrementElementOffset(keySS[i], ssIterator.PositionInSSTable[keySS[i]][2])
 		}
-	} else if dataType1.GetKey() < dataType2.GetKey() {
+		return dataType2, true
+	} else if len(mapaSS) == 0 && len(mapaMem) != 0 {
+		keyMem = adjustPositionsMem(mapaMem)
+		dataType1 = mapaMem[keyMem[0]]
 		for i := 0; i < len(keyMem); i++ {
 			memIterator.IncrementMemTablePosition(keyMem[i])
 		}
+		return dataType1, true
 	} else {
-		for i := 0; i < len(keySS); i++ {
-			ssIterator.IncrementElementOffset(keySS[i], ssIterator.PositionInSSTable[keySS[i]][2])
-		}
-		for j := 0; j < len(keyMem); j++ {
-			memIterator.IncrementMemTablePosition(keyMem[j])
-		}
+		return datatype.DataType{}, false
 	}
-	if dataType1.GetChangeTime().After(dataType2.GetChangeTime()) {
-		return dataType1
-	}
-	return dataType2
 }
 func AdjustPositionPrefix(mapaMem map[*hashmem.Memtable]datatype.DataType, mapaSS map[string]datatype.DataType, ssIterator *iterator.IteratorPrefixSSTable, memIterator *iterator.PrefixIterator) (datatype.DataType, bool) {
 

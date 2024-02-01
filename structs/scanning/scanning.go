@@ -46,11 +46,17 @@ func RANGE_SCAN(valRange [2]string, pageNumber int, pageSize int, memIterator *i
 	n := pageSize
 	page := make([]*datatype.DataType, 0)
 	for m != 0 {
-		RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
+		_, flag := RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
+		if !flag {
+			break
+		}
 		m--
 	}
 	for n != 0 {
-		a := RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
+		a, flag := RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
+		if !flag {
+			break
+		}
 		page = append(page, &a)
 		n--
 	}
