@@ -136,7 +136,6 @@ func DELETE(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable 
 
 	lru1.Delete(key)
 }
-
 func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor, tokenb *token_bucket.TokenBucket) {
 	for true {
 		var opcija string
@@ -668,7 +667,13 @@ func main() {
 	lru1 := lru.NewLRUCache(lruCap)
 
 	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, number, memTableCap, compType)
-	meni(wal, lru1, memtable, tokenb)
+	memtable.Fill(wal)
+	//meni(wal, lru1, memtable, tokenb)
+
+	for i := 0; i < 7; i++ {
+		memtable.AddToMemtable(strconv.Itoa(i), []byte("1"), time.Now(), wal)
+	}
+
 	//scantest()
 	//wal := wal_implementation.NewWriteAheadLog(walSegmentSize)
 	//for i := 0; i < 1000; i++ {

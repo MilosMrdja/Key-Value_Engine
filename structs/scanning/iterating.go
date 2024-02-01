@@ -23,8 +23,7 @@ func RANGE_ITERATE(valueRange [2]string, memIterator *iterator.RangeIterator, ss
 			if j.GetMaxSize() == memIterator.MemTablePositions()[i] {
 				break
 
-			}
-			if !isInRange(j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.ValRange()) && j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey() > memIterator.ValRange()[1] {
+			} else if !isInRange(j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.ValRange()) && j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey() > memIterator.ValRange()[1] {
 				memIterator.MemTablePositions()[i] = j.GetMaxSize()
 				break
 			} else if isInRange(j.GetSortedDataTypes()[memIterator.MemTablePositions()[i]].GetKey(), memIterator.ValRange()) {
@@ -43,7 +42,7 @@ func RANGE_ITERATE(valueRange [2]string, memIterator *iterator.RangeIterator, ss
 			}
 			record, offset := SSTable.GetRecord(k, ssIterator.PositionInSSTable[k][0], compress1, compress2, oneFile)
 
-			if !isInRange(record.GetKey(), ssIterator.Rang) { // && record.GetKey() > ssIterator.Prefix
+			if !isInRange(record.GetKey(), ssIterator.Rang) && record.GetKey() > ssIterator.Rang[1] {
 				v[0] = v[1]
 				break
 			} else if isInRange(record.GetKey(), ssIterator.Rang) {
