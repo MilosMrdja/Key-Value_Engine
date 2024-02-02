@@ -37,7 +37,7 @@ func FindNextDestination(layer, maxSSTlevel int) (string, bool) {
 	return newSstableName, false
 }
 
-func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memtableCap int, compType string, maxSSTlevel int) {
+func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memtableCap int, compType string, maxSSTlevel, levelPlus int) {
 
 	//ovako za gore u entrijim
 	dataDir, err := os.Open("./DataSStable")
@@ -108,7 +108,7 @@ func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memta
 				panic(errNames)
 			}
 
-			if len(sstableName) >= numTables*int(math.Pow10(i)) {
+			if len(sstableName) >= numTables*int(math.Pow(float64(levelPlus), float64(i))) {
 				//jedna tabela sa prethodnog novoa + ostale tabele sa narednog nivoa
 				randSST := rand.Intn(len(sstableName)-1) + 1
 				minData, maxData, _ := SSTable.GetSummaryMinMax(dataDir.Name()+"/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(randSST), compres1, compres2)

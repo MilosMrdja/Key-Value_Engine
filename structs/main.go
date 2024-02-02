@@ -25,7 +25,7 @@ var oneFile bool
 var number, lruCap int
 var N int
 var M int
-var memTableCap, memTableNumber int
+var memTableCap, memTableNumber, levelPlus int
 var memType, compType string
 var walSegmentSize, maxSSTLevel int
 var rate, maxToken int64
@@ -47,6 +47,7 @@ type Config struct {
 	MaxToken       int64  `json:"maxToken"`
 	CompType       string `json:"compType"`
 	MaxSSTLevel    int    `json:"maxSSTLevel"`
+	LevelPlus      int    `json:"levelPlus"`
 }
 
 func setConst() {
@@ -110,6 +111,10 @@ func setConst() {
 	maxSSTLevel = config.MaxSSTLevel
 	if maxSSTLevel <= 0 {
 		maxSSTLevel = 3
+	}
+	levelPlus = config.LevelPlus
+	if levelPlus <= 0 {
+		levelPlus = 10
 	}
 
 }
@@ -729,7 +734,7 @@ func main() {
 	tokenb := token_bucket.NewTokenBucket(rate, maxToken)
 	tokenb.InitRequestsFile("token_bucket/requests.bin")
 	lru1 := lru.NewLRUCache(lruCap)
-	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, number, memTableCap, compType, maxSSTLevel)
+	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, number, memTableCap, compType, maxSSTLevel, levelPlus)
 	memtable.Fill(wal)
 
 	meni(wal, lru1, memtable, tokenb)

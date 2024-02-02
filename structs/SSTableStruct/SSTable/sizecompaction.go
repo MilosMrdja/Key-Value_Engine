@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"hash/crc32"
 	"log"
 	"os"
 	"sstable/bloomfilter/bloomfilter"
@@ -182,8 +183,10 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, N, M,
 
 	return true
 }
+
 func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64, elem int) (datatype.DataType, int64, bool) {
 	oneFile := GetOneFile(filePath)
+	var crc, tempCRC bytes.Buffer
 	filename := "/Data.bin"
 	if oneFile {
 		filename = "/SSTable.bin"
@@ -211,7 +214,6 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 	defer file.Close()
 
 	file.Seek(0, 0)
-	var result bytes.Buffer
 	var currentRead int64
 	var currentKey string
 	var currentValue []byte
@@ -241,17 +243,18 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 	}
 	file.Seek(offsetStart, 0)
 
+	crc.Reset()
+	tempCRC.Reset()
+
 	//read CRC
 	bytes := make([]byte, 4)
 	_, err = file.Read(bytes)
 	if err != nil {
 		panic(err)
 	}
+	crc.Write(bytes)
 	currentRead += 4
-	err = binary.Write(&result, binary.BigEndian, bytes)
-	if err != nil {
-		return *Data, 0, false
-	}
+
 	// read timestamp
 	bytes = make([]byte, 16)
 	_, err = file.Read(bytes)
@@ -260,13 +263,8 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 	}
 	nano := int64(binary.BigEndian.Uint64(bytes[8:]))
 	timestamp = time.Unix(nano, 0)
-	if err != nil {
-		return *Data, 0, false
-	}
-	err = binary.Write(&result, binary.BigEndian, bytes)
-	if err != nil {
-		return *Data, 0, false
-	}
+	tempCRC.Write(bytes)
+
 	currentRead += 16
 	// read tombstone
 	bytes = make([]byte, 1)
@@ -275,10 +273,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 		panic(err)
 	}
 	tomb := int(bytes[0])
-	err = binary.Write(&result, binary.BigEndian, bytes)
-	if err != nil {
-		return *Data, 0, false
-	}
+	tempCRC.Write(bytes)
 	currentRead += 1
 
 	if compres2 {
@@ -289,11 +284,15 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 			var m int
 			if tomb == 0 {
 				valueSize, m = binary.Varint(bytesFile[currentRead:])
+				next := currentRead + int64(m)
+				tempCRC.Write(bytesFile[currentRead:next])
 				currentRead += int64(m)
 			}
 
 			// read key
 			key, k := binary.Varint(bytesFile[currentRead:])
+			next := currentRead + int64(k)
+			tempCRC.Write(bytesFile[currentRead:next])
 			currentRead += int64(k)
 			// read value
 			if tomb == 0 {
@@ -305,6 +304,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 				}
 				currentRead += int64(valueSize)
 				currentValue = bytes
+				tempCRC.Write(bytes)
 			}
 			currentKey = GetKeyByValue(decodeMap, int32(key))
 
@@ -322,6 +322,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 				}
 				currentRead += 8
 				valueSize = int64(binary.BigEndian.Uint64(buff))
+				tempCRC.Write(buff)
 			}
 
 			// read key
@@ -332,7 +333,9 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 			}
 			currentRead += 4
 			key := binary.BigEndian.Uint32(buff)
+			tempCRC.Write(buff)
 			currentKey = GetKeyByValue(decodeMap, int32(key))
+
 			// read value
 			if tomb == 0 {
 				buff = make([]byte, valueSize)
@@ -342,6 +345,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 				}
 				currentRead += int64(valueSize)
 				currentValue = buff
+				tempCRC.Write(buff)
 			}
 
 		}
@@ -349,16 +353,21 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 		if compres1 {
 			// read key size
 			keySize, n := binary.Varint(bytesFile[currentRead:])
+			next := currentRead + int64(n)
+			tempCRC.Write(bytesFile[currentRead:next])
 			currentRead += int64(n)
 			// read value size
 			var m int
 			if tomb == 0 {
 				valueSize, m = binary.Varint(bytesFile[currentRead:])
+				next = currentRead + int64(n)
+				tempCRC.Write(bytesFile[currentRead:next])
 				currentRead += int64(m)
 			}
 			// read key
 			bytes = make([]byte, keySize)
 			file.Seek(currentRead+offsetStart, 0)
+			tempCRC.Write(bytes)
 			_, err = file.Read(bytes)
 			if err != nil {
 				panic(err)
@@ -375,6 +384,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 				}
 				currentRead += valueSize
 				currentValue = bytes
+				tempCRC.Write(bytes)
 			}
 
 		} else {
@@ -384,6 +394,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 				panic(err)
 			}
 			currentRead += 8
+			tempCRC.Write(bytes)
 			keySize := binary.BigEndian.Uint64(bytes)
 			if tomb == 0 {
 				// read value size
@@ -392,6 +403,8 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 				if err != nil {
 					panic(err)
 				}
+				tempCRC.Write(bytes)
+
 				valueSize = int64(binary.BigEndian.Uint64(bytes))
 				currentRead += 8
 			} // read key
@@ -403,6 +416,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 			}
 			currentRead += int64(keySize)
 			currentKey = string(bytes)
+			tempCRC.Write(bytes)
 			// read value
 			if tomb == 0 {
 				bytes = make([]byte, valueSize)
@@ -413,6 +427,7 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 
 				currentRead += int64(valueSize)
 				currentValue = bytes
+				tempCRC.Write(bytes)
 			}
 
 		}
@@ -426,6 +441,9 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 	}
 	Data.SetChangeTime(timestamp)
 
+	if crc32.ChecksumIEEE(tempCRC.Bytes()) != binary.BigEndian.Uint32(crc.Bytes()) {
+		Data.SetKey("")
+	}
 	//fmt.Printf("\n")
 	return *Data, currentRead, true
 }
