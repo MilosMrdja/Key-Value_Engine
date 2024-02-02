@@ -7,10 +7,10 @@ import (
 )
 
 // prva vrednost je min,druga je max
-func GetGlobalSummaryMinMax(compSSTable *map[string][]int64, compress1, compress2, oneFile bool) (datatype.DataType, datatype.DataType) {
+func GetGlobalSummaryMinMax(compSSTable *map[string][]int64, compress1, compress2 bool) (datatype.DataType, datatype.DataType) {
 	var minData, maxData datatype.DataType
 	for path, _ := range *compSSTable {
-		currentMin, currentMax, _ := GetSummaryMinMax(path, compress1, compress2, oneFile)
+		currentMin, currentMax, _ := GetSummaryMinMax(path, compress1, compress2)
 		if minData.GetKey() == "" || minData.GetKey() > currentMin.GetKey() {
 			minData = currentMin
 		}
@@ -23,7 +23,9 @@ func GetGlobalSummaryMinMax(compSSTable *map[string][]int64, compress1, compress
 }
 
 // prva vrednost je min,druga je max
-func GetSummaryMinMax(filePath string, compress1, compress2, oneFile bool) (datatype.DataType, datatype.DataType, int64) {
+func GetSummaryMinMax(filePath string, compress1, compress2 bool) (datatype.DataType, datatype.DataType, int64) {
+	oneFile := GetOneFile(filePath)
+
 	var minData, maxData datatype.DataType
 	fileName := "/Summary.bin"
 	if oneFile {

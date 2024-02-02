@@ -8,12 +8,9 @@ import (
 	"time"
 )
 
-//func summaryContains(prefix string, compress1, compress2, oneFile bool) bool {
-//
-//	return false
-//}
+func GetByPrefix(filePath string, prefix string, compress1, compress2 bool, number *int) ([]datatype.DataType, string, int64, bool) {
+	oneFile := GetOneFile(filePath)
 
-func GetByPrefix(filePath string, prefix string, compress1, compress2, oneFile bool, number *int) ([]datatype.DataType, string, int64, bool) {
 	var data []datatype.DataType
 	var hashMap *map[string]int32
 	var err error
@@ -33,14 +30,16 @@ func GetByPrefix(filePath string, prefix string, compress1, compress2, oneFile b
 	//ako 1. sadrzi prefix citaj redom dok ne procitas sve ili dok ne nadjes prvi bez prefixa
 	//ako 1. ne sadrzi, produzi dalje.....
 
-	data, offset, err3 := ReadByPrefix(fileName, compress1, compress2, 0, 0, prefix, oneFile, hashMap, number)
+	data, offset, err3 := ReadByPrefix(fileName, compress1, compress2, 0, 0, prefix, hashMap, number)
 	if err3 == false {
 		return data, "", 0, false
 	}
 	return data, fileName, offset, true
 	return data, "", 0, false
 }
-func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, prefix string, oneFile bool, hashMap *map[string]int32, number *int) ([]datatype.DataType, int64, bool) {
+
+func ReadByPrefix(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, prefix string, hashMap *map[string]int32, number *int) ([]datatype.DataType, int64, bool) {
+	oneFile := GetOneFile(filePath)
 
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	var result []datatype.DataType

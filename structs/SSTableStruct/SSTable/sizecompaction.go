@@ -61,13 +61,13 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, N, M,
 	//Bloom Filter fajl
 	fileBloom := newFilePath + "/BloomFilter.bin"
 
-	GetOffsetStartEnd(&compSSTable, oneFile)
+	GetOffsetStartEnd(&compSSTable)
 
 	//var minData, maxData datatype.DataType
 
 	// glavna petlja
 
-	minData, maxData := GetGlobalSummaryMinMax(&compSSTable, compres1, compres2, oneFile)
+	minData, maxData := GetGlobalSummaryMinMax(&compSSTable, compres1, compres2)
 	indexData, err = SerializeIndexData(minData.GetKey(), accIndex, compres1, compres2, (*dictionary)[minData.GetKey()])
 	if err != nil {
 		return false
@@ -81,7 +81,7 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, N, M,
 	i := 0
 	for true {
 
-		data, greska := getNextRecord(&compSSTable, compres1, compres2, oneFile)
+		data, greska := getNextRecord(&compSSTable, compres1, compres2)
 		if greska == false && data.GetKey() != "" {
 			continue
 		}
@@ -182,7 +182,14 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, N, M,
 
 	return true
 }
-func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64, oneFile bool, elem int) (datatype.DataType, int64, bool) {
+func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64, elem int) (datatype.DataType, int64, bool) {
+	oneFile := GetOneFile(filePath)
+	filename := "/Data.bin"
+	if oneFile {
+		filename = "/SSTable.bin"
+	}
+	filePath += filename
+
 	var decodeMap *map[string]int32
 	Data := datatype.CreateDataType("", []byte(""), time.Now())
 	var size, sizeEnd int64
@@ -423,8 +430,8 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 	return *Data, currentRead, true
 }
 
-func setStartEndOffset(filePath string, numberSSTable int, oneFile bool) ([]int64, []int64, bool) {
-
+func setStartEndOffset(filePath string, numberSSTable int) ([]int64, []int64, bool) {
+	oneFile := GetOneFile(filePath)
 	endOffsetList := make([]int64, numberSSTable)
 	startOffsetList := make([]int64, numberSSTable)
 	fileName := "/Data.bin"
@@ -459,28 +466,21 @@ func setStartEndOffset(filePath string, numberSSTable int, oneFile bool) ([]int6
 	return startOffsetList, endOffsetList, true
 }
 
-func getNextRecord(compSSTable *map[string][]int64, compres1, compres2, oneFile bool) (datatype.DataType, bool) {
+func getNextRecord(compSSTable *map[string][]int64, compres1, compres2 bool) (datatype.DataType, bool) {
+
 	var elem int
 	elem = 5
 	var data datatype.DataType
 	data.SetKey("")
 	same := 0
-	filename := "/Data.bin"
-	if oneFile {
-		filename = "/SSTable.bin"
-	}
+
 	for path, _ := range *compSSTable {
 		if (*compSSTable)[path][0] == (*compSSTable)[path][3] {
 			same += 1
 			continue
 		}
-		file, err := os.OpenFile(path, os.O_RDONLY, 0666)
-		if err != nil {
-			return data, false
-		}
-		defer file.Close()
 
-		currentData, _, err1 := ReadDataCompact(path+filename, compres1, compres2, (*compSSTable)[path][0], oneFile, elem)
+		currentData, _, err1 := ReadDataCompact(path, compres1, compres2, (*compSSTable)[path][0], elem)
 		if err1 != true {
 			return data, false
 		}
@@ -510,7 +510,7 @@ func getNextRecord(compSSTable *map[string][]int64, compres1, compres2, oneFile 
 		}
 		defer file.Close()
 
-		currentData, read, err1 := ReadDataCompact(path+filename, compres1, compres2, (*compSSTable)[path][0], oneFile, elem)
+		currentData, read, err1 := ReadDataCompact(path, compres1, compres2, (*compSSTable)[path][0], elem)
 		if err1 != true {
 			return data, false
 		}

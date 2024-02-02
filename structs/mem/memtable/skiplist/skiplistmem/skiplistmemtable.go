@@ -44,7 +44,7 @@ func (slmem *SkipListMemtable) SendToSSTable(compress1, compress2, oneFile bool,
 
 	newSstableName, _ := LSM.FindNextDestination(0)
 	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
-	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
+	SSTable.ReadSSTable(newSstableName, compress1, compress2)
 
 	slmem.data = skipliststruct.CreateSkipList(slmem.capacity)
 	slmem.length = 0

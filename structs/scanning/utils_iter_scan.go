@@ -249,7 +249,7 @@ func PrefixIterateSSTable(prefix string, compress1, compress2, oneFile bool) *it
 	for i := 0; i < len(Levels); i++ {
 		ssTemp, _ := ioutil.ReadDir("./DataSSTable/L" + strconv.Itoa(i))
 		for j := 0; j < len(ssTemp); j++ {
-			prvi, poslednji, _ := SSTable.GetSummaryMinMax("./DataSSTable/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(j+1), compress1, compress2, oneFile)
+			prvi, poslednji, _ := SSTable.GetSummaryMinMax("./DataSSTable/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(j+1), compress1, compress2)
 			if prefix < prvi.GetKey()[:duzinaPref] || prefix > poslednji.GetKey()[:duzinaPref] {
 				continue
 			} else {
@@ -273,7 +273,7 @@ func RangeIterateSSTable(rang [2]string, compress1, compress2, oneFile bool) *it
 	for i := 0; i < len(Levels); i++ {
 		ssTemp, _ := ioutil.ReadDir("./DataSSTable/L" + strconv.Itoa(i))
 		for j := 0; j < len(ssTemp); j++ {
-			prvi, poslednji, _ := SSTable.GetSummaryMinMax("./DataSSTable/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(j+1), compress1, compress2, oneFile)
+			prvi, poslednji, _ := SSTable.GetSummaryMinMax("./DataSSTable/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(j+1), compress1, compress2)
 			if rang[1] < prvi.GetKey() || rang[0] > poslednji.GetKey() {
 				continue
 			} else {

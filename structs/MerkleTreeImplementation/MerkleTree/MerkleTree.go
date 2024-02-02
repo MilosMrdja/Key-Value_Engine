@@ -276,8 +276,8 @@ func CheckChanges(mt1 *MerkleTree, mt2 *MerkleTree) ([]int, bool) {
 			// neka konstanta c, nece svi elementi biti promenjeni, samo par njih
 			// ukupna kompleksnost O((log(n)-1) * (c)) = O(log(n))
 			for k := 0; k < len(tempRes); k++ {
-				res = append(res, tempRes[k].index)
 				k += 1
+				res = append(res, tempRes[k].index)
 			}
 			break
 		}

@@ -9,7 +9,9 @@ import (
 	"time"
 )
 
-func GetData(filePath string, key string, compress1, compress2 bool, oneFile bool) (datatype.DataType, bool) {
+func GetData(filePath string, key string, compress1, compress2 bool) (datatype.DataType, bool) {
+	oneFile := GetOneFile(filePath)
+
 	var data datatype.DataType
 	var hashMap *map[string]int32
 	if oneFile {
@@ -34,16 +36,16 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 		file.Close()
 
 		if isInFile == true {
-			offsetStart, offsetEnd, err3 := GetOffset(fileName, key, compress1, compress2, 0, 0, oneFile, 2, hashMap)
+			offsetStart, offsetEnd, err3 := GetOffset(fileName, key, compress1, compress2, 0, 0, 2, hashMap)
 			if err3 == false {
 				return data, false
 			}
-			offsetStart, offsetEnd, err3 = GetOffset(fileName, key, compress1, compress2, offsetStart, offsetEnd, oneFile, 3, hashMap)
+			offsetStart, offsetEnd, err3 = GetOffset(fileName, key, compress1, compress2, offsetStart, offsetEnd, 3, hashMap)
 			if err3 == false {
 				return data, false
 			}
 			fmt.Printf("%d\n", offsetStart)
-			data, err3 = ReadData(fileName, compress1, compress2, offsetStart, offsetEnd, key, oneFile, hashMap)
+			data, err3 = ReadData(fileName, compress1, compress2, offsetStart, offsetEnd, key, hashMap)
 			if err3 == false {
 				return data, false
 			}
@@ -70,16 +72,16 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 					panic(err)
 				}
 			}
-			offsetStart, offsetEnd, err3 := GetOffset(filePath+"/Summary.bin", key, compress1, compress2, 0, 0, oneFile, 2, hashMap)
+			offsetStart, offsetEnd, err3 := GetOffset(filePath+"/Summary.bin", key, compress1, compress2, 0, 0, 2, hashMap)
 			if err3 == false {
 				return data, false
 			}
-			offsetStart, offsetEnd, err3 = GetOffset(filePath+"/Index.bin", key, compress1, compress2, offsetStart, offsetEnd, oneFile, 3, hashMap)
+			offsetStart, offsetEnd, err3 = GetOffset(filePath+"/Index.bin", key, compress1, compress2, offsetStart, offsetEnd, 3, hashMap)
 			if err3 == false {
 				return data, false
 			}
 			fmt.Printf("%d\n", offsetStart)
-			data, err3 = ReadData(filePath+"/Data.bin", compress1, compress2, offsetStart, offsetEnd, key, oneFile, hashMap)
+			data, err3 = ReadData(filePath+"/Data.bin", compress1, compress2, offsetStart, offsetEnd, key, hashMap)
 			if err3 == false {
 				return data, false
 			}
@@ -92,7 +94,9 @@ func GetData(filePath string, key string, compress1, compress2 bool, oneFile boo
 	return data, false
 }
 
-func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, key string, oneFile bool, hashMap *map[string]int32) (datatype.DataType, bool) {
+func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, key string, hashMap *map[string]int32) (datatype.DataType, bool) {
+	oneFile := GetOneFile(filePath)
+
 	Data := datatype.CreateDataType("", []byte(""), time.Now())
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
@@ -362,14 +366,15 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 	return *Data, false
 }
 
-func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, offsetEnd int64, oneFile bool, elem int, hashMap *map[string]int32) (int64, int64, bool) {
+func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, offsetEnd int64, elem int, hashMap *map[string]int32) (int64, int64, bool) {
 	//ukoliko je u odvojenim fajlovima, prosljedjuje se cela putanja
 	//ukoliko je u jednom prosledjuje se putanja da odgovarajuceg fajla SSTable
 
+	oneFile := GetOneFile(filePath)
 	var summaryRead int64
 	summaryRead = 0
 	if elem == 2 {
-		_, _, summaryRead = GetSummaryMinMax(filePath, compress1, compress2, oneFile)
+		_, _, summaryRead = GetSummaryMinMax(filePath, compress1, compress2)
 	}
 
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)

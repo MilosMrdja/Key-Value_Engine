@@ -81,7 +81,7 @@ func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memta
 					a := make([]int64, 2)
 					compSSTable[dataDir.Name()+"/L"+strconv.Itoa(i)+"/"+sstableName[j]] = a
 				}
-				SSTable.GetOffsetStartEnd(&compSSTable, oneFile)
+				SSTable.GetOffsetStartEnd(&compSSTable)
 				SSTable.NewSSTableCompact(newSstableName, compSSTable, N, M, maxElemSize, compres1, compres2, oneFile)
 				fmt.Printf("%d", maxElemSize)
 				deleteLayer(dataDir.Name() + "/L" + strconv.Itoa(i))
@@ -111,7 +111,7 @@ func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memta
 				//jedna tabela sa prethodnog novoa + ostale tabele sa narednog nivoa
 				maxElemSize := memtableCap * int(math.Pow(10, float64(i)))
 				randSST := rand.Intn(len(sstableName)-1) + 1
-				minData, maxData, _ := SSTable.GetSummaryMinMax(dataDir.Name()+"/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(randSST), compres1, compres2, oneFile)
+				minData, maxData, _ := SSTable.GetSummaryMinMax(dataDir.Name()+"/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(randSST), compres1, compres2)
 
 				compSSTable = GetSSTableLevelComp(minData, maxData, dataDir.Name()+"/L"+strconv.Itoa(i+1), compres1, compres2, oneFile)
 				if compSSTable == nil {
@@ -119,7 +119,7 @@ func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memta
 				}
 				a := make([]int64, 2)
 				compSSTable[dataDir.Name()+"/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(randSST)] = a
-				SSTable.GetOffsetStartEnd(&compSSTable, oneFile)
+				SSTable.GetOffsetStartEnd(&compSSTable)
 				fmt.Printf("%s", maxElemSize)
 				newSstableName, _ := FindNextDestination(i + 1)
 				fmt.Println(newSstableName)
@@ -192,7 +192,7 @@ func GetSSTableLevelComp(minData, maxData datatype.DataType, filePath string, co
 	}
 
 	for _, name := range sstableName {
-		currentMin, currentMax, _ := SSTable.GetSummaryMinMax(filePath+"/"+name, compres1, compres2, oneFile)
+		currentMin, currentMax, _ := SSTable.GetSummaryMinMax(filePath+"/"+name, compres1, compres2)
 		if currentMin.GetKey() <= minData.GetKey() && currentMax.GetKey() >= minData.GetKey() {
 
 			a := make([]int64, 2)

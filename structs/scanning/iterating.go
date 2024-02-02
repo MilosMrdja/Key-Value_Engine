@@ -40,7 +40,7 @@ func RANGE_ITERATE(valueRange [2]string, memIterator *iterator.RangeIterator, ss
 			if ssIterator.PositionInSSTable[k][0] == ssIterator.PositionInSSTable[k][1] {
 				break
 			}
-			record, offset := SSTable.GetRecord(k, ssIterator.PositionInSSTable[k][0], compress1, compress2, oneFile)
+			record, offset := SSTable.GetRecord(k, ssIterator.PositionInSSTable[k][0], compress1, compress2)
 
 			if !isInRange(record.GetKey(), ssIterator.Rang) && record.GetKey() > ssIterator.Rang[1] {
 				v[0] = v[1]
@@ -90,7 +90,7 @@ func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssItera
 			if ssIterator.GetSSTableMap()[k][0] == ssIterator.GetSSTableMap()[k][1] {
 				break
 			}
-			record, offset := SSTable.GetRecord(k, ssIterator.GetSSTableMap()[k][0], compress1, compress2, oneFile)
+			record, offset := SSTable.GetRecord(k, ssIterator.GetSSTableMap()[k][0], compress1, compress2)
 
 			if !strings.HasPrefix(record.GetKey(), ssIterator.Prefix) && record.GetKey() > ssIterator.Prefix {
 				v[0] = v[1]

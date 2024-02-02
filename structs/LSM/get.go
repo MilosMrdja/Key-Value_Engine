@@ -32,7 +32,7 @@ func GetByKey(key string, compress1, compress2, oneFile bool) (datatype.DataType
 			panic(errNames)
 		}
 		for j := len(sstableName) - 1; j >= 0; j-- {
-			data, greska := SSTable.GetData("./DataSStable"+"/L"+strconv.Itoa(i)+"/"+sstableName[j], key, compress1, compress2, oneFile)
+			data, greska := SSTable.GetData("./DataSStable"+"/L"+strconv.Itoa(i)+"/"+sstableName[j], key, compress1, compress2)
 			if data.GetKey() == key {
 				return data, greska
 			}
@@ -66,7 +66,7 @@ func GetDataByPrefix(number *int, prefix string, compress1, compress2, oneFile b
 			panic(errNames)
 		}
 		for j := len(sstableName) - 1; j >= 0; j-- {
-			data, path, offset, greska := SSTable.GetByPrefix("./DataSStable"+"/L"+strconv.Itoa(i)+"/"+sstableName[j], prefix, compress1, compress2, oneFile, number)
+			data, path, offset, greska := SSTable.GetByPrefix("./DataSStable"+"/L"+strconv.Itoa(i)+"/"+sstableName[j], prefix, compress1, compress2, number)
 			return data, path, offset, greska
 		}
 	}
@@ -97,7 +97,7 @@ func GetDataByRange(number *int, valrange []string, compress1, compress2, oneFil
 			panic(errNames)
 		}
 		for j := len(sstableName) - 1; j >= 0; j-- {
-			data, path, offset, greska := SSTable.GetByRange("./DataSStable"+"/L"+strconv.Itoa(i)+"/"+sstableName[j], valrange, compress1, compress2, oneFile, number)
+			data, path, offset, greska := SSTable.GetByRange("./DataSStable"+"/L"+strconv.Itoa(i)+"/"+sstableName[j], valrange, compress1, compress2, number)
 			return data, path, offset, greska
 		}
 	}

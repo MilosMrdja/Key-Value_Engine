@@ -34,6 +34,8 @@ func NewCursor(memType string, maxMem int, lruPointer *lru.LRUCache, compress1 b
 			memPointers[i] = hashstruct.CreateHashMemtable(memCap)
 		} else if memType == "skipl" {
 			memPointers[i] = skiplistmem.CreateSkipListMemtable(memCap)
+		} else if memType == "btree" {
+			memPointers[i] = btreemem.NewBTreeMemtable(memCap)
 		} else {
 			memPointers[i] = btreemem.NewBTreeMemtable(memCap)
 		}

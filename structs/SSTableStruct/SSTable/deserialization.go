@@ -8,7 +8,9 @@ import (
 )
 
 // vraca uspesnot i niz za merkle
-func ReadSSTable(filePath string, compress1, compress2, oneFile bool) (bool, [][]byte) {
+func ReadSSTable(filePath string, compress1, compress2 bool) (bool, [][]byte) {
+
+	oneFile := GetOneFile(filePath)
 
 	fileName := filePath + "/Data.bin"
 	if oneFile {
@@ -279,7 +281,10 @@ func GetKeyByValue(mapa *map[string]int32, val int32) string {
 	return ""
 }
 
-func ReadIndex(fileName string, compress1, compress2 bool, elem int, oneFile bool) bool {
+func ReadIndex(fileName string, compress1, compress2 bool, elem int) bool {
+
+	oneFile := GetOneFile(fileName)
+
 	if oneFile {
 		fileName = fileName + "/SSTable.bin"
 	}

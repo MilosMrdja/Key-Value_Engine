@@ -8,7 +8,8 @@ import (
 	"time"
 )
 
-func GetRecord(filePath string, beginOffset uint64, compress1, compress2, oneFile bool) (datatype.DataType, uint32) {
+func GetRecord(filePath string, beginOffset uint64, compress1, compress2 bool) (datatype.DataType, uint32) {
+	oneFile := GetOneFile(filePath)
 	fileName := filePath + "/Data.bin"
 	if oneFile {
 		fileName = filePath + "/SSTable.bin"

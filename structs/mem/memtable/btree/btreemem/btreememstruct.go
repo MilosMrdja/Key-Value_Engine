@@ -108,7 +108,7 @@ func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool, N,
 
 	newSstableName, _ := LSM.FindNextDestination(0)
 	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
-	SSTable.ReadSSTable(newSstableName, compress1, compress2, oneFile)
+	SSTable.ReadSSTable(newSstableName, compress1, compress2)
 
 	btmem.data = btree.NewBTree(btmem.capacity)
 	btmem.length = 0
