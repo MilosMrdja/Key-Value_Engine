@@ -13,14 +13,9 @@ import (
 	count_min_sketch "sstable/cms"
 	"sstable/cursor"
 	"sstable/hyperloglog/hyperloglog"
-	"sstable/iterator"
 	"sstable/lru"
-	"sstable/mem/memtable/hash/hashmem"
-	"sstable/mem/memtable/hash/hashstruct"
-	"sstable/scanning"
 	"sstable/token_bucket"
 	"sstable/wal_implementation"
-	"strconv"
 	"time"
 )
 
@@ -32,7 +27,7 @@ var N int
 var M int
 var memTableCap, memTableNumber int
 var memType, compType string
-var walSegmentSize int
+var walSegmentSize, maxSSTLevel int
 var rate, maxToken int64
 var key, value string
 
@@ -51,6 +46,7 @@ type Config struct {
 	Rate           int64  `json:"rate"`
 	MaxToken       int64  `json:"maxToken"`
 	CompType       string `json:"compType"`
+	MaxSSTLevel    int    `json:"maxSSTLevel"`
 }
 
 func setConst() {
@@ -111,6 +107,10 @@ func setConst() {
 	if compType != "size" && compType != "level" {
 		compType = "size"
 	}
+	maxSSTLevel = config.MaxSSTLevel
+	if maxSSTLevel <= 0 {
+		maxSSTLevel = 3
+	}
 
 }
 
@@ -152,9 +152,12 @@ func GET(lru1 *lru.LRUCache, memtable *cursor.Cursor, key string) ([]byte, bool)
 	}
 
 	data, ok := LSM.GetByKey(key, compress1, compress2, oneFile)
-	if ok {
+	if ok && data.GetKey() != "" {
 		fmt.Printf("Value: %s\n", data.GetData())
 		return data.GetData(), ok
+	} else if data.GetKey() == "" && ok {
+		fmt.Printf("Postoji greska u podacima!\n")
+		return data.GetData(), false
 	} else {
 		fmt.Printf("Nema ga\n")
 		return nil, false
@@ -228,7 +231,7 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 					fmt.Println("Error:", err)
 					return
 				}
-				bf := bloomfilter.CreateBloomFilter(int(n))
+				bf := bloomfilter.CreateBloomFilter(uint64(n))
 				serializedData, _ := bloomfilter.SerializeBloomFilter(bf)
 				PUT(wal, memtable, key, serializedData)
 				fmt.Printf("BloomFilter je upisan u sistem!")
@@ -678,46 +681,46 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 
 }
 
-func scantest() {
-	var mapMem map[*hashmem.Memtable]int
-	prefix := "1"
-	mapMem = make(map[*hashmem.Memtable]int)
-
-	j := 0
-
-	for i := 0; i < 5; i++ {
-		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(15))
-		for k := 0; k < 14; k++ {
-			btm.AddElement(strconv.Itoa(k), []byte(strconv.Itoa(k)), time.Now())
-
-		}
-		btm.SendToSSTable(compress1, compress2, oneFile, 2, 3)
-
-	}
-	j = 17
-	for i := 0; i < 5; i++ {
-		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
-		for k := 0; k < 10; k++ {
-			btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)), time.Now())
-			j++
-		}
-
-		mapMem[&btm] = 0
-	}
-	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
-	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
-	scanning.PREFIX_SCAN_OUTPUT(prefix, 1, 10, iterMem, iterSSTable, compress1, compress2, oneFile)
-
-	for k, _ := range mapMem {
-		mapMem[k] = 0
-	}
-	j = 0
-	valRange := [2]string{"1", "2"}
-	iterMemR := iterator.NewRangeIterator(mapMem, valRange)
-	iterSSTableR := scanning.RangeIterateSSTable(valRange, compress2, compress1, oneFile)
-	scanning.RANGE_SCAN_OUTPUT(valRange, 1, 10, iterMemR, iterSSTableR, compress1, compress2, oneFile)
-	fmt.Println("")
-}
+//func scantest() {
+//	var mapMem map[*hashmem.Memtable]int
+//	prefix := "1"
+//	mapMem = make(map[*hashmem.Memtable]int)
+//
+//	j := 0
+//
+//	for i := 0; i < 5; i++ {
+//		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(15))
+//		for k := 0; k < 14; k++ {
+//			btm.AddElement(strconv.Itoa(k), []byte(strconv.Itoa(k)), time.Now())
+//
+//		}
+//		btm.SendToSSTable(compress1, compress2, oneFile, 2, 3)
+//
+//	}
+//	j = 17
+//	for i := 0; i < 5; i++ {
+//		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
+//		for k := 0; k < 10; k++ {
+//			btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)), time.Now())
+//			j++
+//		}
+//
+//		mapMem[&btm] = 0
+//	}
+//	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
+//	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
+//	scanning.PREFIX_SCAN_OUTPUT(prefix, 1, 10, iterMem, iterSSTable, compress1, compress2, oneFile)
+//
+//	for k, _ := range mapMem {
+//		mapMem[k] = 0
+//	}
+//	j = 0
+//	valRange := [2]string{"1", "2"}
+//	iterMemR := iterator.NewRangeIterator(mapMem, valRange)
+//	iterSSTableR := scanning.RangeIterateSSTable(valRange, compress2, compress1, oneFile)
+//	scanning.RANGE_SCAN_OUTPUT(valRange, 1, 10, iterMemR, iterSSTableR, compress1, compress2, oneFile)
+//	fmt.Println("")
+//}
 
 func main() {
 	setConst()
@@ -726,8 +729,8 @@ func main() {
 	tokenb := token_bucket.NewTokenBucket(rate, maxToken)
 	tokenb.InitRequestsFile("token_bucket/requests.bin")
 	lru1 := lru.NewLRUCache(lruCap)
-	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, number, memTableCap, compType)
-	//memtable.Fill(wal)
+	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, number, memTableCap, compType, maxSSTLevel)
+	memtable.Fill(wal)
 
 	meni(wal, lru1, memtable, tokenb)
 

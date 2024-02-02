@@ -1,8 +1,10 @@
 package SSTable
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
+	"hash/crc32"
 	"os"
 	"sstable/bloomfilter/bloomfilter"
 	"sstable/mem/memtable/datatype"
@@ -72,16 +74,15 @@ func GetData(filePath string, key string, compress1, compress2 bool) (datatype.D
 					panic(err)
 				}
 			}
-			offsetStart, offsetEnd, err3 := GetOffset(filePath+"/Summary.bin", key, compress1, compress2, 0, 0, 2, hashMap)
+			offsetStart, offsetEnd, err3 := GetOffset(filePath, key, compress1, compress2, 0, 0, 2, hashMap)
 			if err3 == false {
 				return data, false
 			}
-			offsetStart, offsetEnd, err3 = GetOffset(filePath+"/Index.bin", key, compress1, compress2, offsetStart, offsetEnd, 3, hashMap)
+			offsetStart, offsetEnd, err3 = GetOffset(filePath, key, compress1, compress2, offsetStart, offsetEnd, 3, hashMap)
 			if err3 == false {
 				return data, false
 			}
-			fmt.Printf("%d\n", offsetStart)
-			data, err3 = ReadData(filePath+"/Data.bin", compress1, compress2, offsetStart, offsetEnd, key, hashMap)
+			data, err3 = ReadData(filePath, compress1, compress2, offsetStart, offsetEnd, key, hashMap)
 			if err3 == false {
 				return data, false
 			}
@@ -96,7 +97,12 @@ func GetData(filePath string, key string, compress1, compress2 bool) (datatype.D
 
 func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd int64, key string, hashMap *map[string]int32) (datatype.DataType, bool) {
 	oneFile := GetOneFile(filePath)
-
+	var crc, tempCRC bytes.Buffer
+	if !oneFile {
+		filePath += "/Data.bin"
+	} else {
+		filePath += "/SSTable.bin"
+	}
 	Data := datatype.CreateDataType("", []byte(""), time.Now())
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
@@ -147,6 +153,8 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 	currentData = []byte("")
 	data := datatype.CreateDataType(currentKey, currentData, timestamp)
 	for offsetStart <= offsetEnd {
+		crc.Reset()
+		tempCRC.Reset()
 		//read CRC
 		bytes := make([]byte, 4)
 		file.Seek(currentRead+oldOffsetStart, 0)
@@ -155,6 +163,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 			panic(err)
 		}
 		currentRead += 4
+		crc.Write(bytes)
 
 		// read timestamp
 		bytes = make([]byte, 16)
@@ -167,6 +176,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 		//fmt.Printf("%d", bytes)
 		nano := int64(binary.BigEndian.Uint64(bytes[8:]))
 		timestamp = time.Unix(nano, 0)
+		tempCRC.Write(bytes)
 
 		// read tombstone
 		bytes = make([]byte, 1)
@@ -177,22 +187,27 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 		}
 		tomb := int(bytes[0])
 		currentRead += 1
+		tempCRC.Write(bytes)
 		//fmt.Printf("%d", bytes)
 
 		if compress2 {
 			if compress1 {
 				// read key size - ne postoji
-
 				// read value size
 				var valueSize int64
 				var m int
 				if tomb == 0 {
 					valueSize, m = binary.Varint(bytesFile[currentRead:])
+
+					next := currentRead + int64(m)
+					tempCRC.Write(bytesFile[currentRead:next])
 					currentRead += int64(m)
 				}
 
 				// read key
 				tempKey, k := binary.Varint(bytesFile[currentRead:])
+				next := currentRead + int64(k)
+				tempCRC.Write(bytesFile[currentRead:next])
 				currentKey = GetKeyByValue(hashMap, int32(tempKey))
 				//fmt.Printf("Key: %s ", ss)
 				currentRead += int64(k)
@@ -207,6 +222,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					//fmt.Printf("Value: %s", bytes)
 					currentRead += int64(valueSize)
 					currentData = bytes
+					tempCRC.Write(bytes)
 				} else if currentKey == key {
 					return *data, false
 				}
@@ -214,6 +230,9 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					data.SetData(currentData)
 					data.SetKey(currentKey)
 					data.SetChangeTime(timestamp)
+					if crc32.ChecksumIEEE(tempCRC.Bytes()) != binary.BigEndian.Uint32(crc.Bytes()) {
+						data.SetKey("")
+					}
 					return *data, true
 				}
 			} else {
@@ -231,6 +250,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					}
 					currentRead += 8
 					valueSize = binary.BigEndian.Uint64(buff)
+					tempCRC.Write(buff)
 				}
 
 				// read key
@@ -241,6 +261,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 				}
 				currentRead += 4
 				tempKey := binary.BigEndian.Uint32(buff)
+				tempCRC.Write(buff)
 				currentKey = GetKeyByValue(hashMap, int32(tempKey))
 				//fmt.Printf("Key : %s ", ss)
 
@@ -254,6 +275,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					//fmt.Printf("Value: %s", buff)
 					currentRead += int64(valueSize)
 					currentData = buff
+					tempCRC.Write(buff)
 				} else if currentKey == key {
 					return *data, false
 				}
@@ -261,6 +283,9 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					data.SetData(currentData)
 					data.SetKey(currentKey)
 					data.SetChangeTime(timestamp)
+					if crc32.ChecksumIEEE(tempCRC.Bytes()) != binary.BigEndian.Uint32(crc.Bytes()) {
+						data.SetKey("")
+					}
 					return *data, true
 				}
 
@@ -269,12 +294,17 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 			if compress1 {
 				// read key size
 				keySize, n := binary.Varint(bytesFile[currentRead:])
+				next := currentRead + int64(n)
+				tempCRC.Write(bytesFile[currentRead:next])
 				currentRead += int64(n)
 				// read value size
 				var valueSize int64
 				var m int
 				if tomb == 0 {
 					valueSize, m = binary.Varint(bytesFile[currentRead:])
+
+					next = currentRead + int64(n)
+					tempCRC.Write(bytesFile[currentRead:next])
 					currentRead += int64(m)
 				}
 				// read key
@@ -282,6 +312,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 
 				file.Seek(currentRead+oldOffsetStart, 0)
 				_, err = file.Read(bytes)
+				tempCRC.Write(bytes)
 				if err != nil {
 					panic(err)
 				}
@@ -299,6 +330,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					//fmt.Printf("Value: %s", bytes)
 					currentRead += valueSize
 					currentData = bytes
+					tempCRC.Write(bytes)
 				} else if currentKey == key {
 					return *data, false
 				}
@@ -306,6 +338,11 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					data.SetData(currentData)
 					data.SetKey(currentKey)
 					data.SetChangeTime(timestamp)
+					t := crc32.ChecksumIEEE(tempCRC.Bytes())
+					t1 := binary.BigEndian.Uint32(crc.Bytes())
+					if t != t1 {
+						data.SetKey("")
+					}
 					return *data, true
 				}
 
@@ -316,6 +353,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					panic(err)
 				}
 				currentRead += 8
+				tempCRC.Write(bytes)
 				keySize := binary.BigEndian.Uint64(bytes)
 				//fmt.Printf("%d", bytes)
 				var valueSize uint64
@@ -326,6 +364,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					if err != nil {
 						panic(err)
 					}
+					tempCRC.Write(bytes)
 					valueSize = binary.BigEndian.Uint64(bytes)
 					currentRead += 8
 					//fmt.Printf("%d", bytes)
@@ -337,6 +376,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 				}
 				currentRead += int64(keySize)
 				currentKey = string(bytes)
+				tempCRC.Write(bytes)
 				//fmt.Printf("Key: %s ", bytes)
 				// read value
 				if tomb == 0 {
@@ -349,6 +389,7 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					//fmt.Printf("Value: %s", bytes)
 					currentRead += int64(valueSize)
 					currentData = bytes
+					tempCRC.Write(bytes)
 				} else if currentKey == key {
 					return *data, false
 				}
@@ -356,6 +397,9 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 					data.SetData(currentData)
 					data.SetKey(currentKey)
 					data.SetChangeTime(timestamp)
+					if crc32.ChecksumIEEE(tempCRC.Bytes()) != binary.BigEndian.Uint32(crc.Bytes()) {
+						data.SetKey("")
+					}
 					return *data, true
 				}
 
@@ -376,7 +420,11 @@ func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, off
 	if elem == 2 {
 		_, _, summaryRead = GetSummaryMinMax(filePath, compress1, compress2)
 	}
-
+	if !oneFile {
+		filePath += "/Summary.bin"
+	} else {
+		filePath += "/SSTable.bin"
+	}
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
 	if err != nil {
 		return 0, 0, false

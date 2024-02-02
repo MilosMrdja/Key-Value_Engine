@@ -5,11 +5,28 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="1a98e096-3453-4118-8f80-f460cf0ec07e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../.idea/advancedalg.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_1_31_2024_9_56_PM__Changes_.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_1_31_2024_9_56_PM__Changes_.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/EncodedKeys.bin" beforeDir="false" afterPath="$PROJECT_DIR$/EncodedKeys.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSM/get.go" beforeDir="false" afterPath="$PROJECT_DIR$/LSM/get.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSM/lsm.go" beforeDir="false" afterPath="$PROJECT_DIR$/LSM/lsm.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SSTableStruct/SSTable/SSTable.go" beforeDir="false" afterPath="$PROJECT_DIR$/SSTableStruct/SSTable/SSTable.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SSTableStruct/SSTable/search.go" beforeDir="false" afterPath="$PROJECT_DIR$/SSTableStruct/SSTable/search.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SSTableStruct/SSTable/sizecompaction.go" beforeDir="false" afterPath="$PROJECT_DIR$/SSTableStruct/SSTable/sizecompaction.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SSTableStruct/SSTable/summaryMinMax.go" beforeDir="false" afterPath="$PROJECT_DIR$/SSTableStruct/SSTable/summaryMinMax.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bloomfilter/bloomfilter.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/bloomfilter/bloomfilter/bloomfilter.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/bloomfilter/bloomfilter/bloomfilter.go" beforeDir="false" afterPath="$PROJECT_DIR$/bloomfilter/bloomfilter/bloomfilter.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.json" beforeDir="false" afterPath="$PROJECT_DIR$/config.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cursor/cursor.go" beforeDir="false" afterPath="$PROJECT_DIR$/cursor/cursor.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/btree/btreemem/btreememstruct.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/btree/btreemem/btreememstruct.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/hash/hashmem/memtable.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/hash/hashmem/memtable.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/hash/hashstruct/hashmem.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/hash/hashstruct/hashmem.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mem/memtable/skiplist/skiplistmem/skiplistmemtable.go" beforeDir="false" afterPath="$PROJECT_DIR$/mem/memtable/skiplist/skiplistmem/skiplistmemtable.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/token_bucket/requests.bin" beforeDir="false" afterPath="$PROJECT_DIR$/token_bucket/requests.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wal_implementation/EndsOfMemtables.bin" beforeDir="false" afterPath="$PROJECT_DIR$/wal_implementation/EndsOfMemtables.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wal_implementation/wal/wal_00001.log" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,23 +46,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
-    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "lsm",
-    "go.import.settings.migrated": "true",
-    "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "D:/FAKS/3. semestar/Napredni algoritmi i strukture/Projekat/Key-Value_Engine",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;lsm&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Acer&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="go build sstable" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="structs" />
@@ -68,5 +85,21 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/LSM/get.go</url>
+          <line>34</line>
+          <option name="timeStamp" value="24" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/SSTableStruct/SSTable/search.go</url>
+          <line>340</line>
+          <option name="timeStamp" value="25" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

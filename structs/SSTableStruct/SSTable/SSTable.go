@@ -29,7 +29,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	accIndex = 0
 	duzinaDataList = len(dataList)
 	var err error
-	bloomFilter := bloomfilter.CreateBloomFilter(duzinaDataList)
+	bloomFilter := bloomfilter.CreateBloomFilter(uint64(duzinaDataList))
 
 	// mapa za enkodirane vrednosti
 	dictionary, err := DeserializationHashMap("EncodedKeys.bin")
@@ -165,6 +165,13 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 		end := fileInfo.Size()
 
 		fmt.Printf("Velicina SST: %d\n", end)
+
+		fileSummary.Close()
+		fileIndex.Close()
+		err = os.Remove(fileName + "/BloomFilter.bin")
+		err = os.Remove(fileName + "/Summary.bin")
+		err = os.Remove(fileName + "/Index.bin")
+		err = os.Remove(fileName + "/Merkle.bin")
 
 	}
 	_, err = SerializeHashmap("EncodedKeys.bin", dictionary)

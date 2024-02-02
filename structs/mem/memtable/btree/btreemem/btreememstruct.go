@@ -102,11 +102,11 @@ func (btmem *BTreeMemtable) SortDataTypes() []datatype.DataType {
 	return dataList
 }
 
-func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool {
+func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M, maxSSTlevel int) bool {
 
 	dataList := btmem.SortDataTypes()
 
-	newSstableName, _ := LSM.FindNextDestination(0)
+	newSstableName, _ := LSM.FindNextDestination(0, maxSSTlevel)
 	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2)
 

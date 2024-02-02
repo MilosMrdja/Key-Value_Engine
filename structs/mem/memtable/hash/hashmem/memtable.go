@@ -21,7 +21,7 @@ type Memtable interface {
 		Zapisi iz memtable se sortiraju i upisuju na disk
 		Potom se memtable "prazni" postavljanjem broja elemenata na 0, kreiranjem prazne strukture i postavljanjem ReadOnly na false
 	*/
-	SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool
+	SendToSSTable(compress1, compress2, oneFile bool, N, M, maxSSTlevel int) bool
 	IsReadOnly() bool
 	GetElementByPrefix(resultList []*datatype.DataType, n *int, prefix string)
 	GetElementByRange(resultList []*datatype.DataType, n *int, valRange []string)

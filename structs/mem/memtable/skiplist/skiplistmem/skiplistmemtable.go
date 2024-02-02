@@ -37,12 +37,12 @@ func (slmem *SkipListMemtable) SortDataTypes() []datatype.DataType {
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju
-func (slmem *SkipListMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M int) bool {
+func (slmem *SkipListMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M, maxSSTlevel int) bool {
 
 	dataList := make([]datatype.DataType, slmem.length)
 	dataList = slmem.data.AllData(slmem.length)
 
-	newSstableName, _ := LSM.FindNextDestination(0)
+	newSstableName, _ := LSM.FindNextDestination(0, maxSSTlevel)
 	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2)
 

@@ -22,7 +22,7 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, N, M,
 	acc = 0
 	accIndex = 0
 	var err error
-	bloomFilter := bloomfilter.CreateBloomFilter(memtableLen)
+	bloomFilter := bloomfilter.CreateBloomFilter(uint64(memtableLen))
 
 	// mapa za enkodirane vrednosti
 	dictionary, err := DeserializationHashMap("EncodedKeys.bin")

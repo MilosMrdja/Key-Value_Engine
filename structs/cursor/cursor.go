@@ -1,6 +1,7 @@
 package cursor
 
 import (
+	"encoding/binary"
 	"sstable/LSM"
 	"sstable/lru"
 	"sstable/mem/memtable/btree/btreemem"
@@ -17,17 +18,18 @@ type Cursor struct {
 	memIndex    int                // broj metabele koja je trenutno aktivna
 	lruPointer  *lru.LRUCache      // pokazivac na kes
 
-	compress1 bool   // da li je ukljucena kompresija duzine
-	compress2 bool   // da li je ukljucena kompresija sa recnikom
-	oneFile   bool   // da li se SSTable cuva u jednom fajlu
-	N         int    // razudjenost Index-a
-	M         int    // razudjenost Summary-ja
-	numTables int    // broj SSTabela na nivou
-	memCap    int    //kapacitet memtabele
-	compType  string //koja kompakcija se koristi
+	compress1   bool   // da li je ukljucena kompresija duzine
+	compress2   bool   // da li je ukljucena kompresija sa recnikom
+	oneFile     bool   // da li se SSTable cuva u jednom fajlu
+	N           int    // razudjenost Index-a
+	M           int    // razudjenost Summary-ja
+	numTables   int    // broj SSTabela na nivou
+	memCap      int    //kapacitet memtabele
+	compType    string //koja kompakcija se koristi
+	maxSSTLevel int    //maksimalan broj nivoa za SStable
 }
 
-func NewCursor(memType string, maxMem int, lruPointer *lru.LRUCache, compress1 bool, compress2 bool, oneFile bool, n int, m int, numTables int, memCap int, compType string) *Cursor {
+func NewCursor(memType string, maxMem int, lruPointer *lru.LRUCache, compress1 bool, compress2 bool, oneFile bool, n int, m int, numTables int, memCap int, compType string, maxSSTLevel int) *Cursor {
 	memPointers := make([]hashmem.Memtable, maxMem)
 	for i := 0; i < maxMem; i++ {
 		if memType == "hash" {
@@ -55,6 +57,7 @@ func NewCursor(memType string, maxMem int, lruPointer *lru.LRUCache, compress1 b
 		numTables:   numTables,
 		memCap:      memCap,
 		compType:    compType,
+		maxSSTLevel: maxSSTLevel,
 	}
 }
 
@@ -124,8 +127,8 @@ func (c *Cursor) AddToMemtable(key string, value []byte, time time.Time, wal *wa
 			c.memIndex = (c.memIndex + 1) % len(c.memPointers)
 			if c.memPointers[c.memIndex].IsReadOnly() {
 				c.memIndex = (c.memIndex - 1 + c.maxMem) % c.maxMem
-				c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M)
-				LSM.CompactSstable(c.numTables, c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap, c.compType)
+				c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.maxSSTLevel)
+				LSM.CompactSstable(c.numTables, c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap, c.compType, c.maxSSTLevel)
 				//Salje se signal u WAL da je memtable upisana na disk
 				err := wal.DeleteMemTable()
 				if err != nil {
@@ -199,18 +202,18 @@ func (c *Cursor) DeleteElement(key string, time time.Time) bool {
 
 }
 
-//func (c *Cursor) Fill(wal *wal_implementation.WriteAheadLog) {
-//	for true {
-//		rec, err := wal.ReadRecord()
-//		if err.Error() != "" {
-//			if err.Error() == "NO MORE RECORDS" {
-//				break
-//			}
-//		}
-//		if err.Error() != "CRC FAILED!" {
-//			nano := int64(binary.BigEndian.Uint64(rec.Timestamp[8:]))
-//			timestamp := time.Unix(nano, 0)
-//			c.AddToMemtable(rec.Key, rec.Value, timestamp, wal)
-//		}
-//	}
-//}
+func (c *Cursor) Fill(wal *wal_implementation.WriteAheadLog) {
+	for true {
+		rec, err := wal.ReadRecord()
+		if err != "" {
+			if err == "NO MORE RECORDS" {
+				break
+			}
+		}
+		if err != "CRC FAILED!" {
+			nano := int64(binary.BigEndian.Uint64(rec.Timestamp[8:]))
+			timestamp := time.Unix(nano, 0)
+			c.AddToMemtable(rec.Key, rec.Value, timestamp, wal)
+		}
+	}
+}

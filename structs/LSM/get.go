@@ -35,6 +35,8 @@ func GetByKey(key string, compress1, compress2, oneFile bool) (datatype.DataType
 			data, greska := SSTable.GetData("./DataSStable"+"/L"+strconv.Itoa(i)+"/"+sstableName[j], key, compress1, compress2)
 			if data.GetKey() == key {
 				return data, greska
+			} else if greska && data.GetKey() == "" {
+				return data, true
 			}
 		}
 	}

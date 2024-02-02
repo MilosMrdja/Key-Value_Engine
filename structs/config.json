@@ -11,7 +11,8 @@
   "walSegmentSize": 2000,
   "rate": 3,
   "maxToken": 10,
-  "compType": "size"
+  "compType": "size",
+  "maxSSTLevel": 4
 }
 
 
