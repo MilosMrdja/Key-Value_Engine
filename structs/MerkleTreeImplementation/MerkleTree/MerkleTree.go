@@ -175,26 +175,9 @@ func SerializeMerkleTree(mt *MerkleTree, fileName string) (bool, error) {
 // deserijalizacija merkle stabla
 // deserijalizujemo duzinu niza kao prvi bajt i svaki 8B kao hesiranu vrednost cvora
 // posle namestamo pokazivace
-func DeserializeMerkleTree(fileName string) (*MerkleTree, bool, error) {
-	_, err := os.Stat(fileName)
-	if err != nil {
-		return nil, false, err
-	}
-	file, err := os.OpenFile(fileName, os.O_RDONLY, 0777)
-	if err != nil {
-		return nil, false, err
-	}
+func DeserializeMerkleTree(treeByte []byte) (*MerkleTree, bool, error) {
 
-	_, err = file.Seek(0, 0) //da dodjemo na pocetak
-	if err != nil {
-		return nil, false, err
-	}
-
-	duzina := make([]byte, 1)
-	_, err = file.Read(duzina)
-	if err != nil {
-		return nil, false, err
-	}
+	duzina := treeByte[:1]
 
 	Mtree := MerkleTree{
 		tree:       make([]*Node, duzina[0]),
@@ -204,6 +187,8 @@ func DeserializeMerkleTree(fileName string) (*MerkleTree, bool, error) {
 	}
 
 	numOfData := 0
+	curr := 1
+	next := 9
 	for i := 0; i < int(duzina[0]); i++ {
 		tempNode := Node{
 			left:      nil,
@@ -211,15 +196,14 @@ func DeserializeMerkleTree(fileName string) (*MerkleTree, bool, error) {
 			hashValue: 0,
 		}
 		tempHash := make([]byte, 8)
-		err := binary.Read(file, binary.BigEndian, tempHash)
-		if err != nil {
-			return nil, false, err
-		}
+		tempHash = treeByte[curr:next]
 		tempNode.hashValue = binary.BigEndian.Uint64(tempHash)
 		if tempNode.hashValue != 0 && i > int(duzina[0])/2-1 {
 			numOfData += 1
 		}
 		Mtree.tree[i] = &tempNode
+		curr += 8
+		next += 8
 	}
 
 	for i := 0; 2*i+1 < int(duzina[0]); i++ {

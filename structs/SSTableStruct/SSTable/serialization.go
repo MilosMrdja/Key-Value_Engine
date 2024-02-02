@@ -71,26 +71,19 @@ func SerializeIndexData(key string, length int, compress1, compress2 bool, keyDi
 // f-ja koja serijalizuje jedan podatak iz memtabele
 
 func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDict int32) ([]byte, error) {
-	var result bytes.Buffer
-
-	//create and write CRC
-	crc := crc32.ChecksumIEEE(data.GetData())
-	err := binary.Write(&result, binary.BigEndian, crc)
-	if err != nil {
-		return nil, nil
-	}
+	var result, tempRes bytes.Buffer
 
 	//create and write timestamp
 	TimeBytes := make([]byte, 16)
 	binary.BigEndian.PutUint64(TimeBytes[8:], uint64(data.GetChangeTime().Unix()))
-	result.Write(TimeBytes)
+	tempRes.Write(TimeBytes)
 
 	// Write tombstone
 	tomb := byte(0)
 	if data.GetDelete() == true {
 		tomb = 1
 	}
-	result.WriteByte(tomb)
+	tempRes.WriteByte(tomb)
 
 	currentData := data.GetData()
 	currentKey := data.GetKey()
@@ -101,9 +94,9 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 		if compress1 {
 			buff := make([]byte, 8)
 			n := binary.PutVarint(buff, int64(len(currentKey)))
-			result.Write(buff[:n])
+			tempRes.Write(buff[:n])
 		} else {
-			err = binary.Write(&result, binary.BigEndian, uint64(len(currentKey)))
+			err := binary.Write(&tempRes, binary.BigEndian, uint64(len(currentKey)))
 			if err != nil {
 				return nil, err
 			}
@@ -115,9 +108,9 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 		if compress1 {
 			buff := make([]byte, 8)
 			n := binary.PutVarint(buff, int64(len(currentData)))
-			result.Write(buff[:n])
+			tempRes.Write(buff[:n])
 		} else {
-			err = binary.Write(&result, binary.BigEndian, uint64(len(currentData)))
+			err := binary.Write(&tempRes, binary.BigEndian, uint64(len(currentData)))
 			if err != nil {
 				return nil, err
 			}
@@ -129,23 +122,31 @@ func SerializeDataType(data datatype.DataType, compress1, compress2 bool, keyDic
 		if compress1 {
 			buff := make([]byte, 4)
 			n := binary.PutVarint(buff, int64(keyDict))
-			result.Write(buff[:n])
+			tempRes.Write(buff[:n])
 
 		} else {
-			err = binary.Write(&result, binary.BigEndian, uint32(keyDict))
+			err := binary.Write(&tempRes, binary.BigEndian, uint32(keyDict))
 			if err != nil {
 				panic(err)
 			}
 		}
 	} else {
 		// u slucaju i sa i bez prve kompresije radi ovo
-		result.Write([]byte(currentKey))
+		tempRes.Write([]byte(currentKey))
 	}
 
 	if tomb == 0 {
 		// write value
-		result.Write(currentData)
+		tempRes.Write(currentData)
 	}
+
+	//create and write CRC
+	crc := crc32.ChecksumIEEE(tempRes.Bytes())
+	err := binary.Write(&result, binary.BigEndian, crc)
+	if err != nil {
+		return nil, nil
+	}
+	result.Write(tempRes.Bytes())
 
 	return result.Bytes(), nil
 }

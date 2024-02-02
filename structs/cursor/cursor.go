@@ -1,7 +1,6 @@
 package cursor
 
 import (
-	"encoding/binary"
 	"sstable/LSM"
 	"sstable/lru"
 	"sstable/mem/memtable/btree/btreemem"
@@ -33,7 +32,7 @@ func NewCursor(memType string, maxMem int, lruPointer *lru.LRUCache, compress1 b
 	for i := 0; i < maxMem; i++ {
 		if memType == "hash" {
 			memPointers[i] = hashstruct.CreateHashMemtable(memCap)
-		} else if memType == "skupl" {
+		} else if memType == "skipl" {
 			memPointers[i] = skiplistmem.CreateSkipListMemtable(memCap)
 		} else {
 			memPointers[i] = btreemem.NewBTreeMemtable(memCap)
@@ -198,18 +197,18 @@ func (c *Cursor) DeleteElement(key string, time time.Time) bool {
 
 }
 
-func (c *Cursor) Fill(wal *wal_implementation.WriteAheadLog) {
-	for true {
-		rec, err := wal.ReadRecord()
-		if err.Error() != "" {
-			if err.Error() == "NO MORE RECORDS" {
-				break
-			}
-		}
-		if err.Error() != "CRC FAILED!" {
-			nano := int64(binary.BigEndian.Uint64(rec.Timestamp[8:]))
-			timestamp := time.Unix(nano, 0)
-			c.AddToMemtable(rec.Key, rec.Value, timestamp, wal)
-		}
-	}
-}
+//func (c *Cursor) Fill(wal *wal_implementation.WriteAheadLog) {
+//	for true {
+//		rec, err := wal.ReadRecord()
+//		if err.Error() != "" {
+//			if err.Error() == "NO MORE RECORDS" {
+//				break
+//			}
+//		}
+//		if err.Error() != "CRC FAILED!" {
+//			nano := int64(binary.BigEndian.Uint64(rec.Timestamp[8:]))
+//			timestamp := time.Unix(nano, 0)
+//			c.AddToMemtable(rec.Key, rec.Value, timestamp, wal)
+//		}
+//	}
+//}

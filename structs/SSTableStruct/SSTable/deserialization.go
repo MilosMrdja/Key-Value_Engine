@@ -3,10 +3,12 @@ package SSTable
 import (
 	"encoding/binary"
 	"fmt"
+	"io/ioutil"
 	"os"
 )
 
-func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
+// vraca uspesnot i niz za merkle
+func ReadSSTable(filePath string, compress1, compress2, oneFile bool) (bool, [][]byte) {
 
 	fileName := filePath + "/Data.bin"
 	if oneFile {
@@ -14,7 +16,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 	}
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
 	if err != nil {
-		return false
+		panic(err)
 	}
 	defer file.Close()
 
@@ -36,12 +38,12 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 		end = sizeEnd - size
 		_, err1 := file.Seek(size, 0)
 		if err1 != nil {
-			return false
+			panic(err)
 		}
 	} else {
 		_, err = file.Seek(0, 0)
 		if err != nil {
-			return false
+			panic(err)
 		}
 	}
 	bytesFile := make([]byte, end)
@@ -59,7 +61,12 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 	}
 
 	file.Seek(size, 0)
+	var merkleArr [][]byte
+	var merkleTreeTemp []byte
+	var nextTree int64
+
 	for currentRead != end {
+		merkleTreeTemp = make([]byte, 0)
 		//read CRC
 		bytes := make([]byte, 4)
 		file.Seek(currentRead+size, 0)
@@ -67,6 +74,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 		if err != nil {
 			panic(err)
 		}
+		merkleTreeTemp = append(merkleTreeTemp, bytes...)
 		currentRead += 4
 
 		// read timestamp
@@ -76,6 +84,8 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 		if err != nil {
 			panic(err)
 		}
+		merkleTreeTemp = append(merkleTreeTemp, bytes...)
+
 		currentRead += 16
 		//fmt.Printf("%d", bytes)
 
@@ -87,6 +97,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 			panic(err)
 		}
 		tomb := int(bytes[0])
+		merkleTreeTemp = append(merkleTreeTemp, bytes...)
 		currentRead += 1
 		//fmt.Printf("%d", bytes)
 
@@ -99,11 +110,15 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 				var m int
 				if tomb == 0 {
 					valueSize, m = binary.Varint(bytesFile[currentRead:])
+					nextTree = currentRead + int64(m)
+					merkleTreeTemp = append(merkleTreeTemp, bytesFile[currentRead:nextTree]...)
 					currentRead += int64(m)
 				}
 
 				// read key
 				key, k := binary.Varint(bytesFile[currentRead:])
+				nextTree = currentRead + int64(k)
+				merkleTreeTemp = append(merkleTreeTemp, bytesFile[currentRead:nextTree]...)
 				ss := GetKeyByValue(decodeMap, int32(key))
 				fmt.Printf("Key: %s ", ss)
 				currentRead += int64(k)
@@ -116,6 +131,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 						panic(err)
 					}
 					fmt.Printf("Value: %s", bytes)
+					merkleTreeTemp = append(merkleTreeTemp, bytes...)
 					currentRead += int64(valueSize)
 				}
 			} else {
@@ -131,6 +147,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 					if err != nil {
 						panic(err)
 					}
+					merkleTreeTemp = append(merkleTreeTemp, buff...)
 					currentRead += 8
 					valueSize = binary.BigEndian.Uint64(buff)
 				}
@@ -141,6 +158,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 				if err != nil {
 					panic(err)
 				}
+				merkleTreeTemp = append(merkleTreeTemp, buff...)
 				currentRead += 4
 				key := binary.BigEndian.Uint32(buff)
 				ss := GetKeyByValue(decodeMap, int32(key))
@@ -154,6 +172,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 						panic(err)
 					}
 					fmt.Printf("Value: %s", buff)
+					merkleTreeTemp = append(merkleTreeTemp, buff...)
 					currentRead += int64(valueSize)
 				}
 
@@ -162,12 +181,16 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 			if compress1 {
 				// read key size
 				keySize, n := binary.Varint(bytesFile[currentRead:])
+				nextTree = currentRead + int64(n)
+				merkleTreeTemp = append(merkleTreeTemp, bytesFile[currentRead:nextTree]...)
 				currentRead += int64(n)
 				// read value size
 				var valueSize int64
 				var m int
 				if tomb == 0 {
 					valueSize, m = binary.Varint(bytesFile[currentRead:])
+					nextTree = currentRead + int64(m)
+					merkleTreeTemp = append(merkleTreeTemp, bytesFile[currentRead:nextTree]...)
 					currentRead += int64(m)
 				}
 				// read key
@@ -178,6 +201,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 					panic(err)
 				}
 				fmt.Printf("Key: %s ", bytes)
+				merkleTreeTemp = append(merkleTreeTemp, bytes...)
 				currentRead += keySize
 				// read value
 				if tomb == 0 {
@@ -188,15 +212,18 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 						panic(err)
 					}
 					fmt.Printf("Value: %s", bytes)
+					merkleTreeTemp = append(merkleTreeTemp, bytes...)
 					currentRead += valueSize
 				}
 
 			} else {
+				//read key size
 				bytes = make([]byte, 8)
 				_, err = file.Read(bytes)
 				if err != nil {
 					panic(err)
 				}
+				merkleTreeTemp = append(merkleTreeTemp, bytes...)
 				currentRead += 8
 				keySize := binary.BigEndian.Uint64(bytes)
 				//fmt.Printf("%d", bytes)
@@ -209,6 +236,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 						panic(err)
 					}
 					valueSize = binary.BigEndian.Uint64(bytes)
+					merkleTreeTemp = append(merkleTreeTemp, bytes...)
 					currentRead += 8
 					//fmt.Printf("%d", bytes)
 				} // read key
@@ -217,6 +245,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 				if err != nil {
 					panic(err)
 				}
+				merkleTreeTemp = append(merkleTreeTemp, bytes...)
 				currentRead += int64(keySize)
 				fmt.Printf("Key: %s ", bytes)
 				// read value
@@ -226,7 +255,7 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 					if err != nil {
 						panic(err)
 					}
-
+					merkleTreeTemp = append(merkleTreeTemp, bytes...)
 					fmt.Printf("Value: %s", bytes)
 					currentRead += int64(valueSize)
 				}
@@ -235,9 +264,10 @@ func ReadSSTable(filePath string, compress1, compress2, oneFile bool) bool {
 
 		}
 		fmt.Printf("\n")
-
+		merkleArr = append(merkleArr, merkleTreeTemp)
 	}
-	return true
+
+	return true, merkleArr
 }
 
 func GetKeyByValue(mapa *map[string]int32, val int32) string {
@@ -473,4 +503,44 @@ func DeserializeTuples(filename string) ([]Tuple, error) {
 	}
 
 	return tuples, nil
+}
+
+// prosledjuje se npr. (sstable1)
+func GetOneFile(filePath string) bool {
+	folders, err := ioutil.ReadDir(filePath)
+	if err != nil {
+		panic(err)
+	}
+	if len(folders) > 1 {
+		return false
+	} else {
+		return true
+	}
+}
+
+// file name = (sstable1)
+func DeserializeMerkleFromSST(fileName string) []byte {
+
+	oneFile := GetOneFile(fileName)
+	var merkleTreeByte []byte
+
+	if oneFile {
+		//TODO
+		return nil
+	} else {
+		fileMerkle, err := os.OpenFile(fileName+"/Merkle.bin", os.O_RDONLY, 0666)
+		if err != nil {
+			panic(err)
+		}
+		info, err := os.Stat(fileName + "/Merkle.bin")
+		if err != nil {
+			panic(err)
+		}
+		merkleTreeByte = make([]byte, info.Size())
+		_, err = fileMerkle.Read(merkleTreeByte)
+		if err != nil {
+			panic(err)
+		}
+		return merkleTreeByte
+	}
 }

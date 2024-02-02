@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"sstable/LSM"
+	"sstable/MerkleTreeImplementation/MerkleTree"
+	"sstable/SSTableStruct/SSTable"
 	"sstable/cursor"
 	"sstable/iterator"
 	"sstable/lru"
@@ -52,30 +54,82 @@ func setConst() {
 
 	configData, err := os.ReadFile("config.json")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
+
 	err = json.Unmarshal(configData, &config)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(config)
+	//fmt.Println(config)
 	lruCap = config.LruCap
-	compress1 = config.Compress1
-	compress2 = config.Compress2
-	oneFile = config.OneFile
-	number = config.Number
+	if lruCap <= 0 {
+		lruCap = 1
+	}
+	compress1 = config.Compress1 //bool
+	compress2 = config.Compress2 //bool
+	oneFile = config.OneFile     //bool
+	number = config.Number       //numOfSST
+	if number <= 0 {
+		number = 1
+	}
 	N = config.N
+	if N <= 0 {
+		N = 1
+	}
 	M = config.M
+	if M <= 0 {
+		M = 1
+	}
 	memTableNumber = config.MemTableNumber
+	if memTableNumber <= 0 {
+		memTableNumber = 1
+	}
 	memTableCap = config.MemTableCap
+	if memTableCap <= 0 {
+		memTableCap = 1
+	}
 	memType = config.MemType
-	walSegmentSize = config.WalSegmentSize
+	if memType != "hash" && memType != "btree" && memType != "skipl" {
+		memType = "hash"
+	}
+	walSegmentSize = config.WalSegmentSize // uradjeno u wall-u
 	rate = config.Rate
+	if rate <= 0 {
+		rate = 1
+	}
 	maxToken = config.MaxToken
+	if maxToken <= 0 {
+		maxToken = 1
+	}
 	compType = config.CompType
+	if compType != "size" && compType != "level" {
+		compType = "size"
+	}
 
 }
-func GET(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor, key string) {
+
+func ValidateSSTable(sstablePath string) {
+	fmt.Println("---------------------------------------------------")
+	merkleTreePath := SSTable.DeserializeMerkleFromSST(sstablePath)
+	merkleTree1, _, err := MerkleTree.DeserializeMerkleTree(merkleTreePath)
+	if err != nil {
+		panic(err)
+	}
+	_, merkleTreeByte := SSTable.ReadSSTable(sstablePath, compress1, compress2, oneFile)
+	merkleTree2, _ := MerkleTree.CreateMerkleTree(merkleTreeByte)
+
+	change, _ := MerkleTree.CheckChanges(merkleTree1, merkleTree2)
+
+	if len(change) > 0 {
+		fmt.Println("Ima promene\n")
+	} else {
+		fmt.Println("Nema promene\n")
+	}
+
+}
+
+func GET(lru1 *lru.LRUCache, memtable *cursor.Cursor, key string) {
 	////ukoliko je GET
 	value, ok := memtable.GetElement(key)
 	if ok {
@@ -96,7 +150,6 @@ func GET(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cu
 
 }
 
-// Ukoliko je unos PUT
 func PUT(wal *wal_implementation.WriteAheadLog, memtable *cursor.Cursor, key string, value []byte) {
 
 	//Prvo u WAL
@@ -180,7 +233,7 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 				fmt.Println("Error:", err)
 				return
 			}
-			GET(wal, lru1, memtable, key)
+			GET(lru1, memtable, key)
 		} else if opcija == "4" {
 			for true {
 				fmt.Println("\n1. Range scan\n2. Prefix Scan\n3. Range iterate\n4. Prefix iterate\n")
@@ -259,23 +312,30 @@ func scantest() {
 
 func main() {
 	setConst()
-
 	//kreiranje potrebnih instanci
 	wal := wal_implementation.NewWriteAheadLog(walSegmentSize)
 	tokenb := token_bucket.NewTokenBucket(rate, maxToken)
 	tokenb.InitRequestsFile("token_bucket/requests.bin")
 	lru1 := lru.NewLRUCache(lruCap)
+	memtable := cursor.NewCursor(memType, 1, lru1, compress1, compress2, oneFile, N, M, number, memTableCap, compType)
+	//memtable.Fill(wal)
 
-	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, number, memTableCap, compType)
-	memtable.Fill(wal)
+	for j := 0; j < 2; j++ {
+		for i := 0; i < memTableCap+1; i++ {
+			memtable.AddToMemtable(strconv.Itoa(i), []byte(strconv.Itoa(i)), time.Now(), wal)
+		}
+	}
+
+	ValidateSSTable("DataSSTable/L0/sstable1")
+
 	//meni(wal, lru1, memtable, tokenb)
 
 	//scantest()
 
-	for i := 0; i < 7; i++ {
-		wal.Log(strconv.Itoa(i), []byte("1"), false, time.Now())
-		memtable.AddToMemtable(strconv.Itoa(i), []byte("1"), time.Now(), wal)
-	}
+	//for i := 0; i < 7; i++ {
+	//	wal.Log(strconv.Itoa(i), []byte("1"), false, time.Now())
+	//	memtable.AddToMemtable(strconv.Itoa(i), []byte("1"), time.Now(), wal)
+	//}
 	//for i := 0; i < 1000; i++ {
 	//	key := "kljuc" + strconv.Itoa(i)
 	//	value_string := "vrednost" + strconv.Itoa(i)
