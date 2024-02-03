@@ -6,10 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="1a98e096-3453-4118-8f80-f460cf0ec07e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSM/lsm.go" beforeDir="false" afterPath="$PROJECT_DIR$/LSM/lsm.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SSTableStruct/SSTable/sizecompaction.go" beforeDir="false" afterPath="$PROJECT_DIR$/SSTableStruct/SSTable/sizecompaction.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cursor/cursor.go" beforeDir="false" afterPath="$PROJECT_DIR$/cursor/cursor.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/token_bucket/requests.bin" beforeDir="false" afterPath="$PROJECT_DIR$/token_bucket/requests.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wal_implementation/wal/wal_00001.log" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

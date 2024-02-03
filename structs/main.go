@@ -21,6 +21,7 @@ import (
 	"sstable/token_bucket"
 	"sstable/wal_implementation"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -235,6 +236,19 @@ func setConst() {
 
 }
 
+func checkKey(key string) (bool, string) {
+	noKey := [5]string{"bf", "hll", "cms", "sh", ""}
+	splitKey := strings.Split(key, "_")
+	index := len(splitKey) - 1
+	for i := 0; i < len(noKey); i++ {
+		if splitKey[index] == noKey[i] {
+			return false, noKey[i]
+		}
+	}
+	return true, ""
+
+}
+
 func ValidateSSTable(sstablePath string) {
 	fmt.Println("---------------------------------------------------")
 	merkleTreePath := SSTable.DeserializeMerkleFromSST(sstablePath)
@@ -341,6 +355,14 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_bf"
+
 			_, found := GET(lru1, memtable, key)
 			if found {
 				fmt.Printf("Vec postoji element sa tim kljucem!")
@@ -366,6 +388,13 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_bf"
 			_, found := GET(lru1, memtable, key)
 			if !found {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
@@ -382,6 +411,13 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_bf"
 			data, found := GET(lru1, memtable, key)
 			if !found {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
@@ -408,6 +444,13 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_bf"
 			data, found := GET(lru1, memtable, key)
 			if !found {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
@@ -455,6 +498,13 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_cms"
 			_, found := GET(lru1, memtable, key)
 			if found {
 				fmt.Printf("Vec postoji element sa tim kljucem!")
@@ -486,6 +536,13 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_cms"
 			_, found := GET(lru1, memtable, key)
 			if !found {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
@@ -502,6 +559,13 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_cms"
 			data, found := GET(lru1, memtable, key)
 			if !found {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
@@ -528,6 +592,13 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_cms"
 			data, found := GET(lru1, memtable, key)
 			if !found {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
@@ -571,6 +642,13 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_hll"
 			_, found := GET(lru1, memtable, key)
 			if found {
 				fmt.Printf("Vec postoji element sa tim kljucem!")
@@ -596,6 +674,13 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_hll"
 			_, found := GET(lru1, memtable, key)
 			if !found {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
@@ -612,6 +697,13 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_hll"
 			data, found := GET(lru1, memtable, key)
 			if !found {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
@@ -638,6 +730,13 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_hll"
 			data, found := GET(lru1, memtable, key)
 			if !found {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
@@ -673,6 +772,13 @@ func TypeSimHash(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memt
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_sh"
 			_, found := GET(lru1, memtable, key)
 			if found {
 				fmt.Printf("Vec postoji element sa tim kljucem!")
@@ -703,6 +809,20 @@ func TypeSimHash(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memt
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key1)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key1 += "_sh"
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr = checkKey(key1)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key2 += "_sh"
 			data1, found1 := GET(lru1, memtable, key1)
 			data2, found2 := GET(lru1, memtable, key2)
 			if !found1 || !found2 {
@@ -848,9 +968,16 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 		if opcija == "1" {
 			fmt.Printf("Unesite kljuc >> ")
 			_, err := fmt.Scan(&key)
+
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
+			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				continue
 			}
 			fmt.Printf("Unesite vrednost >> ")
 			_, err = fmt.Scan(&value)
@@ -867,6 +994,12 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 				fmt.Println("Error:", err)
 				return
 			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				continue
+			}
 			DELETE(wal, lru1, memtable, key)
 			//TODO test
 		} else if opcija == "3" {
@@ -875,6 +1008,12 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
+			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				continue
 			}
 			GET(lru1, memtable, key)
 			//TODO test
