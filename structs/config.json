@@ -1,10 +1,9 @@
-{"lru_cap": 3,
-  "compress1": true,
-  "compress" : true,
+{"lruCap": 3,
+  "compress": true,
+  "dictEncoding" : true,
   "oneFile": false,
   "numberOfSSTable": 5,
-  "N": 3,
-  "M": 4,
+  "summaryEl": 4,
   "memTableNumber" : 2,
   "memTableCap": 3,
   "memType": "hash",
@@ -12,7 +11,8 @@
   "rate": 3,
   "maxToken": 10,
   "compType": "size",
-  "maxSSTLevel": 4
+  "maxSSTLevel": 4,
+  "levelPlus" : 12
 }
 
 

@@ -44,10 +44,10 @@ func (tb *TokenBucket) IsRequestAllowed(tokens int64) (string, bool) {
 	if tb.currentTokens >= tokens {
 		tb.currentTokens -= tokens
 		tb.AppendRequest("token_bucket/requests.bin", []byte(time.Now().Format("15:04:05")+", "+strconv.Itoa(int(tokens))+", ALLOWED\n"))
-		return "Request Allowed", true
+		return "Zahtev dozoljen", true
 	}
 	tb.AppendRequest("token_bucket/requests.bin", []byte(time.Now().Format("15:04:05")+", "+strconv.Itoa(int(tokens))+", BLOCKED\n"))
-	return "Request Blocked", false
+	return "Zahtev nije dozvoljen", false
 }
 
 // SerializeTokenBucket serializes the TokenBucket

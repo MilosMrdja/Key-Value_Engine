@@ -13,16 +13,21 @@ import (
 	count_min_sketch "sstable/cms"
 	"sstable/cursor"
 	"sstable/hyperloglog/hyperloglog"
+	"sstable/iterator"
 	"sstable/lru"
+	"sstable/mem/memtable/hash/hashmem"
+	"sstable/mem/memtable/hash/hashstruct"
+	"sstable/scanning"
 	"sstable/token_bucket"
 	"sstable/wal_implementation"
+	"strconv"
 	"time"
 )
 
 var compress1 bool
 var compress2 bool
 var oneFile bool
-var number, lruCap int
+var NumberOfSST, lruCap int
 var N int
 var M int
 var memTableCap, memTableNumber, levelPlus int
@@ -32,13 +37,13 @@ var rate, maxToken int64
 var key, value string
 
 type Config struct {
-	LruCap         int    `json:"lru_cap"`
-	Compress1      bool   `json:"compress1"`
-	Compress2      bool   `json:"compress2"`
+	LruCap         int    `json:"lruCap"`
+	Compress1      bool   `json:"compress"`
+	Compress2      bool   `json:"dictEncoding"`
 	OneFile        bool   `json:"oneFile"`
-	Number         int    `json:"numberOfSSTable"`
-	N              int    `json:"N"` // razudjenost u indexu
-	M              int    `json:"M"` // razudjenost u summary
+	NumberOfSST    int    `json:"numberOfSSTable"`
+	N              int    `json:"indexEl"`   // razudjenost u indexu
+	M              int    `json:"summaryEl"` // razudjenost u summary
 	MemTableNumber int    `json:"memTableNumber"`
 	MemTableCap    int    `json:"memTableCap"`
 	MemType        string `json:"memType"`
@@ -62,59 +67,170 @@ func setConst() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//fmt.Println(config)
-	lruCap = config.LruCap
-	if lruCap <= 0 {
-		lruCap = 1
+	//provera postojnja u congi.json
+	var dataResult map[string]interface{}
+
+	err = json.Unmarshal(configData, &dataResult)
+	if err != nil {
+		fmt.Println(err)
 	}
-	compress1 = config.Compress1 //bool
-	compress2 = config.Compress2 //bool
-	oneFile = config.OneFile     //bool
-	number = config.Number       //numOfSST
-	if number <= 0 {
-		number = 1
+	// chech for lru
+	_, ok := dataResult["lruCap"]
+	if ok {
+		lruCap = config.LruCap
+		if lruCap <= 0 {
+			lruCap = 2
+		}
+	} else {
+		lruCap = 2
 	}
 
-	memTableNumber = config.MemTableNumber
-	if memTableNumber <= 0 {
-		memTableNumber = 1
+	// compress1
+	_, ok = dataResult["compress"]
+	if ok {
+		compress1 = config.Compress1
+	} else {
+		compress1 = false
 	}
-	memTableCap = config.MemTableCap
-	if memTableCap <= 0 {
-		memTableCap = 1
+	//compress2
+	_, ok = dataResult["dictEncoding"]
+	if ok {
+		compress2 = config.Compress2
+	} else {
+		compress2 = false
 	}
-	N = config.N
+	//oneFile
+	_, ok = dataResult["oneFile"]
+	if ok {
+		oneFile = config.OneFile
+	} else {
+		oneFile = false
+	}
+	//numOfSST
+	_, ok = dataResult["numberOfSSTable"]
+	if ok {
+		NumberOfSST = config.NumberOfSST
+		if NumberOfSST <= 0 {
+			NumberOfSST = 3
+		}
+	} else {
+		NumberOfSST = 5
+	}
+
+	//memTableNum
+	_, ok = dataResult["memTableNumber"]
+	if ok {
+		memTableNumber = config.MemTableNumber
+		if memTableNumber <= 0 {
+			memTableNumber = 2
+		}
+	} else {
+		memTableNumber = 2
+	}
+
+	//memCap
+	_, ok = dataResult["memTableCap"]
+	if ok {
+		memTableCap = config.MemTableCap
+		if memTableCap <= 0 {
+			memTableCap = 5
+		}
+	} else {
+		memTableCap = 5
+	}
+	//indexEl
+	_, ok = dataResult["indexEl"]
+	if ok {
+		N = config.N
+	} else {
+		N = memTableCap / 3
+	}
 	if N <= 0 || N >= memTableCap {
 		N = 1
 	}
-	M = config.M
+	//summaruEl
+	_, ok = dataResult["summaryEl"]
+	if ok {
+		M = config.M
+	} else {
+		M = memTableCap / 2
+	}
 	if M <= 0 || M >= memTableCap {
 		M = 1
 	}
-	memType = config.MemType
-	if memType != "hash" && memType != "btree" && memType != "skipl" {
+	if M < N {
+		M = N + 1
+	}
+
+	//memType
+	_, ok = dataResult["memType"]
+	if ok {
+		memType = config.MemType
+		if memType != "hash" && memType != "btree" && memType != "skipl" {
+			memType = "hash"
+		}
+	} else {
 		memType = "hash"
 	}
-	walSegmentSize = config.WalSegmentSize // uradjeno u wall-u
-	rate = config.Rate
-	if rate <= 0 {
-		rate = 1
+
+	//wal
+	_, ok = dataResult["walSegmentSize"]
+	if ok {
+		walSegmentSize = config.WalSegmentSize
+	} else {
+		walSegmentSize = 2000
+	} //provera uradjena u wal-u
+	//rateForLRU
+	_, ok = dataResult["rate"]
+	if ok {
+		rate = config.Rate
+		if rate <= 0 {
+			rate = 2
+		}
+	} else {
+		rate = 3
 	}
-	maxToken = config.MaxToken
-	if maxToken <= 0 {
-		maxToken = 1
+
+	//maxToken
+	_, ok = dataResult["maxToken"]
+	if ok {
+		maxToken = config.MaxToken
+		if maxToken <= 0 {
+			maxToken = 10
+		}
+	} else {
+		maxToken = 10
 	}
-	compType = config.CompType
-	if compType != "size" && compType != "level" {
+
+	//compType
+	_, ok = dataResult["compType"]
+	if ok {
+		compType = config.CompType
+		if compType != "size" && compType != "level" {
+			compType = "size"
+		}
+	} else {
 		compType = "size"
 	}
-	maxSSTLevel = config.MaxSSTLevel
-	if maxSSTLevel <= 0 {
-		maxSSTLevel = 3
+	//maxSSTVelev
+	_, ok = dataResult["maxSSTLevel"]
+	if ok {
+		maxSSTLevel = config.MaxSSTLevel
+		if maxSSTLevel <= 0 {
+			maxSSTLevel = 3
+		}
+	} else {
+		maxSSTLevel = 4
 	}
-	levelPlus = config.LevelPlus
-	if levelPlus <= 0 {
-		levelPlus = 10
+	//levelPlus
+	_, ok = dataResult["levelPlus"]
+	if ok {
+		levelPlus = config.LevelPlus
+		if levelPlus <= 0 {
+			levelPlus = 10
+		}
+	} else {
+		levelPlus = 12
 	}
 
 }
@@ -132,12 +248,12 @@ func ValidateSSTable(sstablePath string) {
 	change, _ := MerkleTree.CheckChanges(merkleTree1, merkleTree2)
 
 	if len(change) > 0 {
-		fmt.Println("Ima promene\n")
+		fmt.Println("\nIma promene")
 		for i := 0; i < len(change); i++ {
 			fmt.Printf("Podataka na indexu %d. je promenjen.\n", int(change[i]))
 		}
 	} else {
-		fmt.Println("Nema promene\n")
+		fmt.Println("\nNema promene")
 	}
 
 }
@@ -603,13 +719,75 @@ func TypeSimHash(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memt
 	}
 }
 
+func Scan() {
+	for true {
+		fmt.Println("\n1. Prefix scan\n2. Range Scan\n3. Prefix iterate\n4. Range iterate\n5. Izlazak iz skeniranja")
+
+		var opcijaSken string
+		fmt.Printf("Unesite opciju >> ")
+		_, err := fmt.Scan(&opcijaSken)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		if opcijaSken == "1" {
+			var prefix string
+			fmt.Println("Unesite preifx >> ")
+			_, err = fmt.Scan(&prefix)
+			if err != nil {
+				panic(err)
+			}
+			//iteratorSSTable := scanning.PrefixIterateSSTable(prefix, compress1, compress2, oneFile)
+
+		} else if opcijaSken == "2" {
+			fmt.Printf("pref sken")
+		} else if opcijaSken == "3" {
+			fmt.Printf("range iter")
+		} else if opcijaSken == "4" {
+			fmt.Printf("pref sken")
+		} else if opcijaSken == "5" {
+			fmt.Printf("Izlazak..\n")
+			break
+		} else {
+			fmt.Printf("\nIzabrali ste pogresnu opcjiu.")
+		}
+
+	}
+}
+
+func Types(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor) {
+
+	for true {
+		fmt.Println("\n1. Bloomfilter\n2.Count min sketch\n3. Hyperloglog\n4. Simhash\n5. Izlaz")
+		var opcijaTip string
+		_, err := fmt.Scan(&opcijaTip)
+		if err != nil {
+			panic(err)
+		}
+		if opcijaTip == "1" {
+			TypeBloomFilter(wal, lru1, memtable)
+		} else if opcijaTip == "2" {
+			TypeCountMinSketch(wal, lru1, memtable)
+		} else if opcijaTip == "3" {
+			TypeHyperLogLog(wal, lru1, memtable)
+		} else if opcijaTip == "4" {
+			TypeSimHash(wal, lru1, memtable)
+		} else if opcijaTip == "5" {
+			fmt.Println("\nIzlazak iz opcije tipovi.")
+			return
+		} else {
+			fmt.Println("\nIzabrali ste nepostojecu opciju. Pokusajte ponovo.")
+		}
+	}
+}
+
 func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor, tokenb *token_bucket.TokenBucket) {
 	for true {
 		var opcija string
 		fmt.Println("Key-Value Engine")
 
-		fmt.Println("\n1. Put\n2. Delete\n3. Get\n4. Skeniranje\n5. Izlaz\n")
-		fmt.Printf("Unesite opciju : ")
+		fmt.Println("\n1. Unesi podatak\n2. Obrisi podatak\n3. Dobavi podatak\n4. Skeniranje\n5. Tipovi\n6. Proveri SSTabelu\n7. Izlaz")
+		fmt.Printf("Unesite opciju >> ")
 		_, err := fmt.Scan(&opcija)
 		if err != nil {
 			fmt.Println("Error:", err)
@@ -617,124 +795,119 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 		}
 		mess, moze := tokenb.IsRequestAllowed(9)
 		if !moze {
-			fmt.Printf(mess + "\n")
+			fmt.Printf("\n" + mess + "\n")
 			continue
 		}
 
 		if opcija == "1" {
-			fmt.Printf("Unesite key : ")
+			fmt.Printf("Unesite kljuc >> ")
 			_, err := fmt.Scan(&key)
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
 			}
-			fmt.Printf("Unesite value : ")
+			fmt.Printf("Unesite vrednost >> ")
 			_, err = fmt.Scan(&value)
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
 			}
 			PUT(wal, memtable, key, []byte(value))
+			//TODO test
 		} else if opcija == "2" {
-			fmt.Printf("Unesite key : ")
+			fmt.Printf("Unesite kljuc >> ")
 			_, err := fmt.Scan(&key)
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
 			}
 			DELETE(wal, lru1, memtable, key)
+			//TODO test
 		} else if opcija == "3" {
-			fmt.Printf("Unesite key : ")
+			fmt.Printf("Unesite kljuc >> ")
 			_, err := fmt.Scan(&key)
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
 			}
 			GET(lru1, memtable, key)
+			//TODO test
 		} else if opcija == "4" {
-			for true {
-				fmt.Println("\n1. Range scan\n2. Prefix Scan\n3. Range iterate\n4. Prefix iterate\n")
-				var opcijaSken string
-				fmt.Printf("Unesite opciju : ")
-				_, err := fmt.Scan(&opcijaSken)
-				if err != nil {
-					fmt.Println("Error:", err)
-					return
-				}
-				if opcijaSken == "1" {
-					fmt.Printf("range sken")
-				} else if opcijaSken == "2" {
-					fmt.Printf("pref sken")
-				} else if opcijaSken == "3" {
-					fmt.Printf("range iter")
-				} else if opcijaSken == "4" {
-					fmt.Printf("pref sken")
-				} else if opcijaSken == "5" {
-					fmt.Printf("Izlazak..\n")
-					break
-				} else {
-					fmt.Printf("Izabrali ste pogresnu opcjiu.\n")
-				}
-
-			}
+			//Scan()
 		} else if opcija == "5" {
+			Types(wal, lru1, memtable)
+			// TODO test
+		} else if opcija == "6" {
+			fmt.Println("Unesite koj sstabelu zelite da proverite(npr. sstable1) >> ")
+			var sstableName, sstablePath string
+			_, err = fmt.Scan(&sstableName)
+			if err != nil {
+				panic(err)
+			}
+			//TODO provera da li sstable posotji
+			ValidateSSTable(sstablePath)
+			//TEST DONE
+
+		} else if opcija == "7" {
+			fmt.Println("\nGasenje programa...")
 			break
 		} else {
-			fmt.Printf("Izabrali ste pogresnu opciju.\n")
+			fmt.Printf("\nIzabrali ste pogresnu opciju. Pokusajte ponovo.")
 		}
 	}
 
 }
 
-//func scantest() {
-//	var mapMem map[*hashmem.Memtable]int
-//	prefix := "1"
-//	mapMem = make(map[*hashmem.Memtable]int)
-//
-//	j := 0
-//
-//	for i := 0; i < 5; i++ {
-//		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(15))
-//		for k := 0; k < 14; k++ {
-//			btm.AddElement(strconv.Itoa(k), []byte(strconv.Itoa(k)), time.Now())
-//
-//		}
-//		btm.SendToSSTable(compress1, compress2, oneFile, 2, 3)
-//
-//	}
-//	j = 17
-//	for i := 0; i < 5; i++ {
-//		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
-//		for k := 0; k < 10; k++ {
-//			btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)), time.Now())
-//			j++
-//		}
-//
-//		mapMem[&btm] = 0
-//	}
-//	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
-//	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
-//	scanning.PREFIX_SCAN_OUTPUT(prefix, 1, 10, iterMem, iterSSTable, compress1, compress2, oneFile)
-//
-//	for k, _ := range mapMem {
-//		mapMem[k] = 0
-//	}
-//	j = 0
-//	valRange := [2]string{"1", "2"}
-//	iterMemR := iterator.NewRangeIterator(mapMem, valRange)
-//	iterSSTableR := scanning.RangeIterateSSTable(valRange, compress2, compress1, oneFile)
-//	scanning.RANGE_SCAN_OUTPUT(valRange, 1, 10, iterMemR, iterSSTableR, compress1, compress2, oneFile)
-//	fmt.Println("")
-//}
+func scantest() {
+	var mapMem map[*hashmem.Memtable]int
+	prefix := "1"
+	mapMem = make(map[*hashmem.Memtable]int)
+
+	j := 0
+
+	for i := 0; i < 5; i++ {
+		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(15))
+		for k := 0; k < 14; k++ {
+			btm.AddElement(strconv.Itoa(k), []byte(strconv.Itoa(k)), time.Now())
+
+		}
+		btm.SendToSSTable(compress1, compress2, oneFile, 2, 3, maxSSTLevel)
+
+	}
+	j = 17
+	for i := 0; i < 5; i++ {
+		btm := hashmem.Memtable(hashstruct.CreateHashMemtable(10))
+		for k := 0; k < 10; k++ {
+			btm.AddElement(strconv.Itoa(j), []byte(strconv.Itoa(j)), time.Now())
+			j++
+		}
+
+		mapMem[&btm] = 0
+	}
+	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
+	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
+	scanning.PREFIX_SCAN_OUTPUT(prefix, 1, 10, iterMem, iterSSTable, compress1, compress2, oneFile)
+
+	for k, _ := range mapMem {
+		mapMem[k] = 0
+	}
+	j = 0
+	valRange := [2]string{"1", "2"}
+	iterMemR := iterator.NewRangeIterator(mapMem, valRange)
+	iterSSTableR := scanning.RangeIterateSSTable(valRange, compress2, compress1, oneFile)
+	scanning.RANGE_SCAN_OUTPUT(valRange, 1, 10, iterMemR, iterSSTableR, compress1, compress2, oneFile)
+	fmt.Println("")
+}
 
 func main() {
+	// postavka
 	setConst()
 	//kreiranje potrebnih instanci
 	wal := wal_implementation.NewWriteAheadLog(walSegmentSize)
 	tokenb := token_bucket.NewTokenBucket(rate, maxToken)
 	tokenb.InitRequestsFile("token_bucket/requests.bin")
 	lru1 := lru.NewLRUCache(lruCap)
-	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, number, memTableCap, compType, maxSSTLevel, levelPlus)
+	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, NumberOfSST, memTableCap, compType, maxSSTLevel, levelPlus)
 	memtable.Fill(wal)
 
 	meni(wal, lru1, memtable, tokenb)
