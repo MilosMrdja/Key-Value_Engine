@@ -719,7 +719,7 @@ func TypeSimHash(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memt
 	}
 }
 
-func Scan() {
+func Scan(cursor *cursor.Cursor) {
 	for true {
 		fmt.Println("\n1. Prefix scan\n2. Range Scan\n3. Prefix iterate\n4. Range iterate\n5. Izlazak iz skeniranja")
 
@@ -732,15 +732,61 @@ func Scan() {
 		}
 		if opcijaSken == "1" {
 			var prefix string
+			var strana int
+			var brojNaStrani int
 			fmt.Println("Unesite preifx >> ")
 			_, err = fmt.Scan(&prefix)
 			if err != nil {
 				panic(err)
 			}
-			//iteratorSSTable := scanning.PrefixIterateSSTable(prefix, compress1, compress2, oneFile)
+			iteratorSSTable := scanning.PrefixIterateSSTable(prefix, compress1, compress2, oneFile)
+			iteratorMem := iterator.NewPrefixIterator(cursor, prefix)
+
+			fmt.Println("Koja stranica po redu: ")
+			_, err = fmt.Scan(&strana)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println("Broj zapisa po strani: ")
+			_, err = fmt.Scan(&brojNaStrani)
+			if err != nil {
+				panic(err)
+			}
+
+			scanning.PREFIX_SCAN_OUTPUT(prefix, strana, brojNaStrani, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
 
 		} else if opcijaSken == "2" {
-			fmt.Printf("pref sken")
+			var rangeVal [2]string
+			var strana int
+			var brojNaStrani int
+			fmt.Println("Unesite odakle >> ")
+			_, err = fmt.Scan(&rangeVal[0])
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println("Unesite dokle >> ")
+			_, err = fmt.Scan(&rangeVal[1])
+			if err != nil {
+				panic(err)
+			}
+			iteratorSSTable := scanning.RangeIterateSSTable(rangeVal, compress1, compress2, oneFile)
+			iteratorMem := iterator.NewRangeIterator(cursor, rangeVal)
+
+			fmt.Println("Koja stranica po redu: ")
+			_, err = fmt.Scan(&strana)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println("Broj zapisa po strani: ")
+			_, err = fmt.Scan(&brojNaStrani)
+			if err != nil {
+				panic(err)
+			}
+
+			scanning.RANGE_SCAN_OUTPUT(rangeVal, strana, brojNaStrani, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+
 		} else if opcijaSken == "3" {
 			fmt.Printf("range iter")
 		} else if opcijaSken == "4" {
@@ -833,7 +879,7 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 			GET(lru1, memtable, key)
 			//TODO test
 		} else if opcija == "4" {
-			//Scan()
+			Scan(memtable)
 		} else if opcija == "5" {
 			Types(wal, lru1, memtable)
 			// TODO test
@@ -860,7 +906,7 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 
 func scantest() {
 	var mapMem map[*hashmem.Memtable]int
-	prefix := "1"
+	//prefix := "1"
 	mapMem = make(map[*hashmem.Memtable]int)
 
 	j := 0
@@ -884,18 +930,18 @@ func scantest() {
 
 		mapMem[&btm] = 0
 	}
-	iterMem := iterator.NewPrefixIterator(mapMem, prefix)
-	iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
-	scanning.PREFIX_SCAN_OUTPUT(prefix, 1, 10, iterMem, iterSSTable, compress1, compress2, oneFile)
-
-	for k, _ := range mapMem {
-		mapMem[k] = 0
-	}
-	j = 0
-	valRange := [2]string{"1", "2"}
-	iterMemR := iterator.NewRangeIterator(mapMem, valRange)
-	iterSSTableR := scanning.RangeIterateSSTable(valRange, compress2, compress1, oneFile)
-	scanning.RANGE_SCAN_OUTPUT(valRange, 1, 10, iterMemR, iterSSTableR, compress1, compress2, oneFile)
+	//iterMem := iterator.NewPrefixIterator(mapMem, prefix)
+	//iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
+	//scanning.PREFIX_SCAN_OUTPUT(prefix, 1, 10, iterMem, iterSSTable, compress1, compress2, oneFile)
+	//
+	//for k, _ := range mapMem {
+	//	mapMem[k] = 0
+	//}
+	//j = 0
+	//valRange := [2]string{"1", "2"}
+	//iterMemR := iterator.NewRangeIterator(mapMem, valRange)
+	//iterSSTableR := scanning.RangeIterateSSTable(valRange, compress2, compress1, oneFile)
+	//scanning.RANGE_SCAN_OUTPUT(valRange, 1, 10, iterMemR, iterSSTableR, compress1, compress2, oneFile)
 	fmt.Println("")
 }
 
