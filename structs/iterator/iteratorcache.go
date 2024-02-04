@@ -10,6 +10,14 @@ type IteratingCache struct {
 	iterCache       []datatype.DataType
 }
 
+func (i *IteratingCache) MaxNum() int {
+	return i.maxNum
+}
+
+func (i *IteratingCache) SetMaxNum(maxNum int) {
+	i.maxNum = maxNum
+}
+
 func (i *IteratingCache) CurrentPosition() int {
 	return i.currentPosition
 }
