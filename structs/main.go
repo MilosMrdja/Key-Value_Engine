@@ -36,24 +36,26 @@ var memType, compType string
 var walSegmentSize, maxSSTLevel int
 var rate, maxToken int64
 var key, value string
+var p float64
 
 type Config struct {
-	LruCap         int    `json:"lruCap"`
-	Compress1      bool   `json:"compress"`
-	Compress2      bool   `json:"dictEncoding"`
-	OneFile        bool   `json:"oneFile"`
-	NumberOfSST    int    `json:"numberOfSSTable"`
-	N              int    `json:"indexEl"`   // razudjenost u indexu
-	M              int    `json:"summaryEl"` // razudjenost u summary
-	MemTableNumber int    `json:"memTableNumber"`
-	MemTableCap    int    `json:"memTableCap"`
-	MemType        string `json:"memType"`
-	WalSegmentSize int    `json:"walSegmentSize"`
-	Rate           int64  `json:"rate"`
-	MaxToken       int64  `json:"maxToken"`
-	CompType       string `json:"compType"`
-	MaxSSTLevel    int    `json:"maxSSTLevel"`
-	LevelPlus      int    `json:"levelPlus"`
+	LruCap         int     `json:"lruCap"`
+	Compress1      bool    `json:"compress"`
+	Compress2      bool    `json:"dictEncoding"`
+	OneFile        bool    `json:"oneFile"`
+	NumberOfSST    int     `json:"numberOfSSTable"`
+	N              int     `json:"indexEl"`   // razudjenost u indexu
+	M              int     `json:"summaryEl"` // razudjenost u summary
+	MemTableNumber int     `json:"memTableNumber"`
+	MemTableCap    int     `json:"memTableCap"`
+	MemType        string  `json:"memType"`
+	WalSegmentSize int     `json:"walSegmentSize"`
+	Rate           int64   `json:"rate"`
+	MaxToken       int64   `json:"maxToken"`
+	CompType       string  `json:"compType"`
+	MaxSSTLevel    int     `json:"maxSSTLevel"`
+	LevelPlus      int     `json:"levelPlus"`
+	P              float64 `json:"probab"`
 }
 
 func setConst() {
@@ -234,6 +236,10 @@ func setConst() {
 		levelPlus = 12
 	}
 
+	p = config.P
+	if p > 0.1 {
+		p = 0.01
+	}
 }
 
 func checkKey(key string) (bool, string) {
@@ -274,18 +280,29 @@ func ValidateSSTable(sstablePath string) {
 
 func GET(lru1 *lru.LRUCache, memtable *cursor.Cursor, key string) ([]byte, bool) {
 	////ukoliko je GET
+
+	ispis, _ := checkKey(key)
+
 	value, ok := memtable.GetElement(key)
 	if ok {
-		fmt.Printf("Value: %s\n", value)
+		if ispis {
+			fmt.Printf("Value: %s\n", value)
+		}
+
 		return value, true
 	} else if string(value) == "" {
-		fmt.Printf("Element sa kljucem %s je obrisan\n", key)
+		if ispis {
+			fmt.Printf("Element sa kljucem %s je obrisan\n", key)
+
+		}
 		return value, false
 	}
 
 	value = lru1.Get(key)
 	if value != nil {
-		fmt.Printf("Value: %s\n", value)
+		if ispis {
+			fmt.Printf("Value: %s\n", value)
+		}
 		return value, true
 	} else if string(value) == "" {
 		fmt.Printf("Element sa kljucem %s je obrisan\n", key)
@@ -294,13 +311,20 @@ func GET(lru1 *lru.LRUCache, memtable *cursor.Cursor, key string) ([]byte, bool)
 
 	data, ok := LSM.GetByKey(key, compress1, compress2, oneFile)
 	if ok && data.GetKey() != "" {
-		fmt.Printf("Value: %s\n", data.GetData())
+		if ispis {
+			fmt.Printf("Value: %s\n", data.GetData())
+		}
 		return data.GetData(), ok
 	} else if data.GetKey() == "" && ok {
-		fmt.Printf("Postoji greska u podacima!\n")
+		if ispis {
+			fmt.Printf("Postoji greska u podacima!\n")
+		}
 		return data.GetData(), false
 	} else {
-		fmt.Printf("Nema ga\n")
+		if ispis {
+			fmt.Printf("Nema ga\n")
+		}
+
 		return nil, false
 	}
 
@@ -380,7 +404,7 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 					fmt.Println("Error:", err)
 					return
 				}
-				bf := bloomfilter.CreateBloomFilter(uint64(n))
+				bf := bloomfilter.CreateBloomFilter(uint64(n), p)
 				serializedData, _ := bloomfilter.SerializeBloomFilter(bf)
 				PUT(wal, memtable, key, serializedData)
 				fmt.Printf("BloomFilter je upisan u sistem!")
@@ -864,6 +888,7 @@ func Scan(cursor *cursor.Cursor) {
 			if err != nil {
 				panic(err)
 			}
+
 			iteratorSSTable := scanning.PrefixIterateSSTable(prefix, compress1, compress2)
 			iteratorMem := iterator.NewPrefixIterator(cursor, prefix)
 
@@ -1261,7 +1286,7 @@ func scantest() {
 			btm.AddElement(strconv.Itoa(k), []byte(strconv.Itoa(k)), time.Now())
 
 		}
-		btm.SendToSSTable(compress1, compress2, oneFile, 2, 3, maxSSTLevel)
+		btm.SendToSSTable(compress1, compress2, oneFile, 2, 3, maxSSTLevel, p)
 
 	}
 	j = 17
@@ -1297,7 +1322,7 @@ func main() {
 	tokenb := token_bucket.NewTokenBucket(rate, maxToken)
 	tokenb.InitRequestsFile("token_bucket/requests.bin")
 	lru1 := lru.NewLRUCache(lruCap)
-	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, NumberOfSST, memTableCap, compType, maxSSTLevel, levelPlus)
+	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, NumberOfSST, memTableCap, compType, maxSSTLevel, levelPlus, p)
 	memtable.Fill(wal)
 
 	meni(wal, lru1, memtable, tokenb)
