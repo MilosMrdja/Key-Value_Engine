@@ -944,7 +944,7 @@ func Scan(cursor *cursor.Cursor) {
 				}
 				if nextStopPrev == "next" || nextStopPrev == "NEXT" || nextStopPrev == "Next" {
 					iteratorCache.IncrementPosition()
-					if iteratorCache.CheckIfOutOFCache() {
+					if iteratorCache.CheckIfEnd() {
 						data, check := scanning.PREFIX_ITERATE(prefix, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
 						iteratorCache.InsertCache(data)
 						if check {
@@ -964,7 +964,8 @@ func Scan(cursor *cursor.Cursor) {
 					fmt.Println("Prekidanje...")
 					break
 				} else if nextStopPrev == "prev" || nextStopPrev == "PREV" || nextStopPrev == "Prev" {
-					if iteratorCache.CurrentPosition() == 0 {
+					iteratorCache.DecrementPosition()
+					if iteratorCache.CheckIfLast() {
 						fmt.Println("Nema vise elemenata unazad")
 					} else {
 						fmt.Println("Vas podatak: ")
@@ -1003,7 +1004,7 @@ func Scan(cursor *cursor.Cursor) {
 				}
 				if nextStopPrev == "next" || nextStopPrev == "NEXT" || nextStopPrev == "Next" {
 					iteratorCache.IncrementPosition()
-					if iteratorCache.CheckIfOutOFCache() {
+					if iteratorCache.CheckIfEnd() {
 						data, check := scanning.RANGE_ITERATE(rangeVal, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
 						if check {
 							fmt.Println("Vas podatak: ")
@@ -1021,11 +1022,12 @@ func Scan(cursor *cursor.Cursor) {
 					fmt.Println("Prekidanje...")
 					break
 				} else if nextStopPrev == "prev" || nextStopPrev == "PREV" || nextStopPrev == "Prev" {
-					if iteratorCache.CurrentPosition() == 0 {
+					iteratorCache.DecrementPosition()
+					if iteratorCache.CheckIfLast() {
 						fmt.Println("Nema vise elemenata unazad")
 					} else {
 						fmt.Println("Vas podatak: ")
-						iteratorCache.DecrementPosition()
+
 						element := iteratorCache.CurrentElement()
 						fmt.Printf("Kljuc: %s\n\n", element.GetKey())
 

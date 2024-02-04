@@ -40,8 +40,14 @@ func (i *IteratingCache) IncrementPosition() {
 		i.currentPosition = i.maxNum
 	}
 }
-
-func (i *IteratingCache) CheckIfOutOFCache() bool {
+func (i *IteratingCache) CheckIfEnd() bool {
+	element := i.CurrentElement()
+	if i.CurrentPosition() == 0 || element.GetKey() == "" {
+		return true
+	}
+	return false
+}
+func (i *IteratingCache) CheckIfLast() bool {
 	return i.currentPosition == i.maxNum
 }
 
