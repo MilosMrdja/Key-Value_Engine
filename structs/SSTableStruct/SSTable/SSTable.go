@@ -21,6 +21,7 @@ type SSTable struct {
 // N i M su nam redom razudjenost u index-u, i u summary-ju
 func NewSSTable(dataList []datatype.DataType, proability_bf float64, N, M int, fileName string, compress1, compress2, oneFile bool) bool {
 
+	var dictionary *map[string]int32
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
 	var serializedData, indexData []byte
@@ -32,10 +33,13 @@ func NewSSTable(dataList []datatype.DataType, proability_bf float64, N, M int, f
 	bloomFilter := bloomfilter.CreateBloomFilter(uint64(duzinaDataList), proability_bf)
 
 	// mapa za enkodirane vrednosti
-	dictionary, err := DeserializationHashMap("EncodedKeys.bin")
-	if err != nil {
-		panic(err)
+	if compress2 {
+		dictionary, err = DeserializationHashMap("EncodedKeys.bin")
+		if err != nil {
+			panic(err)
+		}
 	}
+
 	//fmt.Printf("Mapa sa starim kljucevima\n")
 	//for k, v := range *dictionary {
 	//	fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
@@ -64,33 +68,59 @@ func NewSSTable(dataList []datatype.DataType, proability_bf float64, N, M int, f
 
 	// upis prvog i poslednjeg
 
-	minData, err := SerializeIndexData(dataList[0].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[0].GetKey()])
-	if err != nil {
-		return false
-	}
-	fileSummary.Write(minData)
+	if compress2 {
+		minData, err := SerializeIndexData(dataList[0].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[0].GetKey()])
+		if err != nil {
+			return false
+		}
+		fileSummary.Write(minData)
 
-	maxData, err := SerializeIndexData(dataList[duzinaDataList-1].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[duzinaDataList-1].GetKey()])
-	if err != nil {
-		return false
+		maxData, err := SerializeIndexData(dataList[duzinaDataList-1].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[duzinaDataList-1].GetKey()])
+		if err != nil {
+			return false
+		}
+		fileSummary.Write(maxData)
+	} else {
+		minData, err := SerializeIndexData(dataList[0].GetKey(), accIndex, compress1, compress2, 0)
+		if err != nil {
+			return false
+		}
+		fileSummary.Write(minData)
+
+		maxData, err := SerializeIndexData(dataList[duzinaDataList-1].GetKey(), accIndex, compress1, compress2, 0)
+		if err != nil {
+			return false
+		}
+		fileSummary.Write(maxData)
 	}
-	fileSummary.Write(maxData)
+
 	// glavna petlja
 
 	for i := 0; i < duzinaDataList; i++ {
 		// u mapu dodamo encodiranu vrednost kljuca
 
-		_, exist := (*dictionary)[dataList[i].GetKey()]
-		if !exist {
-			(*dictionary)[dataList[i].GetKey()] = int32(len(*(dictionary)) + 1)
+		if compress2 {
+			_, exist := (*dictionary)[dataList[i].GetKey()]
+			if !exist {
+				(*dictionary)[dataList[i].GetKey()] = int32(len(*(dictionary)) + 1)
+			}
 		}
+
 		// dodali smo kljuc u bloomf
 		AddKeyToBloomFilter(bloomFilter, dataList[i].GetKey())
 
-		// serijaliacija podatka
-		serializedData, err = SerializeDataType(dataList[i], compress1, compress2, (*dictionary)[dataList[i].GetKey()])
-		if err != nil {
-			return false
+		if compress2 {
+			// serijaliacija podatka
+			serializedData, err = SerializeDataType(dataList[i], compress1, compress2, (*dictionary)[dataList[i].GetKey()])
+			if err != nil {
+				return false
+			}
+		} else {
+			// serijaliacija podatka
+			serializedData, err = SerializeDataType(dataList[i], compress1, compress2, 0)
+			if err != nil {
+				return false
+			}
 		}
 
 		// upisujemo podatak u Data.bin fajl
@@ -99,23 +129,44 @@ func NewSSTable(dataList []datatype.DataType, proability_bf float64, N, M int, f
 			return false
 		}
 
-		//Upis odgovarajucih vrednosti u Summary
-		if (i+1)%M == 0 {
-			indexData, err = SerializeIndexData(dataList[i].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[i].GetKey()])
-			if err != nil {
-				return false
+		if compress2 {
+			//Upis odgovarajucih vrednosti u Summary
+			if (i+1)%M == 0 {
+				indexData, err = SerializeIndexData(dataList[i].GetKey(), accIndex, compress1, compress2, (*dictionary)[dataList[i].GetKey()])
+				if err != nil {
+					return false
+				}
+				fileSummary.Write(indexData)
 			}
-			fileSummary.Write(indexData)
-		}
-		//Upis odgovarajucih vrednosti u Index
-		if (i+1)%N == 0 {
-			indexData, err = SerializeIndexData(dataList[i].GetKey(), acc, compress1, compress2, (*dictionary)[dataList[i].GetKey()])
-			if err != nil {
-				return false
-			}
-			fileIndex.Write(indexData)
-			accIndex += len(indexData)
+			//Upis odgovarajucih vrednosti u Index
+			if (i+1)%N == 0 {
+				indexData, err = SerializeIndexData(dataList[i].GetKey(), acc, compress1, compress2, (*dictionary)[dataList[i].GetKey()])
+				if err != nil {
+					return false
+				}
+				fileIndex.Write(indexData)
+				accIndex += len(indexData)
 
+			}
+		} else {
+			//Upis odgovarajucih vrednosti u Summary
+			if (i+1)%M == 0 {
+				indexData, err = SerializeIndexData(dataList[i].GetKey(), accIndex, compress1, compress2, 0)
+				if err != nil {
+					return false
+				}
+				fileSummary.Write(indexData)
+			}
+			//Upis odgovarajucih vrednosti u Index
+			if (i+1)%N == 0 {
+				indexData, err = SerializeIndexData(dataList[i].GetKey(), acc, compress1, compress2, 0)
+				if err != nil {
+					return false
+				}
+				fileIndex.Write(indexData)
+				accIndex += len(indexData)
+
+			}
 		}
 
 		acc += duzinaPodatka
@@ -174,14 +225,16 @@ func NewSSTable(dataList []datatype.DataType, proability_bf float64, N, M int, f
 		err = os.Remove(fileName + "/Merkle.bin")
 
 	}
-	_, err = SerializeHashmap("EncodedKeys.bin", dictionary)
-	if err != nil {
-		panic(err)
+	if compress2 {
+		_, err = SerializeHashmap("EncodedKeys.bin", dictionary)
+		if err != nil {
+			panic(err)
+		}
+		//fmt.Printf("Mapa sa novim kljucevima")
+		//for k, v := range *dictionary {
+		//	fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
+		//}
 	}
-	//fmt.Printf("Mapa sa novim kljucevima")
-	//for k, v := range *dictionary {
-	//	fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
-	//}
 
 	return true
 }

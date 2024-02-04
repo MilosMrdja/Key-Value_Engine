@@ -15,6 +15,7 @@ import (
 // N i M su nam redom razudjenost u index-u, i u summary-ju
 func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, probability_bf float64, N, M, memtableLen int, compres1, compres2, oneFile bool) bool {
 
+	var dictionary *map[string]int32
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
 	var serializedData, indexData []byte
@@ -25,9 +26,11 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, proba
 	bloomFilter := bloomfilter.CreateBloomFilter(uint64(memtableLen), probability_bf)
 
 	// mapa za enkodirane vrednosti
-	dictionary, err := DeserializationHashMap("EncodedKeys.bin")
-	if err != nil {
-		panic(err)
+	if compres2 {
+		dictionary, err = DeserializationHashMap("EncodedKeys.bin")
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//Data fajl
@@ -63,17 +66,32 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, proba
 
 	// glavna petlja
 
-	minData, maxData := GetGlobalSummaryMinMax(&compSSTable, compres1, compres2)
-	indexData, err = SerializeIndexData(minData.GetKey(), accIndex, compres1, compres2, (*dictionary)[minData.GetKey()])
-	if err != nil {
-		return false
+	if compres2 {
+		minData, maxData := GetGlobalSummaryMinMax(&compSSTable, compres1, compres2)
+		indexData, err = SerializeIndexData(minData.GetKey(), accIndex, compres1, compres2, (*dictionary)[minData.GetKey()])
+		if err != nil {
+			return false
+		}
+		fileSummary.Write(indexData)
+		indexData, err = SerializeIndexData(maxData.GetKey(), accIndex, compres1, compres2, (*dictionary)[maxData.GetKey()])
+		if err != nil {
+			return false
+		}
+		fileSummary.Write(indexData)
+	} else {
+		minData, maxData := GetGlobalSummaryMinMax(&compSSTable, compres1, compres2)
+		indexData, err = SerializeIndexData(minData.GetKey(), accIndex, compres1, compres2, 0)
+		if err != nil {
+			return false
+		}
+		fileSummary.Write(indexData)
+		indexData, err = SerializeIndexData(maxData.GetKey(), accIndex, compres1, compres2, 0)
+		if err != nil {
+			return false
+		}
+		fileSummary.Write(indexData)
 	}
-	fileSummary.Write(indexData)
-	indexData, err = SerializeIndexData(maxData.GetKey(), accIndex, compres1, compres2, (*dictionary)[maxData.GetKey()])
-	if err != nil {
-		return false
-	}
-	fileSummary.Write(indexData)
+
 	i := 0
 	for true {
 
@@ -82,18 +100,28 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, proba
 			break
 		}
 
-		_, exist := (*dictionary)[data.GetKey()]
-		if !exist {
-			(*dictionary)[data.GetKey()] = int32(len(*(dictionary)) + 1)
+		if compres2 {
+			_, exist := (*dictionary)[data.GetKey()]
+			if !exist {
+				(*dictionary)[data.GetKey()] = int32(len(*(dictionary)) + 1)
+			}
 		}
 
 		// dodali smo kljuc u bloomf
 		AddKeyToBloomFilter(bloomFilter, data.GetKey())
 
-		// serijaliacija podatka
-		serializedData, err = SerializeDataType(data, compres1, compres2, (*dictionary)[data.GetKey()])
-		if err != nil {
-			return false
+		if compres2 {
+			// serijaliacija podatka
+			serializedData, err = SerializeDataType(data, compres1, compres2, (*dictionary)[data.GetKey()])
+			if err != nil {
+				return false
+			}
+		} else {
+			// serijaliacija podatka
+			serializedData, err = SerializeDataType(data, compres1, compres2, 0)
+			if err != nil {
+				return false
+			}
 		}
 
 		// upisujemo podatak u Data.bin fajl
@@ -102,23 +130,44 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, proba
 			return false
 		}
 
-		//Upis odgovarajucih vrednosti u Summary
-		if (i+1)%M == 0 {
-			indexData, err = SerializeIndexData(data.GetKey(), accIndex, compres1, compres2, (*dictionary)[data.GetKey()])
-			if err != nil {
-				return false
+		if compres2 {
+			//Upis odgovarajucih vrednosti u Summary
+			if (i+1)%M == 0 {
+				indexData, err = SerializeIndexData(data.GetKey(), accIndex, compres1, compres2, (*dictionary)[data.GetKey()])
+				if err != nil {
+					return false
+				}
+				fileSummary.Write(indexData)
 			}
-			fileSummary.Write(indexData)
-		}
-		//Upis odgovarajucih vrednosti u Index
-		if (i+1)%N == 0 {
-			indexData, err = SerializeIndexData(data.GetKey(), acc, compres1, compres2, (*dictionary)[data.GetKey()])
-			if err != nil {
-				return false
-			}
-			fileIndex.Write(indexData)
-			accIndex += len(indexData)
+			//Upis odgovarajucih vrednosti u Index
+			if (i+1)%N == 0 {
+				indexData, err = SerializeIndexData(data.GetKey(), acc, compres1, compres2, (*dictionary)[data.GetKey()])
+				if err != nil {
+					return false
+				}
+				fileIndex.Write(indexData)
+				accIndex += len(indexData)
 
+			}
+		} else {
+			//Upis odgovarajucih vrednosti u Summary
+			if (i+1)%M == 0 {
+				indexData, err = SerializeIndexData(data.GetKey(), accIndex, compres1, compres2, 0)
+				if err != nil {
+					return false
+				}
+				fileSummary.Write(indexData)
+			}
+			//Upis odgovarajucih vrednosti u Index
+			if (i+1)%N == 0 {
+				indexData, err = SerializeIndexData(data.GetKey(), acc, compres1, compres2, 0)
+				if err != nil {
+					return false
+				}
+				fileIndex.Write(indexData)
+				accIndex += len(indexData)
+
+			}
 		}
 
 		acc += duzinaPodatka
@@ -129,10 +178,13 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, proba
 		i++
 
 	}
-	_, err = SerializeHashmap("EncodedKeys.bin", dictionary)
-	if err != nil {
-		panic(err)
+	if compres2 {
+		_, err = SerializeHashmap("EncodedKeys.bin", dictionary)
+		if err != nil {
+			panic(err)
+		}
 	}
+
 	//Kreiranje i upis Merkle Stabla
 	CreateMerkleTree(arrToMerkle, newFilePath+"/Merkle.bin")
 	//Serijalizacija i upis bloom filtera

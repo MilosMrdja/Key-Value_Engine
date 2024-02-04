@@ -1335,6 +1335,6 @@ func main() {
 		}
 
 	}
-	GET(lru1, memtable, "49685")
+	//GET(lru1, memtable, "49685")
 
 }
