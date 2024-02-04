@@ -123,8 +123,8 @@ func CompactSstable(numTables int, probability_bf float64, compres1, compres2, o
 
 				newSstableName, _ := FindNextDestination(i+1, maxSSTlevel)
 				maxElemSize := memtableCap * int(math.Pow(10, float64(i))) * numTables
-				fmt.Printf("%d", maxElemSize)
-				fmt.Println(newSstableName)
+				//fmt.Printf("%d", maxElemSize)
+				//fmt.Println(newSstableName)
 				SSTable.NewSSTableCompact(newSstableName, compSSTable, probability_bf, N, M, maxElemSize, compres1, compres2, oneFile)
 
 			}

@@ -1,0 +1,95 @@
+RangeIterator - struktura cija su polja:
+- mapa koja slika pokazivac(adrese) memtabela u indexe trenutnih pozicija minimalnih elemenata u njima
+- niz od dva elementa koji sadrzi opseg vrednosti u kom se trazi kljuc prilikom zahteva iteriranja i skeniranja
+
+PrefixIterator - struktura cija su polja:
+- mapa koja slika pokazivac(adrese) memtabela u indexe trenutnih pozicija minimalnih elemenata u njima
+- trenutni prefix koji se trazi
+
+===================================================================================================================
+
+IteratorPrefixSSTable - struktura cija su polja:
+- mapa koja slika string koji je relativna putanja sstabele u niz od 3 clana, trenutni offset,
+kranji offset, offset koji se dodaje prilikom utvrdjivanja da je element iz ove tabele minimalan
+- trenutni prefix koji se trazi
+
+IteratorRangeSSTable - struktura cija su polja:
+- mapa koja slika string koji je relativan putanja sstabele u niz od 3 clana, trenutni offset,
+kranji offset, offset koji se dodaje prilikom utvrdjivanja da je element iz ove tabele minimalan
+- niz od dva elementa koji sadrzi opseg vrednosti u kom se trazi kljuc prilikom yahteva iteriranja i skeniranja
+
+===================================================================================================================
+
+PREFIX_ITERATE - tok resenja:
+Proverava se u oba proslednje iteratora za memtabele i sstabele da li je prefix prosledjen onaj trenutni
+da bismo znali da nastavimo iteriranje po tom prefiksu. Prvo se pozicioniramo u memtabelama
+na poziciju minimalnog elementa, na osnovu prethodno sortiranog celog data dela memtabele.
+Ako minimalan element sa zadatim prefixom se ne nalazi u memtabeli, njen indeks u iteratoru se postavlja na njenu
+maksimalnu duzinu. U mapu koja slika adrese (pokazivace) u DataType se dodaju kljucevi koji su adrese memtabela
+gde se nalaze minimalni elementi sa zadatim prefixom.
+
+Potom proverimo Summary SStabela, te "izvucemo" u kojima postoji mogucnost da se kljuc sa zadatim prefixom nalazi,
+pozicioniramo na poziciju minimalnog elementa inkrementirajuci u vrednost offseta u prvom clanu niza iz mape u iteratoru
+U mapu koja slika naziv sstabele u DataType dodaju se imena sstabela sa minimalnim zadatim prefixom.
+
+Svaki od izdvojenih minimalnih elemenata se poredi prvo medjusobno u memtabelama, i sstabelama.
+Potom se uporede vrednosti najmanjih iz obe grupacije kljuceva. Ukoliko odredjene memtabele imaju manju vrednost kljuca,
+njihove pozicije u mapi iteratora se inkrementiraju. Ukoliko oredjene sstabele imaju manju vrednost kljuca, njihovi offseti
+u mapi iteratora se povecavaju za vrednost sacuvanu u clanu niza sa indexom dva u mapi unutar iteratora.
+Ukoliko i odredjene sstabele i memtabele imaju iste minimalne elemente, uporedjuje se element koji ima najraniji tamestamp,
+ali se pozicije svih takvih memtabela i offseti svih takvih sstabela povecaju.
+Na kraju vratimo DataType koji ima zadati prefix u kljucu, i "najsveziji je".
+===================================================================================================================
+RANGE_ITERATE - tok resenja:
+Proverava se u oba proslednje iteratora za memtabele i sstabele da li je opseg vrednosti prosledjen onaj trenutni
+da bismo znali da nastavimo iteriranje po tom opsegu vrednosti. Prvo se pozicioniramo u memtabelama
+na poziciju minimalnog elementa, na osnovu prethodno sortiranog celog data dela memtabele.
+Ako minimalan element koji je u zadatom opsegu se ne nalazi u memtabeli, njen indeks u iteratoru se postavlja na njenu
+maksimalnu duzinu. U mapu koja slika adrese (pokazivace) u DataType se dodaju kljucevi koji su adrese memtabela
+gde se nalaze minimalni elementi u zadatom opsegu.
+
+Potom proverimo Summary SStabela, te "izvucemo" u kojima postoji mogucnost da se kljuc u zadatom opsegu nalazi,
+pozicioniramo na poziciju minimalnog elementa inkrementirajuci u vrednost offseta u prvom clanu niza iz mape u iteratoru
+U mapu koja slika naziv sstabele u DataType dodaju se imena sstabela sa minimalnim iz zadatog opsega.
+
+Svaki od izdvojenih minimalnih elemenata se poredi prvo medjusobno u memtabelama, i sstabelama.
+Potom se uporede vrednosti najmanjih iz obe grupacije kljuceva. Ukoliko odredjene memtabele imaju manju vrednost kljuca,
+njihove pozicije u mapi iteratora se inkrementiraju. Ukoliko oredjene sstabele imaju manju vrednost kljuca, njihovi offseti
+u mapi iteratora se povecavaju za vrednost sacuvanu u clanu niza sa indexom dva u mapi unutar iteratora.
+Ukoliko i odredjene sstabele i memtabele imaju iste minimalne elemente, uporedjuje se element koji ima najraniji tamestamp,
+ali se pozicije svih takvih memtabela i offseti svih takvih sstabela povecaju.
+Na kraju vratimo DataType ciji se kljuc nalazi u zadatom opsegu vrednosti, i "najsveziji" je.
+
+===================================================================================================================
+
+PREFIX_SCAN - tok resenja
+najpe odredimo broj m koji ce biti broj onih zapisa koje necemo racunati/prikazati.
+Racunamo ga kao (broj_strana-1)*broj_zapisa_na_strani. Broj n racunamo kao broj zapisa na strani, to su oni zapisi
+koji ce biti prikazani korisniku.
+
+===================================================================================================================
+
+RANGE_SCAN - tok resenja
+najpe odredimo broj m koji ce biti broj onih zapisa koje necemo racunati/prikazati.
+Racunamo ga kao (broj_strana-1)*broj_zapisa_na_strani. Broj n racunamo kao broj zapisa na strani, to su oni zapisi
+koji ce biti prikazani korisniku.
+
+===================================================================================================================
+
+Implementacija PREFIX_ITERATE i RANGE ITERATE
+
+IteratorCache - struktura koja cuva prethodnih n zadatih zapisa kao niz DataType. Dodavanje u niz funkcionise tako
+sto se na kraj niza doda element, a element na prvoj poziciji se prethodno "popuje". Putem aktivnog indeksa se vodi,
+trenuta pozicija u nizu. Ako dodjemo do elementa prilikom poziva komande "prev" ciji je kljuc prazan string ili dodjemo
+do pocetka niza, korisniku se prikazuje da nema vise zapisa u istoriji iteriranja. Kada pozivom komande "next" dodjemo
+do poslednjeg u nizu, novi zapis se ucitava pozivom PREFIX_ITERATE ili RANGE_ITERATE funkcije, te se, kao sto smo rekli
+prethodno, prvi iz niza izbaci, novi element ubaci u niz.
+
+Implementaciaj PREFIX_SCAN i RANGE_SCAN:
+
+Ukoliko korisnik zatrazi "next" nastavlja se trazenje zadate strane i zadatog broja elemenata. Ukoliko korisnik zatrazi "prev"
+resetuju se pozicije zapamcenih iteratora, trazenje se prakticno realizuje kao novo.
+
+
+
+

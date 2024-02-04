@@ -63,7 +63,23 @@ func setConst() {
 
 	configData, err := os.ReadFile("config.json")
 	if err != nil {
-		panic(err)
+		compress1 = false
+		compress2 = false
+		oneFile = false
+		NumberOfSST = 2
+		lruCap = 3
+		N = 1
+		M = 1
+		memTableCap = 3
+		memTableNumber = 2
+		levelPlus = 2
+		memType = "hash"
+		compType = "level"
+		walSegmentSize = 2000
+		maxSSTLevel = 5
+		rate = 5
+		maxToken = 10
+		p = 0.01
 	}
 
 	err = json.Unmarshal(configData, &config)
@@ -236,10 +252,17 @@ func setConst() {
 		levelPlus = 12
 	}
 
-	p = config.P
-	if p > 0.1 {
+	//prob for hloglog
+	_, ok = dataResult["probab"]
+	if ok {
+		p = config.P
+		if p > 0.1 {
+			p = 0.01
+		}
+	} else {
 		p = 0.01
 	}
+
 }
 
 func checkKey(key string) (bool, string) {
@@ -284,7 +307,7 @@ func GET(lru1 *lru.LRUCache, memtable *cursor.Cursor, key string) ([]byte, bool)
 	ispis, _ := checkKey(key)
 
 	value, ok := memtable.GetElement(key)
-	if string(value) != "" {
+	if value != nil {
 		if ispis {
 			fmt.Printf("Value: %s\n", value)
 		}
@@ -336,10 +359,10 @@ func PUT(wal *wal_implementation.WriteAheadLog, memtable *cursor.Cursor, key str
 
 	//Prvo u WAL
 	timestamp := time.Now()
-	//err := wal.Log(key, value, false, timestamp)
-	//if err != nil {
-	//	panic(err)
-	//}
+	err := wal.Log(key, value, false, timestamp)
+	if err != nil {
+		panic(err)
+	}
 	//Drugo u mem
 
 	ok := memtable.AddToMemtable(key, value, timestamp, wal)
@@ -369,9 +392,9 @@ func DELETE(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable 
 }
 
 func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor) {
-	option := "-1"
-	for option != "5" {
-		fmt.Println("Rad sa BloomFilter tipom: ")
+	var option string
+	for true {
+		fmt.Println("\nRad sa BloomFilter tipom: ")
 		fmt.Println("\n1. Kreiranje nove instance\n2. Brisanje postojece instance\n3. Dodavanje elementa u postojecu instancu\n4. Provera da li je element u nekoj instanci\n5. Izlaz\n")
 		fmt.Printf("Unesite opciju : ")
 		_, err := fmt.Scan(&option)
@@ -395,8 +418,8 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 			}
 			key += "_bf"
 
-			_, found := GET(lru1, memtable, key)
-			if found {
+			data, found := GET(lru1, memtable, key)
+			if found && len(data) != 0 {
 				fmt.Printf("Vec postoji element sa tim kljucem!")
 			} else {
 				var n int
@@ -411,31 +434,7 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				PUT(wal, memtable, key, serializedData)
 				fmt.Printf("BloomFilter je upisan u sistem!")
 			}
-		}
-		if option == "2" {
-			var key string
-			fmt.Println("Unesite kljuc postojece instance: ")
-			_, err := fmt.Scan(&key)
-			if err != nil {
-				fmt.Println("Error:", err)
-				return
-			}
-			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
-			ok, kr := checkKey(key)
-			if !ok {
-				fmt.Printf("Koristite kljucnu rec %s\n", kr)
-				return
-			}
-			key += "_bf"
-			_, found := GET(lru1, memtable, key)
-			if !found {
-				fmt.Printf("Ne postoji element sa tim kljucem!")
-			} else {
-				DELETE(wal, lru1, memtable, key)
-				fmt.Printf("BloomFilter sa izabranim kljucem je uspesno obrisan!")
-			}
-		}
-		if option == "3" {
+		} else if option == "2" {
 			var key string
 			fmt.Println("Unesite kljuc postojece instance: ")
 			_, err := fmt.Scan(&key)
@@ -451,7 +450,29 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 			}
 			key += "_bf"
 			data, found := GET(lru1, memtable, key)
-			if !found {
+			if !found || len(data) == 0 {
+				fmt.Printf("Ne postoji element sa tim kljucem!")
+			} else {
+				DELETE(wal, lru1, memtable, key)
+				fmt.Printf("BloomFilter sa izabranim kljucem je uspesno obrisan!")
+			}
+		} else if option == "3" {
+			var key string
+			fmt.Println("Unesite kljuc postojece instance: ")
+			_, err := fmt.Scan(&key)
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr := checkKey(key)
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key += "_bf"
+			data, found := GET(lru1, memtable, key)
+			if !found || len(data) == 0 {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
 			} else {
 				bf, _ := bloomfilter.DeserializeBloomFilter(data)
@@ -467,8 +488,7 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				PUT(wal, memtable, key, serializedData)
 				fmt.Printf("Vrednost je uneta u BloomFilter!")
 			}
-		}
-		if option == "4" {
+		} else if option == "4" {
 			var key string
 			fmt.Println("Unesite kljuc postojece instance: ")
 			_, err := fmt.Scan(&key)
@@ -484,7 +504,7 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 			}
 			key += "_bf"
 			data, found := GET(lru1, memtable, key)
-			if !found {
+			if !found || len(data) == 0 {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
 			} else {
 				bf, _ := bloomfilter.DeserializeBloomFilter(data)
@@ -502,8 +522,8 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 					fmt.Println("Vrednost se mozda nalazi u BloomFilter-u!")
 				}
 			}
-		}
-		if option == "5" {
+		} else if option == "5" {
+			fmt.Println("Izlazak...")
 			break
 		} else {
 			fmt.Printf("Uneli ste nepostojecu opciju!")
@@ -512,9 +532,9 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 }
 
 func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor) {
-	option := "-1"
-	for option != "5" {
-		fmt.Println("Rad sa CountMinSketch tipom: ")
+	var option string
+	for true {
+		fmt.Println("\nRad sa CountMinSketch tipom: ")
 		fmt.Println("\n1. Kreiranje nove instance\n2. Brisanje postojece instance\n3. Dodavanje dogadjaja u postojecu instancu\n4. Provera ucestalosti dogadjaja u nekoj instanci\n5. Izlaz\n")
 		fmt.Printf("Unesite opciju : ")
 		_, err := fmt.Scan(&option)
@@ -524,7 +544,7 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 		}
 		if option == "1" {
 			var key string
-			fmt.Println("Unesite kljuc: ")
+			fmt.Println("Unesite kljuc >> ")
 			_, err := fmt.Scan(&key)
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -537,18 +557,18 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 				return
 			}
 			key += "_cms"
-			_, found := GET(lru1, memtable, key)
-			if found {
+			data, found := GET(lru1, memtable, key)
+			if found && len(data) != 0 {
 				fmt.Printf("Vec postoji element sa tim kljucem!")
 			} else {
 				var width, hashes int
-				fmt.Println("Unesite sirinu CountMinSketch tabele:  ")
+				fmt.Println("Unesite sirinu CountMinSketch tabele >>  ")
 				_, err := fmt.Scan(&width)
 				if err != nil {
 					fmt.Println("Error:", err)
 					return
 				}
-				fmt.Println("Unesite broj HASH funkcija CountMinSketch-a:  ")
+				fmt.Println("Unesite broj HASH funkcija CountMinSketch-a >>  ")
 				_, err = fmt.Scan(&hashes)
 				if err != nil {
 					fmt.Println("Error:", err)
@@ -559,10 +579,9 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 				PUT(wal, memtable, key, serializedData)
 				fmt.Printf("Novi CountMinSketch je uspesno upisan u sistem!")
 			}
-		}
-		if option == "2" {
+		} else if option == "2" {
 			var key string
-			fmt.Println("Unesite kljuc postojece instance: ")
+			fmt.Println("Unesite kljuc postojece instance >>")
 			_, err := fmt.Scan(&key)
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -575,15 +594,14 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 				return
 			}
 			key += "_cms"
-			_, found := GET(lru1, memtable, key)
-			if !found {
+			data, found := GET(lru1, memtable, key)
+			if !found || len(data) == 0 {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
 			} else {
 				DELETE(wal, lru1, memtable, key)
 				fmt.Printf("CountMinSketch sa izabranim kljucem je uspesno obrisan!")
 			}
-		}
-		if option == "3" {
+		} else if option == "3" {
 			var key string
 			fmt.Println("Unesite kljuc postojece instance: ")
 			_, err := fmt.Scan(&key)
@@ -599,7 +617,7 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 			}
 			key += "_cms"
 			data, found := GET(lru1, memtable, key)
-			if !found {
+			if !found || len(data) == 0 {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
 			} else {
 				cms, _ := count_min_sketch.DeserializeCountMinSketch(data)
@@ -615,8 +633,7 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 				PUT(wal, memtable, key, serializedData)
 				fmt.Printf("Vrednost je uneta u CountMinSketch!")
 			}
-		}
-		if option == "4" {
+		} else if option == "4" {
 			var key string
 			fmt.Println("Unesite kljuc postojece instance: ")
 			_, err := fmt.Scan(&key)
@@ -632,7 +649,7 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 			}
 			key += "_cms"
 			data, found := GET(lru1, memtable, key)
-			if !found {
+			if !found || len(data) == 0 {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
 			} else {
 				cms, _ := count_min_sketch.DeserializeCountMinSketch(data)
@@ -646,8 +663,7 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 				frequency := (*cms).Estimate(value)
 				fmt.Printf("Ucestanost unete vrednosti u CountMinSketch-u: %v", frequency)
 			}
-		}
-		if option == "5" {
+		} else if option == "5" {
 			break
 		} else {
 			fmt.Printf("Uneli ste nepostojecu opciju!")
@@ -656,11 +672,11 @@ func TypeCountMinSketch(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCach
 }
 
 func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor) {
-	option := "-1"
-	for option != "5" {
-		fmt.Println("Rad sa HyperLogLog tipom: ")
+	var option string
+	for true {
+		fmt.Println("\nRad sa HyperLogLog tipom: ")
 		fmt.Println("\n1. Kreiranje nove instance\n2. Brisanje postojece instance\n3. Dodavanje elementa u postojecu instancu\n4. Provera kardinaliteta\n5. Izlaz\n")
-		fmt.Printf("Unesite opciju : ")
+		fmt.Printf("Unesite opciju >> ")
 		_, err := fmt.Scan(&option)
 		if err != nil {
 			fmt.Println("Error:", err)
@@ -668,7 +684,7 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 		}
 		if option == "1" {
 			var key string
-			fmt.Println("Unesite kljuc: ")
+			fmt.Println("Unesite kljuc >> ")
 			_, err := fmt.Scan(&key)
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -681,12 +697,12 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				return
 			}
 			key += "_hll"
-			_, found := GET(lru1, memtable, key)
-			if found {
+			data, found := GET(lru1, memtable, key)
+			if found && len(data) != 0 {
 				fmt.Printf("Vec postoji element sa tim kljucem!")
 			} else {
 				var n uint64
-				fmt.Println("Unesite duzinu seta HyperLogLog-a: ")
+				fmt.Println("Unesite duzinu seta HyperLogLog-a >>")
 				_, err := fmt.Scan(&n)
 				if err != nil {
 					fmt.Println("Error:", err)
@@ -697,10 +713,9 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				PUT(wal, memtable, key, serializedData)
 				fmt.Printf("HyperLogLog je upisan u sistem!")
 			}
-		}
-		if option == "2" {
+		} else if option == "2" {
 			var key string
-			fmt.Println("Unesite kljuc postojece instance: ")
+			fmt.Println("Unesite kljuc postojece instance >> ")
 			_, err := fmt.Scan(&key)
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -720,8 +735,7 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				DELETE(wal, lru1, memtable, key)
 				fmt.Printf("HyperLogLog sa izabranim kljucem je uspesno obrisan!")
 			}
-		}
-		if option == "3" {
+		} else if option == "3" {
 			var key string
 			fmt.Println("Unesite kljuc postojece instance: ")
 			_, err := fmt.Scan(&key)
@@ -737,26 +751,32 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 			}
 			key += "_hll"
 			data, found := GET(lru1, memtable, key)
-			if !found {
+			if !found || len(data) == 0 {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
 			} else {
 				hll, _ := hyperloglog.DeserializeHyperLogLog(data)
-				var value []byte
+				value := make([]byte, 8)
+				var v string
 				fmt.Println("Unesite vrednost koju unosite u HyperLogLog: ")
-				_, err := fmt.Scan(&value)
+
+				_, err := fmt.Scan(&v)
 				if err != nil {
 					fmt.Println("Error:", err)
 					return
 				}
+
+				value = []byte(v)
 				(*hll).Add(value)
 				serializedData, _ := hyperloglog.SerializeHyperLogLog(hll)
+				hlll, _ := hyperloglog.DeserializeHyperLogLog(serializedData)
+				fmt.Println(hlll)
 				PUT(wal, memtable, key, serializedData)
 				fmt.Printf("Vrednost je uneta u HyperLogLog!")
+				fmt.Printf("Kardinalitet izabrane instance HyperLogLog-a: %v", (*hll).CountHLL())
 			}
-		}
-		if option == "4" {
+		} else if option == "4" {
 			var key string
-			fmt.Println("Unesite kljuc postojece instance: ")
+			fmt.Println("Unesite kljuc postojece instance >>")
 			_, err := fmt.Scan(&key)
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -770,14 +790,14 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 			}
 			key += "_hll"
 			data, found := GET(lru1, memtable, key)
-			if !found {
+			if !found || len(data) == 0 {
 				fmt.Printf("Ne postoji element sa tim kljucem!")
 			} else {
 				hll, _ := hyperloglog.DeserializeHyperLogLog(data)
 				fmt.Printf("Kardinalitet izabrane instance HyperLogLog-a: %v", (*hll).CountHLL())
 			}
-		}
-		if option == "5" {
+		} else if option == "5" {
+			fmt.Println("Izlazak...")
 			break
 		} else {
 			fmt.Printf("Uneli ste nepostojecu opciju!")
@@ -786,10 +806,10 @@ func TypeHyperLogLog(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 }
 
 func TypeSimHash(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor) {
-	option := "-1"
-	for option != "3" {
-		fmt.Println("Rad sa SimHash tipom: ")
-		fmt.Println("\n1. Cuvanje fingerprinta prosledjenog teksta\n2.Racunanje Hemingove udaljenosti dva fingerprinta\n3. Izlaz\n")
+	var option string
+	for true {
+		fmt.Println("\nRad sa SimHash tipom: ")
+		fmt.Println("\n1. Cuvanje fingerprinta prosledjenog teksta\n2. Racunanje Hemingove udaljenosti dva fingerprinta\n3. Izlaz\n")
 		fmt.Printf("Unesite opciju : ")
 		_, err := fmt.Scan(&option)
 		if err != nil {
@@ -798,7 +818,7 @@ func TypeSimHash(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memt
 		}
 		if option == "1" {
 			var key string
-			fmt.Println("Unesite kljuc: ")
+			fmt.Println("Unesite kljuc >>")
 			_, err := fmt.Scan(&key)
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -827,15 +847,15 @@ func TypeSimHash(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memt
 				PUT(wal, memtable, key, value)
 				fmt.Printf("SimHash je upisan u sistem!")
 			}
-		}
-		if option == "2" {
+		} else if option == "2" {
 			var key1, key2 string
-			fmt.Println("Unesite kljuc postojece instance: ")
+			fmt.Printf("Unesite kljuceve postojece instance\n>> ")
 			_, err := fmt.Scan(&key1)
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
 			}
+			fmt.Printf("\n>> ")
 			_, err = fmt.Scan(&key2)
 			if err != nil {
 				fmt.Println("Error:", err)
@@ -862,8 +882,8 @@ func TypeSimHash(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memt
 			} else {
 				fmt.Printf("Hemingovo rastojanje izmedju dva izabrana fingerprinta: %v", SimHash.HammingDistance(data1, data2))
 			}
-		}
-		if option == "3" {
+		} else if option == "3" {
+			fmt.Println("Izlazak...")
 			break
 		} else {
 			fmt.Printf("Uneli ste nepostojecu opciju!")
@@ -1028,7 +1048,7 @@ func Scan(cursor *cursor.Cursor) {
 				panic(err)
 			}
 
-			iteratorCache := iterator.NewIteratingCache(10) //promeniti kasnije
+			iteratorCache := iterator.NewIteratingCache(50) //promeniti kasnije
 
 			iteratorSSTable := scanning.PrefixIterateSSTable(prefix, compress1, compress2)
 			iteratorMem := iterator.NewPrefixIterator(cursor, prefix)
@@ -1042,12 +1062,14 @@ func Scan(cursor *cursor.Cursor) {
 					iteratorCache.IncrementPosition()
 					if iteratorCache.CheckIfLast() {
 						data, check := scanning.PREFIX_ITERATE(prefix, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
-						iteratorCache.InsertCache(data)
+
 						if check {
+							iteratorCache.InsertCache(data)
 							fmt.Println("Vas podatak: ")
 							fmt.Printf("Kljuc: %s\n\n", data.GetKey())
 						} else {
 							fmt.Println("Ne posotji elemenata koji zadovoljavaju uslov.")
+
 						}
 					} else {
 						fmt.Println("Vas podatak: ")
@@ -1066,6 +1088,7 @@ func Scan(cursor *cursor.Cursor) {
 					iteratorCache.DecrementPosition()
 					if iteratorCache.CheckIfEnd() {
 						fmt.Println("Nema vise elemenata unazad")
+						iteratorCache.IncrementPosition()
 
 					} else {
 						fmt.Println("Vas podatak: ")
@@ -1106,12 +1129,14 @@ func Scan(cursor *cursor.Cursor) {
 					iteratorCache.IncrementPosition()
 					if iteratorCache.CheckIfLast() {
 						data, check := scanning.RANGE_ITERATE(rangeVal, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
-						iteratorCache.InsertCache(data)
+
 						if check {
+							iteratorCache.InsertCache(data)
 							fmt.Println("Vas podatak: ")
 							fmt.Printf("Kljuc: %s\n\n", data.GetKey())
 						} else {
 							fmt.Println("Ne posotji elemenata koji zadovoljavaju uslov.")
+
 						}
 					} else {
 						fmt.Println("Vas podatak: ")
@@ -1130,6 +1155,7 @@ func Scan(cursor *cursor.Cursor) {
 					iteratorCache.DecrementPosition()
 					if iteratorCache.CheckIfEnd() {
 						fmt.Println("Nema vise elemenata unazad")
+						iteratorCache.IncrementPosition()
 
 					} else {
 						fmt.Println("Vas podatak: ")
@@ -1156,7 +1182,7 @@ func Scan(cursor *cursor.Cursor) {
 func Types(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor) {
 
 	for true {
-		fmt.Println("\n1. Bloomfilter\n2.Count min sketch\n3. Hyperloglog\n4. Simhash\n5. Izlaz")
+		fmt.Println("\n1. Bloomfilter\n2. Count min sketch\n3. Hyperloglog\n4. Simhash\n5. Izlaz")
 		var opcijaTip string
 		_, err := fmt.Scan(&opcijaTip)
 		if err != nil {
@@ -1182,7 +1208,7 @@ func Types(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *
 func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *cursor.Cursor, tokenb *token_bucket.TokenBucket) {
 	for true {
 		var opcija string
-		fmt.Println("Key-Value Engine")
+		fmt.Println("\n--------------------------------------------------------\nKey-Value Engine")
 
 		fmt.Println("\n1. Unesi podatak\n2. Obrisi podatak\n3. Dobavi podatak\n4. Skeniranje\n5. Tipovi\n6. Proveri SSTabelu\n7. Izlaz")
 		fmt.Printf("Unesite opciju >> ")
@@ -1191,7 +1217,7 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 			fmt.Println("Error:", err)
 			return
 		}
-		mess, moze := tokenb.IsRequestAllowed(9)
+		mess, moze := tokenb.IsRequestAllowed(1)
 		if !moze {
 			fmt.Printf("\n" + mess + "\n")
 			continue
@@ -1218,7 +1244,6 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 				return
 			}
 			PUT(wal, memtable, key, []byte(value))
-			//TODO test
 		} else if opcija == "2" {
 			fmt.Printf("Unesite kljuc >> ")
 			_, err := fmt.Scan(&key)
@@ -1233,7 +1258,6 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 				continue
 			}
 			DELETE(wal, lru1, memtable, key)
-			//TODO test
 		} else if opcija == "3" {
 			fmt.Printf("Unesite kljuc >> ")
 			_, err := fmt.Scan(&key)
@@ -1248,7 +1272,6 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 				continue
 			}
 			GET(lru1, memtable, key)
-			//TODO test
 		} else if opcija == "4" {
 			Scan(memtable)
 		} else if opcija == "5" {
@@ -1261,8 +1284,13 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 			if err != nil {
 				panic(err)
 			}
-			//TODO provera da li sstable posotji
-			ValidateSSTable(sstableName)
+			_, err = os.Stat(sstableName)
+			if err != nil {
+				fmt.Println("Ne postoji zadata sstabela.")
+			} else {
+				ValidateSSTable(sstableName)
+
+			}
 			//TEST DONE
 
 		} else if opcija == "7" {
@@ -1316,6 +1344,24 @@ func scantest() {
 	fmt.Println("")
 }
 
+func skripta(flag bool, wal *wal_implementation.WriteAheadLog, memtable *cursor.Cursor) {
+	if flag {
+		for i := 1; i <= 2; i++ {
+			for j := 1; j <= 50000; j++ {
+				PUT(wal, memtable, strconv.Itoa(j), []byte(strconv.Itoa(j)))
+			}
+
+		}
+	} else {
+		for i := 0; i < 1000; i++ {
+			for j := 1; j <= 100; j++ {
+				PUT(wal, memtable, strconv.Itoa(j), []byte(strconv.Itoa(j)))
+			}
+		}
+	}
+
+}
+
 func main() {
 	// postavka
 	setConst()
@@ -1326,15 +1372,7 @@ func main() {
 	lru1 := lru.NewLRUCache(lruCap)
 	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, NumberOfSST, memTableCap, compType, maxSSTLevel, levelPlus, p)
 	memtable.Fill(wal)
-	//meni(wal, lru1, memtable, tokenb)
-	//
-	for i := 1; i <= 2; i++ {
-		for j := 1; j <= 50000; j++ {
-			PUT(wal, memtable, strconv.Itoa(j), []byte(strconv.Itoa(j)))
-			fmt.Printf(strconv.Itoa(j) + "\n")
-		}
 
-	}
-	//GET(lru1, memtable, "49685")
+	meni(wal, lru1, memtable, tokenb)
 
 }

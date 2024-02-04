@@ -250,12 +250,15 @@ func PrefixIterateSSTable(prefix string, compress1, compress2 bool) *iterator.It
 		ssTemp, _ := ioutil.ReadDir("./DataSSTable/L" + strconv.Itoa(i))
 		for j := 0; j < len(ssTemp); j++ {
 			prvi, poslednji, _ := SSTable.GetSummaryMinMax("./DataSSTable/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(j+1), compress1, compress2)
-			if prefix < prvi.GetKey()[:duzinaPref] || prefix > poslednji.GetKey()[:duzinaPref] {
-				continue
-			} else {
-				fileSST := "./DataSSTable/L" + strconv.Itoa(i) + "/sstable" + strconv.Itoa(j+1)
-				mapa[fileSST] = GetBeginsEnds(fileSST)
+			if duzinaPref <= len(poslednji.GetKey()) {
+				if prefix < prvi.GetKey()[:duzinaPref] || prefix > poslednji.GetKey()[:duzinaPref] {
+					continue
+				} else {
+					fileSST := "./DataSSTable/L" + strconv.Itoa(i) + "/sstable" + strconv.Itoa(j+1)
+					mapa[fileSST] = GetBeginsEnds(fileSST)
+				}
 			}
+
 		}
 	}
 	//for k, v := range mapa {
@@ -274,6 +277,7 @@ func RangeIterateSSTable(rang [2]string, compress1, compress2 bool) *iterator.It
 		ssTemp, _ := ioutil.ReadDir("./DataSSTable/L" + strconv.Itoa(i))
 		for j := 0; j < len(ssTemp); j++ {
 			prvi, poslednji, _ := SSTable.GetSummaryMinMax("./DataSSTable/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(j+1), compress1, compress2)
+
 			if rang[1] < prvi.GetKey() || rang[0] > poslednji.GetKey() {
 				continue
 			} else {

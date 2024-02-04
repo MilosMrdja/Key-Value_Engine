@@ -12,7 +12,7 @@ import (
 
 func leviAktivniBit(x uint64) int64 {
 
-	return int64(1 + bits.TrailingZeros64(x))
+	return int64(1 + bits.LeadingZeros64(x))
 }
 
 type HyperLogLog struct {
@@ -187,7 +187,19 @@ func LoadHyperLogLogFromFile(fileName string) (*HyperLogLog, error) {
 	return &hll, nil
 }
 
+func NextPowerOfTwo(num uint64) uint64 {
+	x := 1
+	for true {
+		x = x << 1
+		if uint64(x) > num {
+			break
+		}
+	}
+	return uint64(x)
+}
+
 func CreateHyperLogLog(m uint64) *HyperLogLog {
+	m = NextPowerOfTwo(m)
 	return &HyperLogLog{
 		registers: make([]int64, m),
 		m:         m,
@@ -199,7 +211,7 @@ func (hyperloglog *HyperLogLog) Add(input []byte) {
 	hesh := hash64(input)
 	prvihBBita := 64 - hyperloglog.b
 	result := leviAktivniBit(hesh)
-	j := hesh >> prvihBBita
+	j := (hesh >> prvihBBita)
 
 	if result > hyperloglog.registers[j] {
 		hyperloglog.registers[j] = result
