@@ -28,9 +28,9 @@ func generateHashFunctions(m uint64, n uint64) []hash.Hash32 { //Generise niz ha
 	return hashArray
 }
 
-func calculateProbability() float64 { //Ovo navodno navodi korisnik
+func calculateProbability(p float64) float64 { //Ovo navodno navodi korisnik
 
-	return (0.01) * math.Log2(float64(2))
+	return (p) * math.Log2(float64(2))
 }
 
 func calculateBitsetSize(n uint64, probability float64) uint64 { //Racuna duzinu bitseta u zavisnosi od kolicine elemenata po formuli
@@ -202,14 +202,14 @@ func SerializeBloomFilter(f *BloomFilter) ([]byte, error) {
 	return resultArray, nil
 }
 
-func CreateBloomFilter(n uint64) *BloomFilter { //Constructor
+func CreateBloomFilter(n uint64, p float64) *BloomFilter { //Constructor
 
-	bloomfilter := BloomFilter{bitsetLength: calculateBitsetSize(n, calculateProbability()),
+	bloomfilter := BloomFilter{bitsetLength: calculateBitsetSize(n, calculateProbability(p)),
 		elemNum:       uint64(n),
-		bitset:        make([]byte, calculateBitsetSize(n, calculateProbability()), calculateBitsetSize(n, calculateProbability())),
-		numOfHashes:   generateOptimalNumberOfHashFunctions(calculateBitsetSize(n, calculateProbability()), n),
-		hashFunctions: generateHashFunctions(calculateBitsetSize(n, calculateProbability()), n),
-		probability:   calculateProbability()}
+		bitset:        make([]byte, calculateBitsetSize(n, calculateProbability(p)), calculateBitsetSize(n, calculateProbability(p))),
+		numOfHashes:   generateOptimalNumberOfHashFunctions(calculateBitsetSize(n, calculateProbability(p)), n),
+		hashFunctions: generateHashFunctions(calculateBitsetSize(n, calculateProbability(p)), n),
+		probability:   calculateProbability(p)}
 
 	return &bloomfilter
 }

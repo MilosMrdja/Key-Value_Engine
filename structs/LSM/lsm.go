@@ -37,7 +37,7 @@ func FindNextDestination(layer, maxSSTlevel int) (string, bool) {
 	return newSstableName, false
 }
 
-func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memtableCap int, compType string, maxSSTlevel, levelPlus int) {
+func CompactSstable(numTables int, probability_bf float64, compres1, compres2, oneFile bool, N, M, memtableCap int, compType string, maxSSTlevel, levelPlus int) {
 
 	//ovako za gore u entrijim
 	dataDir, err := os.Open("./DataSStable")
@@ -87,7 +87,7 @@ func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memta
 					compSSTable[dataDir.Name()+"/L"+strconv.Itoa(i)+"/"+sstableName[j]] = a
 				}
 				SSTable.GetOffsetStartEnd(&compSSTable)
-				SSTable.NewSSTableCompact(newSstableName, compSSTable, N, M, maxElemSize, compres1, compres2, oneFile)
+				SSTable.NewSSTableCompact(newSstableName, compSSTable, probability_bf, N, M, maxElemSize, compres1, compres2, oneFile)
 				fmt.Printf("%d", maxElemSize)
 			}
 
@@ -125,7 +125,7 @@ func CompactSstable(numTables int, compres1, compres2, oneFile bool, N, M, memta
 				maxElemSize := memtableCap * int(math.Pow(10, float64(i))) * numTables
 				fmt.Printf("%d", maxElemSize)
 				fmt.Println(newSstableName)
-				SSTable.NewSSTableCompact(newSstableName, compSSTable, N, M, maxElemSize, compres1, compres2, oneFile)
+				SSTable.NewSSTableCompact(newSstableName, compSSTable, probability_bf, N, M, maxElemSize, compres1, compres2, oneFile)
 
 			}
 

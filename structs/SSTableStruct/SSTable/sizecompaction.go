@@ -14,7 +14,7 @@ import (
 )
 
 // N i M su nam redom razudjenost u index-u, i u summary-ju
-func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, N, M, memtableLen int, compres1, compres2, oneFile bool) bool {
+func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, probability_bf float64, N, M, memtableLen int, compres1, compres2, oneFile bool) bool {
 
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
@@ -23,7 +23,7 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, N, M,
 	acc = 0
 	accIndex = 0
 	var err error
-	bloomFilter := bloomfilter.CreateBloomFilter(uint64(memtableLen))
+	bloomFilter := bloomfilter.CreateBloomFilter(uint64(memtableLen), probability_bf)
 
 	// mapa za enkodirane vrednosti
 	dictionary, err := DeserializationHashMap("EncodedKeys.bin")

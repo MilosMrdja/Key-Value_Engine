@@ -383,13 +383,20 @@ func TypeBloomFilter(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, 
 				fmt.Printf("Vec postoji element sa tim kljucem!")
 			} else {
 				var n int
+				var p float64
 				fmt.Println("Unesite duzinu BloomFilter-a >> ")
 				_, err := fmt.Scan(&n)
 				if err != nil {
 					fmt.Println("Error:", err)
 					return
 				}
-				bf := bloomfilter.CreateBloomFilter(uint64(n))
+				fmt.Println("Unesite probabilitet BloomFilter-a >> ")
+				_, err = fmt.Scan(&p)
+				if err != nil {
+					fmt.Println("Error:", err)
+					return
+				}
+				bf := bloomfilter.CreateBloomFilter(uint64(n), float64(p))
 				serializedData, _ := bloomfilter.SerializeBloomFilter(bf)
 				PUT(wal, memtable, key, serializedData)
 				fmt.Printf("BloomFilter je upisan u sistem!")

@@ -18,16 +18,25 @@ type Cursor struct {
 	memIndex    int                // broj metabele koja je trenutno aktivna
 	lruPointer  *lru.LRUCache      // pokazivac na kes
 
-	compress1   bool   // da li je ukljucena kompresija duzine
-	compress2   bool   // da li je ukljucena kompresija sa recnikom
-	oneFile     bool   // da li se SSTable cuva u jednom fajlu
-	N           int    // razudjenost Index-a
-	M           int    // razudjenost Summary-ja
-	numTables   int    // broj SSTabela na nivou
-	memCap      int    //kapacitet memtabele
-	compType    string //koja kompakcija se koristi
-	maxSSTLevel int    //maksimalan broj nivoa za SStable
-	levelPlus   int
+	compress1              bool   // da li je ukljucena kompresija duzine
+	compress2              bool   // da li je ukljucena kompresija sa recnikom
+	oneFile                bool   // da li se SSTable cuva u jednom fajlu
+	N                      int    // razudjenost Index-a
+	M                      int    // razudjenost Summary-ja
+	numTables              int    // broj SSTabela na nivou
+	memCap                 int    //kapacitet memtabele
+	compType               string //koja kompakcija se koristi
+	maxSSTLevel            int    //maksimalan broj nivoa za SStable
+	levelPlus              int
+	bloomFilterProbability float64
+}
+
+func (c *Cursor) BloomFilterProbability() float64 {
+	return c.bloomFilterProbability
+}
+
+func (c *Cursor) SetBloomFilterProbability(bloomFilterProbability float64) {
+	c.bloomFilterProbability = bloomFilterProbability
 }
 
 func NewCursor(memType string, maxMem int, lruPointer *lru.LRUCache, compress1 bool, compress2 bool, oneFile bool, n int, m int, numTables int, memCap int, compType string, maxSSTLevel, levelPlus int) *Cursor {
@@ -130,7 +139,7 @@ func (c *Cursor) AddToMemtable(key string, value []byte, time time.Time, wal *wa
 			if c.memPointers[c.memIndex].IsReadOnly() {
 				c.memIndex = (c.memIndex - 1 + c.maxMem) % c.maxMem
 				c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.maxSSTLevel)
-				LSM.CompactSstable(c.numTables, c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap, c.compType, c.maxSSTLevel, c.levelPlus)
+				LSM.CompactSstable(c.numTables, c.BloomFilterProbability(), c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap, c.compType, c.maxSSTLevel, c.levelPlus)
 				//Salje se signal u WAL da je memtable upisana na disk
 				err := wal.DeleteMemTable()
 				if err != nil {

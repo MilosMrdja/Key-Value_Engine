@@ -19,7 +19,7 @@ type SSTable struct {
 }
 
 // N i M su nam redom razudjenost u index-u, i u summary-ju
-func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compress1, compress2, oneFile bool) bool {
+func NewSSTable(dataList []datatype.DataType, proability_bf float64, N, M int, fileName string, compress1, compress2, oneFile bool) bool {
 
 	// pomocne promenljive
 	arrToMerkle := make([][]byte, 0)
@@ -29,7 +29,7 @@ func NewSSTable(dataList []datatype.DataType, N, M int, fileName string, compres
 	accIndex = 0
 	duzinaDataList = len(dataList)
 	var err error
-	bloomFilter := bloomfilter.CreateBloomFilter(uint64(duzinaDataList))
+	bloomFilter := bloomfilter.CreateBloomFilter(uint64(duzinaDataList), proability_bf)
 
 	// mapa za enkodirane vrednosti
 	dictionary, err := DeserializationHashMap("EncodedKeys.bin")
