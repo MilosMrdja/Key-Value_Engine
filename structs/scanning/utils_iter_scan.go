@@ -240,7 +240,7 @@ func adjustPositionsMem(mapa map[*hashmem.Memtable]datatype.DataType) []*hashmem
 	//}
 	return minKeys
 }
-func PrefixIterateSSTable(prefix string, compress1, compress2, oneFile bool) *iterator.IteratorPrefixSSTable {
+func PrefixIterateSSTable(prefix string, compress1, compress2 bool) *iterator.IteratorPrefixSSTable {
 
 	Levels, _ := ioutil.ReadDir("./DataSSTable")
 	mapa := make(map[string][]uint64)
@@ -254,7 +254,7 @@ func PrefixIterateSSTable(prefix string, compress1, compress2, oneFile bool) *it
 				continue
 			} else {
 				fileSST := "./DataSSTable/L" + strconv.Itoa(i) + "/sstable" + strconv.Itoa(j+1)
-				mapa[fileSST] = GetBeginsEnds(fileSST, oneFile)
+				mapa[fileSST] = GetBeginsEnds(fileSST)
 			}
 		}
 	}
@@ -266,7 +266,7 @@ func PrefixIterateSSTable(prefix string, compress1, compress2, oneFile bool) *it
 
 // string[0] - string[1]
 // preduslov: rang[0] je manje od rang[1]
-func RangeIterateSSTable(rang [2]string, compress1, compress2, oneFile bool) *iterator.IteratorRangeSSTable {
+func RangeIterateSSTable(rang [2]string, compress1, compress2 bool) *iterator.IteratorRangeSSTable {
 	Levels, _ := ioutil.ReadDir("./DataSSTable")
 	mapa := make(map[string][]uint64)
 	//SSTable.ReadIndex("./DataSStable/L0/sstable1/Summary.bin", true, true, 1, false)
@@ -278,7 +278,7 @@ func RangeIterateSSTable(rang [2]string, compress1, compress2, oneFile bool) *it
 				continue
 			} else {
 				fileSST := "./DataSSTable/L" + strconv.Itoa(i) + "/sstable" + strconv.Itoa(j+1)
-				mapa[fileSST] = GetBeginsEnds(fileSST, oneFile)
+				mapa[fileSST] = GetBeginsEnds(fileSST)
 			}
 		}
 	}
@@ -288,8 +288,9 @@ func RangeIterateSSTable(rang [2]string, compress1, compress2, oneFile bool) *it
 	return &iterator.IteratorRangeSSTable{PositionInSSTable: mapa, Rang: rang}
 }
 
-func GetBeginsEnds(sstableFile string, oneFile bool) []uint64 {
+func GetBeginsEnds(sstableFile string) []uint64 {
 	beginsEnds := make([]uint64, 2)
+	oneFile := SSTable.GetOneFile(sstableFile)
 	if oneFile {
 		file, err := os.OpenFile(sstableFile+"/SSTable.bin", os.O_RDONLY, 0666)
 		if err != nil {

@@ -14,7 +14,7 @@ func RANGE_ITERATE(valueRange [2]string, memIterator *iterator.RangeIterator, ss
 		memIterator.ResetMemTableIndexes()
 	}
 	if valueRange[0] != ssIterator.Rang[0] || valueRange[1] != ssIterator.Rang[1] {
-		ssIterator = RangeIterateSSTable(valueRange, compress1, compress2, oneFile)
+		ssIterator = RangeIterateSSTable(valueRange, compress1, compress2)
 	}
 	minMap := make(map[*hashmem.Memtable]datatype.DataType)
 	for i := range memIterator.MemTablePositions() {
@@ -65,7 +65,7 @@ func PREFIX_ITERATE(prefix string, memIterator *iterator.PrefixIterator, ssItera
 		memIterator.ResetMemTableIndexes()
 	}
 	if prefix != ssIterator.Prefix {
-		ssIterator = PrefixIterateSSTable(prefix, compress1, compress2, oneFile)
+		ssIterator = PrefixIterateSSTable(prefix, compress1, compress2)
 	}
 	minMap := make(map[*hashmem.Memtable]datatype.DataType)
 	for i := range memIterator.MemTablePositions() {

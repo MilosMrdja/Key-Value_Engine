@@ -1,8 +1,10 @@
-{"lruCap": 3,
+{
+  "lruCap": 3,
   "compress": true,
   "dictEncoding" : true,
   "oneFile": false,
   "numberOfSSTable": 5,
+  "indexEl": 3,
   "summaryEl": 4,
   "memTableNumber" : 2,
   "memTableCap": 3,
@@ -14,7 +16,3 @@
   "maxSSTLevel": 4,
   "levelPlus" : 12
 }
-
-
-
-
