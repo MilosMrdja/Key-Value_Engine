@@ -856,7 +856,7 @@ func TypeSimHash(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memt
 }
 
 func Scan(cursor *cursor.Cursor) {
-	for true {
+	for {
 		fmt.Println("\n1. Prefix scan\n2. Range Scan\n3. Prefix iterate\n4. Range iterate\n5. Izlazak iz skeniranja")
 
 		var opcijaSken string
@@ -925,39 +925,62 @@ func Scan(cursor *cursor.Cursor) {
 
 		} else if opcijaSken == "3" {
 			var prefix string
-			var nextStop string
+			var nextStopPrev string
 			fmt.Println("Unesite preifx >> ")
 			_, err = fmt.Scan(&prefix)
 			if err != nil {
 				panic(err)
 			}
+
+			iteratorCache := iterator.NewIteratingCache(10) //promeniti kasnije
+
 			iteratorSSTable := scanning.PrefixIterateSSTable(prefix, compress1, compress2)
 			iteratorMem := iterator.NewPrefixIterator(cursor, prefix)
-			for true {
+			for {
 				fmt.Printf(">> ")
-				_, err := fmt.Scan(&nextStop)
+				_, err := fmt.Scan(&nextStopPrev)
 				if err != nil {
 					panic(err)
 				}
-				if nextStop == "next" || nextStop == "NEXT" || nextStop == "Next" {
-					data, check := scanning.PREFIX_ITERATE(prefix, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
-					if check {
-						fmt.Println("Vas podatak: ")
-						fmt.Printf("Kljuc: %s\n\n", data.GetKey())
+				if nextStopPrev == "next" || nextStopPrev == "NEXT" || nextStopPrev == "Next" {
+					iteratorCache.IncrementPosition()
+					if iteratorCache.CheckIfOutOFCache() {
+						data, check := scanning.PREFIX_ITERATE(prefix, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+						iteratorCache.InsertCache(data)
+						if check {
+							fmt.Println("Vas podatak: ")
+							fmt.Printf("Kljuc: %s\n\n", data.GetKey())
+						} else {
+							fmt.Println("Ne posotji elemenata koji zadovoljavaju uslov.")
+						}
 					} else {
-						fmt.Println("Ne posotji elemenata koji zadovoljavaju uslov.")
+						fmt.Println("Vas podatak: ")
+						element := iteratorCache.CurrentElement()
+						fmt.Printf("Kljuc: %s\n\n", element.GetKey())
+
 					}
-				} else if nextStop == "stop" || nextStop == "STOP" || nextStop == "Stop" {
+
+				} else if nextStopPrev == "stop" || nextStopPrev == "STOP" || nextStopPrev == "Stop" {
 					fmt.Println("Prekidanje...")
 					break
+				} else if nextStopPrev == "prev" || nextStopPrev == "PREV" || nextStopPrev == "Prev" {
+					if iteratorCache.CurrentPosition() == 0 {
+						fmt.Println("Nema vise elemenata unazad")
+					} else {
+						fmt.Println("Vas podatak: ")
+						iteratorCache.DecrementPosition()
+						element := iteratorCache.CurrentElement()
+						fmt.Printf("Kljuc: %s\n\n", element.GetKey())
+
+					}
 				} else {
-					fmt.Println("Pogresna opcija(next ili stop).\n")
+					fmt.Println("Pogresna opcija(next, stop ili prev).\n")
 				}
 			}
 
 		} else if opcijaSken == "4" {
 			var rangeVal [2]string
-			var nextStop string
+			var nextStopPrev string
 			fmt.Println("Unesite odakle >> ")
 			_, err = fmt.Scan(&rangeVal[0])
 			if err != nil {
@@ -968,27 +991,47 @@ func Scan(cursor *cursor.Cursor) {
 			if err != nil {
 				panic(err)
 			}
+
+			iteratorCache := iterator.NewIteratingCache(10) //promeniti kasnije
 			iteratorSSTable := scanning.RangeIterateSSTable(rangeVal, compress1, compress2)
 			iteratorMem := iterator.NewRangeIterator(cursor, rangeVal)
-			for true {
+			for {
 				fmt.Printf(">> ")
-				_, err := fmt.Scan(&nextStop)
+				_, err := fmt.Scan(&nextStopPrev)
 				if err != nil {
 					panic(err)
 				}
-				if nextStop == "next" || nextStop == "NEXT" || nextStop == "Next" {
-					data, check := scanning.RANGE_ITERATE(rangeVal, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
-					if check {
-						fmt.Println("Vas podatak: ")
-						fmt.Printf("Kljuc: %s\n\n", data.GetKey())
+				if nextStopPrev == "next" || nextStopPrev == "NEXT" || nextStopPrev == "Next" {
+					iteratorCache.IncrementPosition()
+					if iteratorCache.CheckIfOutOFCache() {
+						data, check := scanning.RANGE_ITERATE(rangeVal, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+						if check {
+							fmt.Println("Vas podatak: ")
+							fmt.Printf("Kljuc: %s\n\n", data.GetKey())
+						} else {
+							fmt.Println("Ne posotji elemenata koji zadovoljavaju uslov.")
+						}
 					} else {
-						fmt.Println("Ne posotji elemenata koji zadovoljavaju uslov.")
+						fmt.Println("Vas podatak: ")
+						element := iteratorCache.CurrentElement()
+						fmt.Printf("Kljuc: %s\n\n", element.GetKey())
+
 					}
-				} else if nextStop == "stop" || nextStop == "STOP" || nextStop == "Stop" {
+				} else if nextStopPrev == "stop" || nextStopPrev == "STOP" || nextStopPrev == "Stop" {
 					fmt.Println("Prekidanje...")
 					break
+				} else if nextStopPrev == "prev" || nextStopPrev == "PREV" || nextStopPrev == "Prev" {
+					if iteratorCache.CurrentPosition() == 0 {
+						fmt.Println("Nema vise elemenata unazad")
+					} else {
+						fmt.Println("Vas podatak: ")
+						iteratorCache.DecrementPosition()
+						element := iteratorCache.CurrentElement()
+						fmt.Printf("Kljuc: %s\n\n", element.GetKey())
+
+					}
 				} else {
-					fmt.Println("Pogresna opcija(next ili stop).\n")
+					fmt.Println("Pogresna opcija(next, stop ili prev).\n")
 				}
 			}
 		} else if opcijaSken == "5" {
@@ -1174,7 +1217,10 @@ func main() {
 	//kreiranje potrebnih instanci
 	wal := wal_implementation.NewWriteAheadLog(walSegmentSize)
 	tokenb := token_bucket.NewTokenBucket(rate, maxToken)
-	tokenb.InitRequestsFile("token_bucket/requests.bin")
+	err := tokenb.InitRequestsFile("token_bucket/requests.bin")
+	if err != nil {
+		return
+	}
 	lru1 := lru.NewLRUCache(lruCap)
 	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, NumberOfSST, memTableCap, compType, maxSSTLevel, levelPlus)
 	memtable.Fill(wal)
