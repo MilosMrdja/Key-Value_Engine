@@ -50,11 +50,11 @@ func (mem *HashMemtable) SortDataTypes() []datatype.DataType {
 
 }
 
-func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M, maxSSTlevel int) bool {
+func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M, maxSSTlevel int, prob float64) bool {
 
 	dataList := mem.SortDataTypes()
 	newSstableName, _ := LSM.FindNextDestination(0, maxSSTlevel)
-	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
+	SSTable.NewSSTable(dataList, prob, N, M, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2)
 
 	mem.data = make(map[string]*datatype.DataType)
@@ -65,6 +65,7 @@ func (mem *HashMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M,
 
 func (mem *HashMemtable) UpdateElement(key string, data []byte, time time.Time) {
 	mem.data[key].UpdateDataType(data, time)
+	mem.data[key].SetDelete(false)
 }
 
 func (mem *HashMemtable) AddElement(key string, data []byte, time time.Time) bool {
@@ -85,12 +86,12 @@ func (mem *HashMemtable) AddElement(key string, data []byte, time time.Time) boo
 	return false
 }
 
-func (mem *HashMemtable) GetElement(key string) (bool, []byte) {
+func (mem *HashMemtable) GetElement(key string) (bool, *datatype.DataType) {
 	elem, err := mem.data[key]
-	if !err || elem.IsDeleted() {
+	if !err {
 		return false, nil
 	}
-	return true, elem.GetData()
+	return true, elem
 }
 
 func (mem *HashMemtable) DeleteElement(key string, time time.Time) bool {

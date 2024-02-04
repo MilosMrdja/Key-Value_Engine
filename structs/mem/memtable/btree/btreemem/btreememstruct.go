@@ -57,6 +57,9 @@ func NewBTreeMemtable(capacity int) *BTreeMemtable {
 
 func (btmem *BTreeMemtable) UpdateElement(key string, data []byte, time time.Time) {
 	btmem.data.Update(key, data, time)
+	elem, _ := btmem.data.Search(key)
+	elem.SetDelete(false)
+
 }
 
 func (btmem *BTreeMemtable) AddElement(key string, data []byte, time time.Time) bool {
@@ -78,12 +81,12 @@ func (btmem *BTreeMemtable) AddElement(key string, data []byte, time time.Time) 
 	return false
 }
 
-func (btmem *BTreeMemtable) GetElement(key string) (bool, []byte) {
+func (btmem *BTreeMemtable) GetElement(key string) (bool, *datatype.DataType) {
 	elem, err := btmem.data.Search(key)
-	if !err || elem.IsDeleted() {
+	if !err {
 		return false, nil
 	}
-	return true, elem.GetData()
+	return true, elem
 }
 func (btmem *BTreeMemtable) GetMaxSize() int {
 	return btmem.length
@@ -102,12 +105,12 @@ func (btmem *BTreeMemtable) SortDataTypes() []datatype.DataType {
 	return dataList
 }
 
-func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M, maxSSTlevel int) bool {
+func (btmem *BTreeMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M, maxSSTlevel int, prob float64) bool {
 
 	dataList := btmem.SortDataTypes()
 
 	newSstableName, _ := LSM.FindNextDestination(0, maxSSTlevel)
-	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
+	SSTable.NewSSTable(dataList, prob, N, M, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2)
 
 	btmem.data = btree.NewBTree(btmem.capacity)

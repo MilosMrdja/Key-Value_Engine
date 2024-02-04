@@ -38,16 +38,16 @@ func GetData(filePath string, key string, compress1, compress2 bool) (datatype.D
 		file.Close()
 
 		if isInFile == true {
-			offsetStart, offsetEnd, err3 := GetOffset(fileName, key, compress1, compress2, 0, 0, 2, hashMap)
+			offsetStart, offsetEnd, err3 := GetOffset(filePath, key, compress1, compress2, 0, 0, 2, hashMap)
 			if err3 == false {
 				return data, false
 			}
-			offsetStart, offsetEnd, err3 = GetOffset(fileName, key, compress1, compress2, offsetStart, offsetEnd, 3, hashMap)
+			offsetStart, offsetEnd, err3 = GetOffset(filePath, key, compress1, compress2, offsetStart, offsetEnd, 3, hashMap)
 			if err3 == false {
 				return data, false
 			}
 			fmt.Printf("%d\n", offsetStart)
-			data, err3 = ReadData(fileName, compress1, compress2, offsetStart, offsetEnd, key, hashMap)
+			data, err3 = ReadData(filePath, compress1, compress2, offsetStart, offsetEnd, key, hashMap)
 			if err3 == false {
 				return data, false
 			}

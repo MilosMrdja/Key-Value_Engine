@@ -3,7 +3,6 @@ package SSTable
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"hash/crc32"
 	"log"
 	"os"
@@ -29,10 +28,6 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, proba
 	dictionary, err := DeserializationHashMap("EncodedKeys.bin")
 	if err != nil {
 		panic(err)
-	}
-	fmt.Printf("Mapa sa starim kljucevima\n")
-	for k, v := range *dictionary {
-		fmt.Printf("\nMAPA[%s] -> %d\n", k, v)
 	}
 
 	//Data fajl
@@ -172,13 +167,12 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, proba
 		fileOne.Write(serializedInOneFile)
 		fileOne.Close()
 
-		fileInfo, err := os.Stat(fileNameOneFile)
-		if err != nil {
-			panic(err)
-		}
-		end := fileInfo.Size()
-
-		fmt.Printf("Velicina SST: %d\n", end)
+		fileSummary.Close()
+		fileIndex.Close()
+		err = os.Remove(newFilePath + "/BloomFilter.bin")
+		err = os.Remove(newFilePath + "/Summary.bin")
+		err = os.Remove(newFilePath + "/Index.bin")
+		err = os.Remove(newFilePath + "/Merkle.bin")
 	}
 
 	return true
@@ -444,7 +438,6 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 	if crc32.ChecksumIEEE(tempCRC.Bytes()) != binary.BigEndian.Uint32(crc.Bytes()) {
 		Data.SetKey("")
 	}
-	//fmt.Printf("\n")
 	return *Data, currentRead, true
 }
 
@@ -506,7 +499,7 @@ func getNextRecord(compSSTable *map[string][]int64, compres1, compres2 bool) (da
 			data = currentData
 		} else if currentData.GetKey() == data.GetKey() {
 			if data.GetChangeTime().Before(currentData.GetChangeTime()) {
-				currentData = data
+				data = currentData
 			}
 		} else if currentData.GetKey() < data.GetKey() {
 			data = currentData
@@ -536,8 +529,8 @@ func getNextRecord(compSSTable *map[string][]int64, compres1, compres2 bool) (da
 			(*compSSTable)[path][0] += read
 		}
 	}
-	if data.IsDeleted() == true {
-		return data, false
-	}
+	//if data.IsDeleted() == true {
+	//	return data, false
+	//}
 	return data, true
 }

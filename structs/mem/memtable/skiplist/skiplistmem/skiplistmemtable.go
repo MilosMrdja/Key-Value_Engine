@@ -37,13 +37,13 @@ func (slmem *SkipListMemtable) SortDataTypes() []datatype.DataType {
 
 // funkcija koja ce se implementirati kasnije a sluzi da prosledi podatke iz memtable u SSTable
 // i da isprazni memtable kad se podaci posalju
-func (slmem *SkipListMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M, maxSSTlevel int) bool {
+func (slmem *SkipListMemtable) SendToSSTable(compress1, compress2, oneFile bool, N, M, maxSSTlevel int, prob float64) bool {
 
 	dataList := make([]datatype.DataType, slmem.length)
 	dataList = slmem.data.AllData(slmem.length)
 
 	newSstableName, _ := LSM.FindNextDestination(0, maxSSTlevel)
-	SSTable.NewSSTable(dataList, N, M, newSstableName, compress1, compress2, oneFile)
+	SSTable.NewSSTable(dataList, prob, N, M, newSstableName, compress1, compress2, oneFile)
 	SSTable.ReadSSTable(newSstableName, compress1, compress2)
 
 	slmem.data = skipliststruct.CreateSkipList(slmem.capacity)
@@ -55,6 +55,7 @@ func (slmem *SkipListMemtable) SendToSSTable(compress1, compress2, oneFile bool,
 func (slmem *SkipListMemtable) UpdateElement(key string, data []byte, time time.Time) {
 	_, elem := slmem.data.GetElement(key)
 	elem.UpdateDataType(data, time)
+	elem.SetDelete(false)
 }
 
 func (slmem *SkipListMemtable) AddElement(key string, data []byte, time time.Time) bool {
@@ -77,10 +78,10 @@ func (slmem *SkipListMemtable) AddElement(key string, data []byte, time time.Tim
 	return false
 
 }
-func (slmem *SkipListMemtable) GetElement(key string) (bool, []byte) {
+func (slmem *SkipListMemtable) GetElement(key string) (bool, *datatype.DataType) {
 	err, elem := slmem.data.GetElement(key)
 	if err == true {
-		return true, elem.GetData()
+		return true, elem
 	}
 	return false, nil
 }

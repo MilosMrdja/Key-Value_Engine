@@ -5,6 +5,7 @@ import (
 	"sstable/LSM"
 	"sstable/lru"
 	"sstable/mem/memtable/btree/btreemem"
+	"sstable/mem/memtable/datatype"
 	"sstable/mem/memtable/hash/hashmem"
 	"sstable/mem/memtable/hash/hashstruct"
 	"sstable/mem/memtable/skiplist/skiplistmem"
@@ -39,7 +40,7 @@ func (c *Cursor) SetBloomFilterProbability(bloomFilterProbability float64) {
 	c.bloomFilterProbability = bloomFilterProbability
 }
 
-func NewCursor(memType string, maxMem int, lruPointer *lru.LRUCache, compress1 bool, compress2 bool, oneFile bool, n int, m int, numTables int, memCap int, compType string, maxSSTLevel, levelPlus int) *Cursor {
+func NewCursor(memType string, maxMem int, lruPointer *lru.LRUCache, compress1 bool, compress2 bool, oneFile bool, n int, m int, numTables int, memCap int, compType string, maxSSTLevel, levelPlus int, bloomFilterProbability float64) *Cursor {
 	memPointers := make([]hashmem.Memtable, maxMem)
 	for i := 0; i < maxMem; i++ {
 		if memType == "hash" {
@@ -55,20 +56,21 @@ func NewCursor(memType string, maxMem int, lruPointer *lru.LRUCache, compress1 b
 	}
 
 	return &Cursor{
-		memPointers: memPointers,
-		maxMem:      maxMem,
-		memIndex:    0,
-		lruPointer:  lruPointer,
-		compress1:   compress1,
-		compress2:   compress2,
-		oneFile:     oneFile,
-		N:           n,
-		M:           m,
-		numTables:   numTables,
-		memCap:      memCap,
-		compType:    compType,
-		maxSSTLevel: maxSSTLevel,
-		levelPlus:   levelPlus,
+		memPointers:            memPointers,
+		maxMem:                 maxMem,
+		memIndex:               0,
+		lruPointer:             lruPointer,
+		compress1:              compress1,
+		compress2:              compress2,
+		oneFile:                oneFile,
+		N:                      n,
+		M:                      m,
+		numTables:              numTables,
+		memCap:                 memCap,
+		compType:               compType,
+		maxSSTLevel:            maxSSTLevel,
+		levelPlus:              levelPlus,
+		bloomFilterProbability: bloomFilterProbability,
 	}
 }
 
@@ -132,13 +134,13 @@ func (c *Cursor) AddToMemtable(key string, value []byte, time time.Time, wal *wa
 	var full bool
 	full = false
 
-	j, find := c.findElement(key)
+	find, _ := c.memPointers[c.memIndex].GetElement(key)
 	if !find {
 		if c.memPointers[c.memIndex].IsReadOnly() {
 			c.memIndex = (c.memIndex + 1) % len(c.memPointers)
 			if c.memPointers[c.memIndex].IsReadOnly() {
 				c.memIndex = (c.memIndex - 1 + c.maxMem) % c.maxMem
-				c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.maxSSTLevel)
+				c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.maxSSTLevel, c.bloomFilterProbability)
 				LSM.CompactSstable(c.numTables, c.BloomFilterProbability(), c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap, c.compType, c.maxSSTLevel, c.levelPlus)
 				//Salje se signal u WAL da je memtable upisana na disk
 				err := wal.DeleteMemTable()
@@ -146,14 +148,13 @@ func (c *Cursor) AddToMemtable(key string, value []byte, time time.Time, wal *wa
 					return false
 				}
 				full = c.memPointers[c.memIndex].AddElement(key, value, time)
-
 			}
 		} else {
 			full = c.memPointers[c.memIndex].AddElement(key, value, time)
 		}
-
 	} else {
-		c.memPointers[j].UpdateElement(key, value, time)
+		c.memPointers[c.memIndex].UpdateElement(key, value, time)
+
 	}
 
 	//ako se memtable popunio salje se signal u WAL
@@ -170,9 +171,7 @@ func (c *Cursor) AddToMemtable(key string, value []byte, time time.Time, wal *wa
 
 func (c *Cursor) findElement(key string) (int, bool) {
 
-	var find bool
-
-	find = false
+	find := false
 	j := c.memIndex
 	for true {
 		find, _ = c.memPointers[j].GetElement(key)
@@ -185,31 +184,28 @@ func (c *Cursor) findElement(key string) (int, bool) {
 		}
 
 	}
-
 	return j, find
 }
 
 func (c *Cursor) GetElement(key string) ([]byte, bool) {
 
-	var value []byte
+	var value *datatype.DataType
 
 	j, find := c.findElement(key)
 
 	if find {
 		_, value = c.memPointers[j].GetElement(key)
+		if value.IsDeleted() {
+			return []byte(""), true
+		}
+		return value.GetData(), find
 	}
+	return nil, false
 
-	return value, find
 }
 
 func (c *Cursor) DeleteElement(key string, time time.Time) bool {
-	j, find := c.findElement(key)
-
-	if find {
-		c.memPointers[j].DeleteElement(key, time)
-		return true
-	}
-	return false
+	return c.memPointers[c.memIndex].DeleteElement(key, time)
 
 }
 

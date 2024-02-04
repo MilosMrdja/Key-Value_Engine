@@ -68,7 +68,7 @@ func CompactSstable(numTables int, probability_bf float64, compres1, compres2, o
 				panic(errNames)
 			}
 
-			if len(sstableName) >= numTables {
+			if len(sstableName) >= numTables && i < maxSSTlevel-1 {
 				if i+1 < maxSSTlevel {
 					if _, err := os.Stat(dataDir.Name() + "/L" + strconv.Itoa(i+1)); errors.Is(err, os.ErrNotExist) {
 						err := os.Mkdir(dataDir.Name()+"/L"+strconv.Itoa(i+1), os.ModePerm)
@@ -108,7 +108,7 @@ func CompactSstable(numTables int, probability_bf float64, compres1, compres2, o
 				panic(errNames)
 			}
 
-			if len(sstableName) >= numTables*int(math.Pow(float64(levelPlus), float64(i))) {
+			if len(sstableName) >= numTables*int(math.Pow(float64(levelPlus), float64(i))) && i < maxSSTlevel-1 {
 				//jedna tabela sa prethodnog novoa + ostale tabele sa narednog nivoa
 				randSST := rand.Intn(len(sstableName)-1) + 1
 				minData, maxData, _ := SSTable.GetSummaryMinMax(dataDir.Name()+"/L"+strconv.Itoa(i)+"/sstable"+strconv.Itoa(randSST), compres1, compres2)
