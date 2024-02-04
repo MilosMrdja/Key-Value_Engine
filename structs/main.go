@@ -832,20 +832,21 @@ func TypeSimHash(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memt
 				return
 			}
 
-			key1 += "_sh"
 			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
 			ok, kr := checkKey(key1)
-			if ok {
+			if !ok {
+				fmt.Printf("Koristite kljucnu rec %s\n", kr)
+				return
+			}
+			key1 += "_sh"
+
+			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
+			ok, kr = checkKey(key2)
+			if !ok {
 				fmt.Printf("Koristite kljucnu rec %s\n", kr)
 				return
 			}
 			key2 += "_sh"
-			//provera da li KEY sadrzi neku od kljucnih reci na kraju reci
-			ok, kr = checkKey(key2)
-			if ok {
-				fmt.Printf("Koristite kljucnu rec %s\n", kr)
-				return
-			}
 			data1, found1 := GET(lru1, memtable, key1)
 			data2, found2 := GET(lru1, memtable, key2)
 			if !found1 || !found2 {
@@ -899,6 +900,31 @@ func Scan(cursor *cursor.Cursor) {
 
 			scanning.PREFIX_SCAN_OUTPUT(prefix, strana, brojNaStrani, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
 
+			for true {
+				fmt.Println("Da li zelite da vidite prethodnu stranu?")
+				var yesOrNo string
+				_, err = fmt.Scan(&yesOrNo)
+				if err != nil {
+					panic(err)
+				}
+				if yesOrNo == "DA" || yesOrNo == "da" || yesOrNo == "Da" {
+					iteratorSSTable = scanning.PrefixIterateSSTable(prefix, compress1, compress2)
+					iteratorMem = iterator.NewPrefixIterator(cursor, prefix)
+					strana -= 1
+					if strana <= 0 {
+						fmt.Println("Dosli ste do prve stranice, nema prethodnih vise.")
+						break
+					}
+					scanning.PREFIX_SCAN_OUTPUT(prefix, strana, brojNaStrani, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+
+				} else if yesOrNo == "Ne" || yesOrNo == "NE" || yesOrNo == "ne" {
+					fmt.Println("Izlazak...")
+					break
+				} else {
+					fmt.Println("Uneta nepostojeca opcija.")
+				}
+			}
+
 		} else if opcijaSken == "2" {
 			var rangeVal [2]string
 			var strana int
@@ -929,37 +955,61 @@ func Scan(cursor *cursor.Cursor) {
 				panic(err)
 			}
 
-			pageCache := iterator.NewPageCache(brojNaStrani)
-			scanning.RANGE_SCAN(rangeVal, strana, brojNaStrani, pageCache, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
-			pageCache.OutputCurrPage()
-			var nextStopPrev string
-			for {
-				fmt.Printf(">> ")
-				_, err := fmt.Scan(&nextStopPrev)
+			//pageCache := iterator.NewPageCache(brojNaStrani)
+			scanning.RANGE_SCAN_OUTPUT(rangeVal, strana, brojNaStrani, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+			for true {
+				fmt.Println("Da li zelite da vidite prethodnu stranu?")
+				var yesOrNo string
+				_, err = fmt.Scan(&yesOrNo)
 				if err != nil {
 					panic(err)
 				}
-				if nextStopPrev == "next" || nextStopPrev == "NEXT" || nextStopPrev == "Next" {
-					pageCache.IncrementCurrPage()
-					if pageCache.CheckIfLast() {
-						scanning.RANGE_SCAN(rangeVal, 1, brojNaStrani, pageCache, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
-
+				if yesOrNo == "DA" || yesOrNo == "da" || yesOrNo == "Da" {
+					iteratorSSTable := scanning.RangeIterateSSTable(rangeVal, compress1, compress2)
+					iteratorMem := iterator.NewRangeIterator(cursor, rangeVal)
+					strana -= 1
+					if strana <= 0 {
+						fmt.Println("Dosli ste do prve stranice, nema prethodnih vise.")
+						break
 					}
-					fmt.Println("Vasa strana: ")
-					pageCache.OutputCurrPage()
+					scanning.RANGE_SCAN_OUTPUT(rangeVal, strana, brojNaStrani, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
 
-				} else if nextStopPrev == "stop" || nextStopPrev == "STOP" || nextStopPrev == "Stop" {
-					fmt.Println("Prekidanje...")
+				} else if yesOrNo == "Ne" || yesOrNo == "NE" || yesOrNo == "ne" {
+					fmt.Println("Izlazak...")
 					break
-				} else if nextStopPrev == "prev" || nextStopPrev == "PREV" || nextStopPrev == "Prev" {
-
-					pageCache.DecrementCurrPage()
-					pageCache.OutputCurrPage()
-
 				} else {
-					fmt.Println("Pogresna opcija(next, stop ili prev).\n")
+					fmt.Println("Uneta nepostojeca opcija.")
 				}
 			}
+			//pageCache.OutputCurrPage()
+			//var nextStopPrev string
+			//for {
+			//	fmt.Printf(">> ")
+			//	_, err := fmt.Scan(&nextStopPrev)
+			//	if err != nil {
+			//		panic(err)
+			//	}
+			//	if nextStopPrev == "next" || nextStopPrev == "NEXT" || nextStopPrev == "Next" {
+			//		pageCache.IncrementCurrPage()
+			//		if pageCache.CheckIfLast() {
+			//			scanning.RANGE_SCAN(rangeVal, 1, brojNaStrani, pageCache, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+			//
+			//		}
+			//		fmt.Println("Vasa strana: ")
+			//		pageCache.OutputCurrPage()
+			//
+			//	} else if nextStopPrev == "stop" || nextStopPrev == "STOP" || nextStopPrev == "Stop" {
+			//		fmt.Println("Prekidanje...")
+			//		break
+			//	} else if nextStopPrev == "prev" || nextStopPrev == "PREV" || nextStopPrev == "Prev" {
+			//
+			//		pageCache.DecrementCurrPage()
+			//		pageCache.OutputCurrPage()
+			//
+			//	} else {
+			//		fmt.Println("Pogresna opcija(next, stop ili prev).\n")
+			//	}
+			//}
 
 		} else if opcijaSken == "3" {
 			var prefix string

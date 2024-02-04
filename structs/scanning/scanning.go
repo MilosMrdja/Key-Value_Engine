@@ -14,12 +14,12 @@ func PREFIX_SCAN_OUTPUT(prefix string, pageNumber int, pageSize int, memIterator
 	}
 }
 
-//	func RANGE_SCAN_OUTPUT(valrange [2]string, pageNumber int, pageSize int, memIterator *iterator.RangeIterator, ssIterator *iterator.IteratorRangeSSTable, compress1 bool, compress2 bool, oneFile bool) {
-//		page := RANGE_SCAN(valrange, pageNumber, pageSize, memIterator, ssIterator, compress1, compress2, oneFile)
-//		for _, d := range page {
-//			fmt.Printf("Key: %s, Value: %s Time: %s\n", d.GetKey(), d.GetData(), d.GetChangeTime())
-//		}
-//	}
+func RANGE_SCAN_OUTPUT(valrange [2]string, pageNumber int, pageSize int, memIterator *iterator.RangeIterator, ssIterator *iterator.IteratorRangeSSTable, compress1 bool, compress2 bool, oneFile bool) {
+	page := RANGE_SCAN(valrange, pageNumber, pageSize, memIterator, ssIterator, compress1, compress2, oneFile)
+	for _, d := range page {
+		fmt.Printf("Key: %s, Value: %s Time: %s\n", d.GetKey(), d.GetData(), d.GetChangeTime())
+	}
+}
 func PREFIX_SCAN(prefix string, pageNumber int, pageSize int, memIterator *iterator.PrefixIterator, ssIterator *iterator.IteratorPrefixSSTable, compress1 bool, compress2 bool, oneFile bool) []datatype.DataType {
 	m := pageSize * (pageNumber - 1)
 	n := pageSize
@@ -42,28 +42,36 @@ func PREFIX_SCAN(prefix string, pageNumber int, pageSize int, memIterator *itera
 	return page
 }
 
-func RANGE_SCAN(valRange [2]string, pageNumber int, pageSize int, pageCache *iterator.PageCache, memIterator *iterator.RangeIterator, ssIterator *iterator.IteratorRangeSSTable, compress1 bool, compress2 bool, oneFile bool) {
-	//m := pageSize * (pageNumber - 1)
+func RANGE_SCAN(valRange [2]string, pageNumber int, pageSize int, memIterator *iterator.RangeIterator, ssIterator *iterator.IteratorRangeSSTable, compress1 bool, compress2 bool, oneFile bool) []datatype.DataType {
+	m := pageSize * (pageNumber - 1)
 	n := pageNumber
+	page := make([]datatype.DataType, 0)
 
-	//for m != 0 {
-	//	_, flag := RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
-	//	if !flag {
-	//		break
-	//	}
-	//	m--
-	//}
-	for i := 0; i < n; i++ {
-		page := make([]datatype.DataType, 0)
-		for j := 0; j < pageSize; j++ {
-			a, flag := RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
-			if !flag {
-				break
-			}
-			page = append(page, a)
+	for m != 0 {
+		_, flag := RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
+		if !flag {
+			break
 		}
-		pageCache.InsertPage(page)
-
+		m--
 	}
+	for n != 0 {
+		a, flag := RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
+		if !flag {
+			break
+		}
+		page = append(page, a)
+		n--
+	}
+	return page
+	//for i := 0; i < n; i++ {
+	//	for j := 0; j < pageSize; j++ {
+	//		a, flag := RANGE_ITERATE(valRange, memIterator, ssIterator, compress1, compress2, oneFile)
+	//		if !flag {
+	//			break
+	//		}
+	//		page = append(page, a)
+	//	}
+	//
+	//}
 
 }
