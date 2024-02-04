@@ -406,6 +406,9 @@ func ReadData(filePath string, compress1, compress2 bool, offsetStart, offsetEnd
 			}
 		}
 		offsetStart = oldOffsetStart + currentRead
+		if offsetStart >= offsetEnd {
+			break
+		}
 	}
 	return *Data, false
 }
@@ -600,6 +603,9 @@ func GetOffset(filePath, key string, compress1, compress2 bool, offsetStart, off
 			}
 		}
 		offsetStart = oldOffsetStart + currentRead
+		if offsetStart >= offsetEnd {
+			break
+		}
 
 	}
 	return currentOffset, 0, true

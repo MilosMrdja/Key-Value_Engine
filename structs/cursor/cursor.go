@@ -134,27 +134,28 @@ func (c *Cursor) AddToMemtable(key string, value []byte, time time.Time, wal *wa
 	var full bool
 	full = false
 
-	find, _ := c.memPointers[c.memIndex].GetElement(key)
-	if !find {
+	//find, _ := c.memPointers[c.memIndex].GetElement(key)
+	//if !find {
+	//
+	//} else {
+	//	c.memPointers[c.memIndex].UpdateElement(key, value, time)
+	//
+	//}
+	if c.memPointers[c.memIndex].IsReadOnly() {
+		c.memIndex = (c.memIndex + 1) % len(c.memPointers)
 		if c.memPointers[c.memIndex].IsReadOnly() {
-			c.memIndex = (c.memIndex + 1) % len(c.memPointers)
-			if c.memPointers[c.memIndex].IsReadOnly() {
-				c.memIndex = (c.memIndex - 1 + c.maxMem) % c.maxMem
-				c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.maxSSTLevel, c.bloomFilterProbability)
-				LSM.CompactSstable(c.numTables, c.BloomFilterProbability(), c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap, c.compType, c.maxSSTLevel, c.levelPlus)
-				//Salje se signal u WAL da je memtable upisana na disk
-				err := wal.DeleteMemTable()
-				if err != nil {
-					return false
-				}
-				full = c.memPointers[c.memIndex].AddElement(key, value, time)
+			c.memIndex = (c.memIndex - 1 + c.maxMem) % c.maxMem
+			c.memPointers[c.memIndex].SendToSSTable(c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.maxSSTLevel, c.bloomFilterProbability)
+			LSM.CompactSstable(c.numTables, c.BloomFilterProbability(), c.Compress1(), c.Compress2(), c.OneFile(), c.N, c.M, c.memCap, c.compType, c.maxSSTLevel, c.levelPlus)
+			//Salje se signal u WAL da je memtable upisana na disk
+			err := wal.DeleteMemTable()
+			if err != nil {
+				return false
 			}
-		} else {
 			full = c.memPointers[c.memIndex].AddElement(key, value, time)
 		}
 	} else {
-		c.memPointers[c.memIndex].UpdateElement(key, value, time)
-
+		full = c.memPointers[c.memIndex].AddElement(key, value, time)
 	}
 
 	//ako se memtable popunio salje se signal u WAL

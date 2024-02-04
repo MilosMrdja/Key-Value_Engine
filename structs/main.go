@@ -284,13 +284,13 @@ func GET(lru1 *lru.LRUCache, memtable *cursor.Cursor, key string) ([]byte, bool)
 	ispis, _ := checkKey(key)
 
 	value, ok := memtable.GetElement(key)
-	if ok {
+	if string(value) != "" {
 		if ispis {
 			fmt.Printf("Value: %s\n", value)
 		}
 
 		return value, true
-	} else if string(value) == "" {
+	} else if string(value) == "" && ok {
 		if ispis {
 			fmt.Printf("Element sa kljucem %s je obrisan\n", key)
 
@@ -304,8 +304,10 @@ func GET(lru1 *lru.LRUCache, memtable *cursor.Cursor, key string) ([]byte, bool)
 			fmt.Printf("Value: %s\n", value)
 		}
 		return value, true
-	} else if string(value) == "" {
-		fmt.Printf("Element sa kljucem %s je obrisan\n", key)
+	} else if string(value) == "" && ok {
+		if ispis {
+			fmt.Printf("Element sa kljucem %s je obrisan\n", key)
+		}
 		return value, false
 	}
 
@@ -334,10 +336,10 @@ func PUT(wal *wal_implementation.WriteAheadLog, memtable *cursor.Cursor, key str
 
 	//Prvo u WAL
 	timestamp := time.Now()
-	err := wal.Log(key, value, false, timestamp)
-	if err != nil {
-		panic(err)
-	}
+	//err := wal.Log(key, value, false, timestamp)
+	//if err != nil {
+	//	panic(err)
+	//}
 	//Drugo u mem
 
 	ok := memtable.AddToMemtable(key, value, timestamp, wal)
@@ -1254,13 +1256,13 @@ func meni(wal *wal_implementation.WriteAheadLog, lru1 *lru.LRUCache, memtable *c
 			// TODO test
 		} else if opcija == "6" {
 			fmt.Println("Unesite koj sstabelu zelite da proverite(npr. sstable1) >> ")
-			var sstableName, sstablePath string
+			var sstableName string
 			_, err = fmt.Scan(&sstableName)
 			if err != nil {
 				panic(err)
 			}
 			//TODO provera da li sstable posotji
-			ValidateSSTable(sstablePath)
+			ValidateSSTable(sstableName)
 			//TEST DONE
 
 		} else if opcija == "7" {
@@ -1324,16 +1326,15 @@ func main() {
 	lru1 := lru.NewLRUCache(lruCap)
 	memtable := cursor.NewCursor(memType, memTableNumber, lru1, compress1, compress2, oneFile, N, M, NumberOfSST, memTableCap, compType, maxSSTLevel, levelPlus, p)
 	memtable.Fill(wal)
-
-	meni(wal, lru1, memtable, tokenb)
-
-	//for i := 1; i <= 2; i++ {
-	//	for j := 1; j <= 50000; j++ {
-	//		PUT(wal, memtable, strconv.Itoa(j), []byte(strconv.Itoa(j)))
-	//		fmt.Printf(strconv.Itoa(j) + "\n")
-	//	}
+	//meni(wal, lru1, memtable, tokenb)
 	//
-	//}
-	//GET(lru1, memtable, "0")
+	for i := 1; i <= 2; i++ {
+		for j := 1; j <= 50000; j++ {
+			PUT(wal, memtable, strconv.Itoa(j), []byte(strconv.Itoa(j)))
+			fmt.Printf(strconv.Itoa(j) + "\n")
+		}
+
+	}
+	GET(lru1, memtable, "49685")
 
 }

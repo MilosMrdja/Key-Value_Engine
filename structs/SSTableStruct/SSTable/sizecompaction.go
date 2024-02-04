@@ -77,10 +77,7 @@ func NewSSTableCompact(newFilePath string, compSSTable map[string][]int64, proba
 	i := 0
 	for true {
 
-		data, greska := getNextRecord(&compSSTable, compres1, compres2)
-		if greska == false && data.GetKey() != "" {
-			continue
-		}
+		data, _ := getNextRecord(&compSSTable, compres1, compres2)
 		if data.GetKey() == "" {
 			break
 		}
@@ -361,11 +358,12 @@ func ReadDataCompact(filePath string, compres1, compres2 bool, offsetStart int64
 			// read key
 			bytes = make([]byte, keySize)
 			file.Seek(currentRead+offsetStart, 0)
-			tempCRC.Write(bytes)
+
 			_, err = file.Read(bytes)
 			if err != nil {
 				panic(err)
 			}
+			tempCRC.Write(bytes)
 			currentRead += keySize
 			// read value
 			currentKey = string(bytes)
@@ -486,7 +484,7 @@ func getNextRecord(compSSTable *map[string][]int64, compres1, compres2 bool) (da
 	same := 0
 
 	for path, _ := range *compSSTable {
-		if (*compSSTable)[path][0] == (*compSSTable)[path][3] {
+		if (*compSSTable)[path][0] == (*compSSTable)[path][1] {
 			same += 1
 			continue
 		}
@@ -511,7 +509,7 @@ func getNextRecord(compSSTable *map[string][]int64, compres1, compres2 bool) (da
 		return data, true
 	}
 	for path, _ := range *compSSTable {
-		if (*compSSTable)[path][0] == (*compSSTable)[path][3] {
+		if (*compSSTable)[path][0] == (*compSSTable)[path][1] {
 			same += 1
 			continue
 		}
