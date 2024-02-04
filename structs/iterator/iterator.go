@@ -54,8 +54,8 @@ func (i *RangeIterator) IncrementMemTablePosition(memTablePtr *hashmem.Memtable)
 func NewRangeIterator(cursor *cursor.Cursor, valRange [2]string) *RangeIterator {
 	memTablePositions := make(map[*hashmem.Memtable]int)
 
-	for _, v := range cursor.MemPointers() {
-		memTablePositions[&v] = 0
+	for i := range cursor.MemPointers() {
+		memTablePositions[&cursor.MemPointers()[i]] = 0
 	}
 	return &RangeIterator{memTablePositions: memTablePositions, valRange: valRange}
 }
@@ -69,8 +69,8 @@ type PrefixIterator struct {
 func NewPrefixIterator(cursor *cursor.Cursor, currPrefix string) *PrefixIterator {
 	memTablePositions := make(map[*hashmem.Memtable]int)
 
-	for _, v := range cursor.MemPointers() {
-		memTablePositions[&v] = 0
+	for i := range cursor.MemPointers() {
+		memTablePositions[&cursor.MemPointers()[i]] = 0
 	}
 	return &PrefixIterator{memTablePositions: memTablePositions, currPrefix: currPrefix}
 }

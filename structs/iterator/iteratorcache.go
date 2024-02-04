@@ -26,10 +26,13 @@ func (i *IteratingCache) CurrentElement() datatype.DataType {
 }
 
 func (i *IteratingCache) DecrementPosition() {
-	if i.currentPosition != 0 {
+	if i.currentPosition == i.maxNum {
 		i.currentPosition--
-	} else {
-		i.currentPosition = 0
+		return
+	}
+	element := i.CurrentElement()
+	if i.currentPosition != 0 || element.GetKey() != "" {
+		i.currentPosition--
 	}
 }
 
@@ -42,10 +45,7 @@ func (i *IteratingCache) IncrementPosition() {
 }
 func (i *IteratingCache) CheckIfEnd() bool {
 	element := i.CurrentElement()
-	if i.CurrentPosition() == 0 || element.GetKey() == "" {
-		return true
-	}
-	return false
+	return i.CurrentPosition() == 0 || element.GetKey() == ""
 }
 func (i *IteratingCache) CheckIfLast() bool {
 	return i.currentPosition == i.maxNum
@@ -59,7 +59,7 @@ func (i *IteratingCache) InsertCache(elem datatype.DataType) {
 func NewIteratingCache(numSaved int) *IteratingCache {
 	cache := make([]datatype.DataType, numSaved, numSaved)
 
-	return &IteratingCache{iterCache: cache, maxNum: numSaved, currentPosition: numSaved - 1}
+	return &IteratingCache{iterCache: cache, maxNum: numSaved, currentPosition: numSaved}
 }
 
 // ==================================================================================================
