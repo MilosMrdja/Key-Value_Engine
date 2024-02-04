@@ -906,6 +906,7 @@ func Scan(cursor *cursor.Cursor) {
 			if err != nil {
 				panic(err)
 			}
+
 			iteratorSSTable := scanning.RangeIterateSSTable(rangeVal, compress1, compress2)
 			iteratorMem := iterator.NewRangeIterator(cursor, rangeVal)
 
@@ -921,7 +922,37 @@ func Scan(cursor *cursor.Cursor) {
 				panic(err)
 			}
 
-			scanning.RANGE_SCAN_OUTPUT(rangeVal, strana, brojNaStrani, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+			pageCache := iterator.NewPageCache(brojNaStrani)
+			scanning.RANGE_SCAN(rangeVal, strana, brojNaStrani, pageCache, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+			pageCache.OutputCurrPage()
+			var nextStopPrev string
+			for {
+				fmt.Printf(">> ")
+				_, err := fmt.Scan(&nextStopPrev)
+				if err != nil {
+					panic(err)
+				}
+				if nextStopPrev == "next" || nextStopPrev == "NEXT" || nextStopPrev == "Next" {
+					pageCache.IncrementCurrPage()
+					if pageCache.CheckIfLast() {
+						scanning.RANGE_SCAN(rangeVal, 1, brojNaStrani, pageCache, iteratorMem, iteratorSSTable, cursor.Compress1(), cursor.Compress2(), cursor.OneFile())
+
+					}
+					fmt.Println("Vasa strana: ")
+					pageCache.OutputCurrPage()
+
+				} else if nextStopPrev == "stop" || nextStopPrev == "STOP" || nextStopPrev == "Stop" {
+					fmt.Println("Prekidanje...")
+					break
+				} else if nextStopPrev == "prev" || nextStopPrev == "PREV" || nextStopPrev == "Prev" {
+
+					pageCache.DecrementCurrPage()
+					pageCache.OutputCurrPage()
+
+				} else {
+					fmt.Println("Pogresna opcija(next, stop ili prev).\n")
+				}
+			}
 
 		} else if opcijaSken == "3" {
 			var prefix string

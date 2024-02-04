@@ -1,6 +1,7 @@
 package iterator
 
 import (
+	"fmt"
 	"sstable/mem/memtable/datatype"
 )
 
@@ -72,4 +73,79 @@ func NewIteratingCache(numSaved int) *IteratingCache {
 
 // ==================================================================================================
 type PageCache struct {
+	pageSize int
+	pageNum  int
+	currPage int
+	CacheArr [][]datatype.DataType
+}
+
+func (p *PageCache) CurrPage() []datatype.DataType {
+	return p.CacheArr[p.currPage]
+}
+
+func (p *PageCache) CurrPageCursor() int {
+	return p.currPage
+}
+func (p *PageCache) DecrementCurrPage() {
+	if len(p.CacheArr) != 0 && p.currPage != 0 {
+		p.currPage--
+		return
+	}
+
+}
+
+func (p *PageCache) IncrementCurrPage() {
+	if p.currPage != p.pageNum-1 {
+		p.currPage++
+	} else {
+		p.currPage = p.pageNum - 1
+	}
+}
+func (p *PageCache) SetCurrPage(currPage int) {
+	p.currPage = currPage
+}
+
+func (p *PageCache) PageSize() int {
+	return p.pageSize
+}
+
+func (p *PageCache) SetPageSize(pageSize int) {
+	p.pageSize = pageSize
+}
+
+func (p *PageCache) PageNum() int {
+	return p.pageNum
+}
+
+func (p *PageCache) SetPageNum(pageNum int) {
+	p.pageNum = pageNum
+}
+
+func (p *PageCache) OutputCurrPage() {
+	page := p.CurrPage()
+	for i := 0; i < len(page); i++ {
+		fmt.Printf("Kljuc: %s\n", page[i].GetKey())
+	}
+}
+
+func (p *PageCache) InsertPage(stranica []datatype.DataType) {
+	if len(p.CacheArr) != p.pageNum {
+		p.CacheArr = append(p.CacheArr, stranica)
+	} else {
+		p.CacheArr = p.CacheArr[1:]
+		p.CacheArr = append(p.CacheArr, stranica)
+	}
+}
+
+func NewPageCache(pageNum int) *PageCache {
+	pageArr := make([][]datatype.DataType, 0, pageNum)
+
+	return &PageCache{pageNum: pageNum, currPage: pageNum - 1, CacheArr: pageArr}
+}
+func (i *PageCache) CheckIfEnd() bool {
+
+	return i.CurrPageCursor() == 0
+}
+func (i *PageCache) CheckIfLast() bool {
+	return i.CurrPageCursor() == i.pageNum-1
 }
