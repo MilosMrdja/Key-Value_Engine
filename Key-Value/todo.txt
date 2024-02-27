@@ -1,0 +1,18 @@
+1. namestiti timestamp, treba da bude isti u wal-u i u sstable
+2. leveled kompakcija
+3. scan ne meroamo da gledamo lru!
+4. istestirati PUT, GET, DELETE
+5. skripta za unos 100000 el, pise u sepcifikaciji, poziv fnukcije
+6. range scan
+7. prefix scan
+8. prefix mem, range mem - iterator
+9. prefix sstable, range sstable - iterator
+- preko iteratora moze scan -
+10. za wal imamo txt da znamo gde se zavrsavaju mem, da znamo sta treba da brisemo
+11. dodati token bucket pri slanju zahteva
+12. TIPOVI - meni
+    12.1 - Bloom
+    12.2 - csm
+    12.3 - SimHash - fali implementacija ser/deser
+    12.4 - HLogLog
+
