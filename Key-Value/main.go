@@ -1329,18 +1329,6 @@ func scantest() {
 
 		mapMem[&btm] = 0
 	}
-	//iterMem := iterator.NewPrefixIterator(mapMem, prefix)
-	//iterSSTable := scanning.PrefixIterateSSTable(prefix, compress2, compress1, oneFile)
-	//scanning.PREFIX_SCAN_OUTPUT(prefix, 1, 10, iterMem, iterSSTable, compress1, compress2, oneFile)
-	//
-	//for k, _ := range mapMem {
-	//	mapMem[k] = 0
-	//}
-	//j = 0
-	//valRange := [2]string{"1", "2"}
-	//iterMemR := iterator.NewRangeIterator(mapMem, valRange)
-	//iterSSTableR := scanning.RangeIterateSSTable(valRange, compress2, compress1, oneFile)
-	//scanning.RANGE_SCAN_OUTPUT(valRange, 1, 10, iterMemR, iterSSTableR, compress1, compress2, oneFile)
 	fmt.Println("")
 }
 
